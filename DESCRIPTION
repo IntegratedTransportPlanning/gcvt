@@ -17,3 +17,5 @@ LazyData: true
 Imports: eurostat,
     shiny,
     leaflet
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 6.0.1
