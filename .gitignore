@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+*.zip
+SHAPE
+*.geojson
