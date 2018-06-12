@@ -16,6 +16,8 @@ Encoding: UTF-8
 LazyData: true
 Imports: eurostat,
     shiny,
-    leaflet
+    leaflet,
+    dplyr,
+    sf
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.0.1
