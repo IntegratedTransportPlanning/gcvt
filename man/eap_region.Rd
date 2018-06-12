@@ -24,6 +24,12 @@ eap_countries = spData::world \%>\%
   filter(name_long \%in\% eap_countries)
 mapview::mapview(eap_countries)
 devtools::use_data(eap_countries)
+eap_buff = st_buffer(eap_countries, 0.00001)
+eap_region = st_difference(eap_buff, eap_buff) \%>\% 
+  st_combine() \%>\% 
+  st_union()
+plot(eap_region)
+devtools::use_data(eap_region)
 }
 }
 \keyword{datasets}
