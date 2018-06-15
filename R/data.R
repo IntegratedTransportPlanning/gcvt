@@ -1,8 +1,5 @@
 #' Study region and countries
 #'
-#' These points represent population-weighted centroids of Medium Super Output Area (MSOA) zones within a 1 mile radius of of my home when I was writing this package.
-#'
-#' Cents was generated from the data repository pct-data: https://github.com/npct/pct-data. This data was accessed from within the pct repo: https://github.com/npct/pct, using the following code:
 #' @aliases eap_region eap_countries
 #' @examples
 #' \dontrun{
