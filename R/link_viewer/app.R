@@ -53,13 +53,13 @@ addAutoLinks = function (map, data, column) {
     addLegend(position = "bottomleft", pal = pal, values = col, title = column, layerId = "linksLegend")
 }
 
-addAutoLinksJSON = function (map, data, json, column) {
-  col = data[[column]]
-  pal = autoPalette(col)
-  map %>%
-    addGeoJSON(geojson = json, color=pal(col), weight = 2) %>%
-    addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
-}
+# addAutoLinksJSON = function (map, data, json, column) {
+#   col = data[[column]]
+#   pal = autoPalette(col)
+#   map %>%
+#     addGeoJSON(geojson = json, color=pal(col), weight = 2) %>%
+#     addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
+# }
 
 library(shiny)
 
