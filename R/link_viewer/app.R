@@ -73,12 +73,14 @@ server = function(input, output) {
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addAutoLinks(data = links, column = input$variable)
+      addAutoLinks(data = links, column = "MODE")
   })
 
-  # observeEvent(input$variable, {
-  #   leafletProxy("map") %>% addAutoLinks(data = links, column = input$variable)
-  # })
+  observeEvent(input$variable, {
+    leafletProxy("map") %>%
+      clearGroup("links") %>%
+      addAutoLinks(data = links, column = input$variable)
+  })
 }
 
 # Run the application
