@@ -27,7 +27,8 @@ variables = sort(colnames(links))
 variables = variables[!variables == "geom"]
 
 # Too slow with all the links...
-links = links[sample(1:nrow(links), 3000),]
+#links = links[sample(1:nrow(links), 3000),]
+links = links[1:1000,]
 
 # Just the geography as geojson
 # library(geojsonio)
@@ -48,36 +49,38 @@ addAutoLinks = function (map, data, column) {
   col = data[[column]]
   pal = autoPalette(col)
   map %>%
-    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2) %>%
-    addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
+    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2, group = "links") %>%
+    addLegend(position = "bottomleft", pal = pal, values = col, title = column, layerId = "linksLegend")
 }
 
-addAutoLinksJSON = function (map, data, json, column) {
-  col = data[[column]]
-  pal = autoPalette(col)
-  map %>%
-    addGeoJSON(geojson = json, color=pal(col), weight = 2) %>%
-    addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
-}
+# addAutoLinksJSON = function (map, data, json, column) {
+#   col = data[[column]]
+#   pal = autoPalette(col)
+#   map %>%
+#     addGeoJSON(geojson = json, color=pal(col), weight = 2) %>%
+#     addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
+# }
 
 library(shiny)
 
-ui <- fillPage(
+ui = fillPage(
   leafletOutput("map", height = "100%"),
   div(class = "floater", selectInput("variable", "Variable", variables, selected="MODE")),
   theme = "fullscreen.css"
 )
 
-server <- function(input, output) {
+server = function(input, output) {
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addAutoLinks(data = links, column = input$variable)
+      addAutoLinks(data = links, column = "MODE")
   })
 
-  # observeEvent(input$variable, {
-  #   leafletProxy("map") %>% addAutoLinks(data = links, column = input$variable)
-  # })
+  observeEvent(input$variable, {
+    leafletProxy("map") %>%
+      clearGroup("links") %>%
+      addAutoLinks(data = links, column = input$variable)
+  })
 }
 
 # Run the application
