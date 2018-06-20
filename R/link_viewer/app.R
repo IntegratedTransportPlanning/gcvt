@@ -49,8 +49,8 @@ addAutoLinks = function (map, data, column) {
   col = data[[column]]
   pal = autoPalette(col)
   map %>%
-    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2) %>%
-    addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
+    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2, group = "links") %>%
+    addLegend(position = "bottomleft", pal = pal, values = col, title = column, layerId = "linksLegend")
 }
 
 addAutoLinksJSON = function (map, data, json, column) {
