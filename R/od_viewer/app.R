@@ -48,8 +48,7 @@ addAutoLinks = function (map, data, column) {
 }
 
 # Add zones coloured by sum of variable for row
-addAutoZones = function(map, data, skim, variable) {
-  values = rowSums(skim[[variable]])
+addAutoZones = function(map, data, skim, variable, values = rowSums(skim[[variable]])) {
   pal = autoPalette(values)
   map %>%
     addPolygons(data = data, color=pal(values), label = as.character(values),
@@ -60,11 +59,7 @@ addAutoZones = function(map, data, skim, variable) {
 # Add zones coloured by their value with respect to selected zone
 addAutoZonesOD = function(map, data, selected, skim, variable) {
   values = skim[[variable]][selected,]
-  pal = autoPalette(values)
-  map %>%
-    addPolygons(data = data, color=pal(values), label = as.character(values),
-                group = "zones", layerId = 1:nrow(data)) %>%
-    addLegend(layerId = "zonesLegend", position = "bottomleft", data = data, pal = pal, values = values, title = variable)
+  addAutoZones(map, data, skim, variable, values = values)
 }
 
 library(shiny)
