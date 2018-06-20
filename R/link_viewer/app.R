@@ -27,7 +27,8 @@ variables = sort(colnames(links))
 variables = variables[!variables == "geom"]
 
 # Too slow with all the links...
-links = links[sample(1:nrow(links), 3000),]
+#links = links[sample(1:nrow(links), 3000),]
+links = links[1:1000,]
 
 # Just the geography as geojson
 # library(geojsonio)
