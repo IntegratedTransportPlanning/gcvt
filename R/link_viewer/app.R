@@ -63,13 +63,13 @@ addAutoLinks = function (map, data, column) {
 
 library(shiny)
 
-ui <- fillPage(
+ui = fillPage(
   leafletOutput("map", height = "100%"),
   div(class = "floater", selectInput("variable", "Variable", variables, selected="MODE")),
   theme = "fullscreen.css"
 )
 
-server <- function(input, output) {
+server = function(input, output) {
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
