@@ -41,7 +41,7 @@ autoPalette = function(data) {
   } else if (is.logical(data)) {
     colorFactor(topo.colors(2), data)
   } else {
-    colorNumeric(palette = "PuRd", domain = data)
+    colorNumeric(palette = c("red", "green"), domain = data)
   }
 }
 
