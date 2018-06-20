@@ -51,9 +51,10 @@ addAutoLinks = function (map, data, column) {
 addAutoZones = function(map, data, skim, variable, values = rowSums(skim[[variable]])) {
   pal = autoPalette(values)
   map %>%
-    addPolygons(data = data, color=pal(values), label = as.character(values),
-                group = "zones", layerId = 1:nrow(data)) %>%
-    addLegend(layerId = "zonesLegend", position = "bottomleft", data = data, pal = pal, values = values, title = variable)
+    addPolygons(data = data, color=pal(values), label = paste(data$NAME, ":", as.character(values)),
+                group = "zones", layerId = 1:nrow(data),
+                weight = 1) %>%
+    addLegend(group = "zones", layerId = "zonesLegend", position = "bottomleft", pal = pal, values = values, title = variable)
 }
 
 # Add zones coloured by their value with respect to selected zone
