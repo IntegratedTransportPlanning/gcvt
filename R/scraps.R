@@ -1,3 +1,5 @@
+devtools::install_github("cmcaine/leaflet")
+
 library(sf)
 library(mapview)
 library(leaflet)
