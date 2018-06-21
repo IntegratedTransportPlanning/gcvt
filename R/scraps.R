@@ -85,3 +85,46 @@ olm() %>% add_geojson(gjlinks, style = stroke_style(color = autoPalette(links$MO
 nc = st_read(system.file("shape/nc.shp", package="sf"))
 olm() %>%
   add_features(nc, style = fill_style(color = rand_colours))
+
+## Oh god, this was harder than expected
+
+paste("OBJECTID", row[["OBJECTID"]])
+
+links = [1:1000,]
+stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
+row = stripSf(links)
+trs = lapply(colnames(row), function(col){
+  paste("<tr><td>", col,"</td>", "<td>", row[[col]], "</td>")
+})
+
+trsM = matrix(unlist(trs), length(trs[[1]]))
+
+tables = 1:nrow(trsM)
+for (rn in 1:nrow(trsM)) {
+  tables[[rn]] = paste("<table>", paste(trsM[rn,], collapse=''), "</table>")
+}
+
+paste("table", paste(paste("td", colnames(links), "td", "td", stripSf(links[1,]), "td"), collapse=''), "table")
+
+htmltools::tags$td("hello")
+
+paste("A", trs, "B")
+
+trs[[1]][[1]]
+
+
+tables = 1:nrow(row)
+for (rn in 1:length(trs[[1]])) {
+  trs2 = 1:32
+  for (cn in 1:length(trs)) {
+    trs2[[cn]] = trs[[cn]][[rn]]
+  }
+  tables[[rn]] = paste(trs2, collapse='')
+}
+
+oength(trs)
+
+krm(trs)
+for (col in colnames(row)) {
+  print(paste(col, row[[col]]))
+}
