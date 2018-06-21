@@ -32,3 +32,7 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
     font-size: smaller;
     text-align: center;
 }
+
+.gcvt-popup-tr:nth-child(even) {
+    background-color: lightgray;
+}

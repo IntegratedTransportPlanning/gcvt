@@ -45,11 +45,17 @@ autoPalette = function(data) {
   }
 }
 
+getPopup = function (data, id) {
+  stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
+  meta = stripSf(links[id,])
+  popupText = paste("<table>", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
+}
+
 addAutoLinks = function (map, data, column) {
   col = data[[column]]
   pal = autoPalette(col)
   map %>%
-    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2, group = "links") %>%
+    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2, layerId = 1:nrow(data), group = "links") %>%
     addLegend(position = "bottomleft", pal = pal, values = col, title = column, layerId = "linksLegend")
 }
 
@@ -80,6 +86,15 @@ server = function(input, output) {
     leafletProxy("map") %>%
       clearGroup("links") %>%
       addAutoLinks(data = links, column = input$variable)
+  })
+
+  observeEvent(input$map_shape_click, {
+    e = input$map_shape_click
+
+    popupText = getPopup(links, e$id)
+    print (popupText)
+    leafletProxy("map") %>%
+      addPopups(lng=e$lng, lat=e$lat, popup=popupText)
   })
 }
 
