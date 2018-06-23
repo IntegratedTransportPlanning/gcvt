@@ -53,8 +53,22 @@ reStyleZones = function(map, data, skim, variable, selected = NULL) {
 }
 
 reStyle = function(map, group, values, title, pal = autoPalette(values), label = as.character(values)) {
-  styles = lapply(pal(values), function(colour) {list(fillColor=colour, color=colour)})
   map %>%
-    setStyle(group, styles, label = label) %>%
+    addAutoLegend(values, title, group, pal) %>%
+    setStyleFast(group, color = pal(values), label = label)
+}
+
+reStyleSlow = function(map, group, values, title, pal = autoPalette(values), label = as.character(values), chunksize = 500) {
+  map %>%
     addAutoLegend(values, title, group, pal)
+
+  # Chunking doesn't actually make this any faster, but it does produce a nice visual effect :)
+  chunked = batchtools::chunk(values, chunk.size = chunksize, shuffle = F)
+  offset = 0
+  for (cn in 1:max(chunked)) {
+    vals = values[chunked == cn]
+    styles = lapply(pal(vals), function(colour) {list(fillColor=colour, color=colour)})
+    setStyle(map, group, styles, label = label, offset = offset)
+    offset = offset + length(vals)
+  }
 }
