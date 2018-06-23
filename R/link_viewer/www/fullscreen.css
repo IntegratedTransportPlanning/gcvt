@@ -12,10 +12,6 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
     margin-right: -23em;
 }
 
-.floater * {
-    position:relative;
-}
-
 .floater:hover {
     height: auto;
     width: auto;
