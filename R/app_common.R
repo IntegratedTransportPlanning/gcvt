@@ -20,7 +20,7 @@ addAutoLinks = function (map, data, column, palfunc = autoPalette) {
   col = data[[column]]
   pal = palfunc(col)
   map %>%
-    addPolylines(data = data, group = "links", color=pal(col), label = ~as.character(col), weight = 2) %>%
+    addPolylines(data = data, group = "links", color=pal(col), label = ~as.character(col), weight = 2, layerId = 1:nrow(data)) %>%
     addAutoLegend(col, column, "links", pal)
 }
 
