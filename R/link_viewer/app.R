@@ -82,6 +82,15 @@ server = function(input, output) {
       reStyle("links", links[[input$variable]], input$variable, pal = autoPalette(links[[input$variable]], factorColors = topo.colors))
   })
 
+  # TODO this is nearly done, but need to add 'rows=' to addAutoLinks, and a way to
+  # remember it when changing variable too
+  #
+  # observeEvent(input$linkMode, {
+  #   leafletProxy("map") %>%
+  #     clearGroup("links") %>%
+  #     addAutoLinks(data = links, column = input$variable, rows=input$linkMode)
+  # })
+
   observeEvent(input$map_shape_click, {
     e = input$map_shape_click
 
