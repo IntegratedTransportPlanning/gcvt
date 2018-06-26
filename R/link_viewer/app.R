@@ -9,7 +9,6 @@
 #   Graphs
 #     Qs to answer?
 #   better UI
-#     Floaty button to pop out options
 #     Scenario selection
 #   Performance
 #     server side of lef() %>% addAutoLinks(links) takes ~ 5.5s
@@ -22,13 +21,16 @@
 # Get the data
 library(sf)
 library(leaflet)
+# library(shinythemes)
 links = read_sf("../../data/sensitive/processed/links.gpkg", stringsAsFactors = T)
 variables = sort(colnames(links))
 variables = variables[!variables == "geom"]
 
+
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
 links = links[1:1000,]
+modes = unique(links[["MODE"]])
 
 # Just the geography as geojson
 # library(geojsonio)
@@ -48,7 +50,7 @@ autoPalette = function(data) {
 getPopup = function (data, id) {
   stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
   meta = stripSf(links[id,])
-  popupText = paste("<table>", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
+  popupText = paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
 }
 
 addAutoLinks = function (map, data, column) {
@@ -71,7 +73,29 @@ library(shiny)
 
 ui = fillPage(
   leafletOutput("map", height = "100%"),
-  div(class = "floater", selectInput("variable", "Variable", variables, selected="MODE")),
+  div(class="panel-group floater",
+      div(class="panel panel-default",
+          div(id="gcvt-heading", class="panel-heading",
+              a(href="#collapse1", "Toggle Controls", 'data-toggle'="collapse")),
+          div(id="collapse1", class="panel-collapse collapse in",
+              tags$ul(class="list-group",
+                 tags$li(class="list-group-item",
+                        textInput("scenarioPackage", "Scenario Package")),
+                 tags$li(class="list-group-item",
+
+                         # CSS is drawing wrong for the below. Seems to be related to inheriting position:relative
+                         # from 'floater', but havent figured out how to fix yet
+                         sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
+                 tags$li(class="list-group-item",
+                         selectInput("variable", "Variable", variables, selected="MODE")),
+                 tags$li(class="list-group-item",
+                         selectInput("linkMode", "Mode", modes)),
+                 tags$li(class="list-group-item", checkboxInput("another", "Another control"))
+          )))
+      )
+  ,
+  # Couldnt figure out how to provide multiple CSSs, which would have allowed use of BootSwatch
+  # shinythemes lets you switch in bootswatch, but then you have to replace the below
   theme = "fullscreen.css"
 )
 
@@ -88,11 +112,20 @@ server = function(input, output) {
       addAutoLinks(data = links, column = input$variable)
   })
 
+  # TODO this is nearly done, but need to add 'rows=' to addAutoLinks, and a way to
+  # remember it when changing variable too
+  #
+  # observeEvent(input$linkMode, {
+  #   leafletProxy("map") %>%
+  #     clearGroup("links") %>%
+  #     addAutoLinks(data = links, column = input$variable, rows=input$linkMode)
+  # })
+
   observeEvent(input$map_shape_click, {
     e = input$map_shape_click
 
     popupText = getPopup(links, e$id)
-    print (popupText)
+
     leafletProxy("map") %>%
       addPopups(lng=e$lng, lat=e$lat, popup=popupText)
   })

@@ -2,23 +2,17 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
     height: 100%
 }
 
-.floater {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    padding: 10px;
-    width: 25em;
-    background: white;
-    margin-right: -23em;
-}
-
 .floater * {
     position:relative;
 }
 
-.floater:hover {
-    height: auto;
-    width: auto;
+.floater {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 25em;
+    background: white;
+    
     overflow: visible;
     margin-right: 0;
 }
@@ -33,6 +27,20 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
     text-align: center;
 }
 
+.gcvt-td {
+    padding: 2px;
+}
 .gcvt-popup-tr:nth-child(even) {
-    background-color: lightgray;
+    background-color: #eeeeee;
+}
+
+#gcvt-heading {
+    text-align: right;
+}
+
+/*
+this doesnt fix the drawing problems...
+*/
+#modelYear {
+    position: absolute !important;
 }
