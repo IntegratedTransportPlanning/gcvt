@@ -36,38 +36,6 @@ modes = unique(links[["MODE"]])
 # library(geojsonio)
 # gjlinks = geojson_list(subset(links, select=c("geom")))
 
-# Helpers
-autoPalette = function(data) {
-  if (is.factor(data)) {
-    colorFactor(topo.colors(length(levels(data))), data)
-  } else if (is.logical(data)) {
-    colorFactor(topo.colors(2), data)
-  } else {
-    colorNumeric(palette = "RdYlBu", domain = data)
-  }
-}
-
-getPopup = function (data, id) {
-  stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
-  meta = stripSf(links[id,])
-  popupText = paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
-}
-
-addAutoLinks = function (map, data, column) {
-  col = data[[column]]
-  pal = autoPalette(col)
-  map %>%
-    addPolylines(data = data, color=pal(col), label = as.character(col), weight = 2, layerId = 1:nrow(data), group = "links") %>%
-    addLegend(position = "bottomleft", pal = pal, values = col, title = column, layerId = "linksLegend")
-}
-
-# addAutoLinksJSON = function (map, data, json, column) {
-#   col = data[[column]]
-#   pal = autoPalette(col)
-#   map %>%
-#     addGeoJSON(geojson = json, color=pal(col), weight = 2) %>%
-#     addLegend(position = "bottomleft", data = data, pal = pal, values = col, title = column)
-# }
 
 library(shiny)
 
@@ -100,6 +68,8 @@ ui = fillPage(
 )
 
 server = function(input, output) {
+  source("../app_common.R")
+
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
@@ -108,8 +78,7 @@ server = function(input, output) {
 
   observeEvent(input$variable, {
     leafletProxy("map") %>%
-      clearGroup("links") %>%
-      addAutoLinks(data = links, column = input$variable)
+      reStyle("links", links[[input$variable]], input$variable, pal = autoPalette(links[[input$variable]], factorColors = topo.colors))
   })
 
   # TODO this is nearly done, but need to add 'rows=' to addAutoLinks, and a way to

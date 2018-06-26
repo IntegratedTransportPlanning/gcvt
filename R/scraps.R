@@ -1,3 +1,5 @@
+devtools::install_github("cmcaine/leaflet")
+
 library(sf)
 library(mapview)
 library(leaflet)
@@ -90,7 +92,7 @@ olm() %>%
 
 paste("OBJECTID", row[["OBJECTID"]])
 
-links = [1:1000,]
+
 stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
 row = stripSf(links)
 trs = lapply(colnames(row), function(col){
