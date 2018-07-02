@@ -21,6 +21,10 @@ zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
 #   }
 # }
 
+linesFrom = function(from, to) {
+  st_sfc(lapply(st_geometry(to), function(point) {st_linestring(rbind(from, point))}))
+}
+
 # Fake up an od skim
 variables = c("Cheese (tonnes)", "Wine (tonnes)", "CO2 (tonnes)", "Time (minutes)")
 od_skim = list()
