@@ -24,6 +24,8 @@ library(leaflet)
 links = read_sf("../../data/sensitive/processed/links.gpkg", stringsAsFactors = T)
 variables = sort(colnames(links))
 variables = variables[!variables == "geom"]
+continuous_variables = colnames(links)[sapply(links, is.numeric)] %>% sort()
+continuous_variables = continuous_variables[!continuous_variables == "geom"]
 
 
 # Too slow with all the links...
@@ -50,7 +52,9 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
                  tags$li(class="list-group-item",
-                         selectInput("variable", "Variable", variables, selected="MODE")),
+                         selectInput("colourBy", "Variable", variables, selected="MODE")),
+                 tags$li(class="list-group-item",
+                         selectInput("widthBy", "Set width by", continuous_variables, selected="SPEED")),
                  tags$li(class="list-group-item",
                          selectInput("linkMode", "Mode", modes)),
                  tags$li(class="list-group-item", checkboxInput("another", "Another control"))
@@ -74,12 +78,18 @@ server = function(input, output) {
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addAutoLinks(data = links, column = "MODE")
+      addAutoLinks(data = links, colorCol = "MODE", weightCol = "SPEED")
   })
 
-  observeEvent(input$variable, {
+  observeEvent(input$widthBy, {
     leafletProxy("map") %>%
-      reStyle("links", links[[input$variable]], input$variable, pal = autoPalette(links[[input$variable]], factorColors = topo.colors))
+      reStyle2("links", weight = links[[input$widthBy]],
+               label = paste(input$colourBy, ": ", links[[input$colourBy]], "; ", input$widthBy, ": ", links[[input$widthBy]], sep = ""))
+  })
+
+  observeEvent(input$colourBy, {
+    leafletProxy("map") %>%
+      reStyle("links", links[[input$colourBy]], input$colourBy, pal = autoPalette(links[[input$colourBy]], factorColors = topo.colors))
   })
 
   # TODO this is nearly done, but need to add 'rows=' to addAutoLinks, and a way to

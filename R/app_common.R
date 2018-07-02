@@ -16,12 +16,15 @@ addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
               title = title, group = group, layerId = paste(group, "Legend"))
 }
 
-addAutoLinks = function (map, data, column, palfunc = autoPalette) {
-  col = data[[column]]
-  pal = palfunc(col)
+addAutoLinks = function (map, data, colorCol, weightCol, palfunc = autoPalette) {
+  color = data[[colorCol]]
+  pal = palfunc(color)
   map %>%
-    addPolylines(data = data, group = "links", color=pal(col), label = ~as.character(col), weight = 2, layerId = 1:nrow(data)) %>%
-    addAutoLegend(col, column, "links", pal)
+    addPolylines(data = data, group = "links", color = pal(color), layerId = 1:nrow(data)) %>%
+    addAutoLegend(color, colorCol, "links", pal) %>%
+    reStyle2("links", weight = data[[weightCol]],
+             label = paste(colorCol, ": ", color, "; ",
+                           weightCol, ": ", data[[weightCol]], sep = ""))
 }
 
 addAutoPolygons = function(map, data, values, title, palfunc = autoPalette) {
@@ -56,6 +59,23 @@ reStyle = function(map, group, values, title, pal = autoPalette(values), label =
   map %>%
     addAutoLegend(values, title, group, pal) %>%
     setStyleFast(group, color = pal(values), label = label)
+}
+
+# Scale a numeric vector to some range.
+scale_to_range = function(x, domain) {
+  domain = range(domain)
+  size = domain[[2]] - domain[[1]]
+  (x - min(x)) / (max(x) / size) + domain[[1]]
+}
+
+reStyle2 = function(map, group, color = NULL, weight = NULL,
+                    pal = autoPalette(color),
+                    label = NULL) {
+  if (missing(label)) { label = paste(color, weight) %>% stringr::str_trim() }
+  if (!missing(weight)) { weight = scale_to_range(weight, domain = c(2, 10)) }
+  if (!missing(color)) { color = pal(color) }
+  map %>%
+    setStyleFast(group, color = color, weight = weight, label = label)
 }
 
 reStyleSlow = function(map, group, values, title, pal = autoPalette(values), label = as.character(values), chunksize = 500) {
