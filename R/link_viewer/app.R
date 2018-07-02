@@ -33,6 +33,14 @@ continuous_variables = continuous_variables[!continuous_variables == "geom"]
 links = links[1:1000,]
 modes = unique(links[["MODE"]])
 
+# Dummy var for now
+scenarios = c("Do minimum",
+              "EV Road Freight",
+              "EV Private Vehicles",
+              "Rail Electrification",
+              "EV Freight and Rail Electrification",
+              "Port Automation")
+
 # Just the geography as geojson
 # library(geojsonio)
 # gjlinks = geojson_list(subset(links, select=c("geom")))
@@ -48,7 +56,7 @@ ui = fillPage(
           div(id="collapse1", class="panel-collapse collapse in",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
-                        textInput("scenarioPackage", "Scenario Package")),
+                        selectInput("scenarioPackage", "Scenario Package", scenarios)),
                  tags$li(class="list-group-item",
                          sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
                  tags$li(class="list-group-item",
@@ -56,7 +64,7 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          selectInput("widthBy", "Set width by", continuous_variables, selected="SPEED")),
                  tags$li(class="list-group-item",
-                         selectInput("linkMode", "Show mode", modes)),
+                         selectInput("linkMode", "Show mode", modes, selected=NULL)),
                  tags$li(class="list-group-item", checkboxInput("showConnectors", "Show Connectors"))
           )))
       )
