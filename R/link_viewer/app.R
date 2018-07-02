@@ -56,8 +56,8 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          selectInput("widthBy", "Set width by", continuous_variables, selected="SPEED")),
                  tags$li(class="list-group-item",
-                         selectInput("linkMode", "Mode", modes)),
-                 tags$li(class="list-group-item", checkboxInput("another", "Another control"))
+                         selectInput("linkMode", "Show mode", modes)),
+                 tags$li(class="list-group-item", checkboxInput("showConnectors", "Show Connectors"))
           )))
       )
   ,
@@ -68,6 +68,12 @@ ui = fillPage(
 
 server = function(input, output) {
   source("../app_common.R")
+
+  # Keep track of which modes are shown
+  # Turn off 'connector' links by default, keeps it neat
+  visible = rep(T, times = length(modes))
+  names(visible) = modes
+  visible['connector'] = F
 
   getPopup = function (data, id) {
     stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
@@ -92,14 +98,19 @@ server = function(input, output) {
       reStyle("links", links[[input$colourBy]], input$colourBy, pal = autoPalette(links[[input$colourBy]], factorColors = topo.colors))
   })
 
-  # TODO this is nearly done, but need to add 'rows=' to addAutoLinks, and a way to
-  # remember it when changing variable too
-  #
-  # observeEvent(input$linkMode, {
-  #   leafletProxy("map") %>%
-  #     clearGroup("links") %>%
-  #     addAutoLinks(data = links, column = input$variable, rows=input$linkMode)
-  # })
+  observeEvent(input$linkMode, {
+    print (paste("filtering for mode:", input$linkMode))
+    visible[visible == T] = F
+    visible[input$linkMode] = T
+
+    # The below can be uncommented when reStyle(vis=) is implemented
+    # leafletProxy("map") %>%
+    #   reStyle("links",
+    #           links[[input$variable]],
+    #           input$variable,
+    #           pal = autoPalette(links[[input$variable]], factorColors = topo.colors),
+    #           vis = visible)
+  }, ignoreInit = T)
 
   observeEvent(input$map_shape_click, {
     e = input$map_shape_click
