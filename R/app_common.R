@@ -19,12 +19,13 @@ addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
 addAutoLinks = function (map, data, colorCol, weightCol, palfunc = autoPalette) {
   color = data[[colorCol]]
   pal = palfunc(color)
-  map %>%
+  map = map %>%
     addPolylines(data = data, group = "links", color = pal(color), layerId = 1:nrow(data)) %>%
-    addAutoLegend(color, colorCol, "links", pal) %>%
-    reStyle2("links", weight = data[[weightCol]],
-             label = paste(colorCol, ": ", color, "; ",
-                           weightCol, ": ", data[[weightCol]], sep = ""))
+    addAutoLegend(color, colorCol, "links", pal)
+  if (is.null(weightCol))
+    reStyle2(map, "links", weight = rep(1, nrow(data)))
+  else
+    reStyle2(map, "links", weight = data[[weightCol]], label = paste(colorCol, ": ", color, "; ", weightCol, ": ", data[[weightCol]], sep = ""))
 }
 
 addAutoPolygons = function(map, data, values, title, palfunc = autoPalette) {
