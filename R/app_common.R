@@ -72,13 +72,14 @@ scale_to_range = function(x, domain) {
     (x - min(x)) / (max(x) / diff(domain)) + domain[[1]]
 }
 
+# Restyle color, weight, and/or label
 reStyle2 = function(map, group, color = NULL, weight = NULL,
-                    pal = autoPalette(color),
-                    label = NULL) {
+                    pal = autoPalette(color), label = NULL,
+                    visible = NULL) {
   if (!missing(weight)) { weight = scale_to_range(weight, domain = c(2, 10)) }
   if (!missing(color)) { color = pal(color) }
   map %>%
-    setStyleFast(group, color = color, weight = weight, label = label)
+    setStyleFast(group, color = color, weight = weight, label = label, stroke = visible)
 }
 
 # Overcomplicated so that you can leave out colorCol or weightCol (which doesn't currently ever happen)
