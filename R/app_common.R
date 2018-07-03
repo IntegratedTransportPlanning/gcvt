@@ -80,3 +80,22 @@ reStyle2 = function(map, group, color = NULL, weight = NULL,
   map %>%
     setStyleFast(group, color = color, weight = weight, label = label)
 }
+
+# Overcomplicated so that you can leave out colorCol or weightCol (which doesn't currently ever happen)
+reStyleLinks = function(map, data, colorCol = NULL, weightCol = NULL, palfunc = autoPalette) {
+  label = ""
+  if (!missing(colorCol)) {
+    label = paste(label, colorCol, ": ", data[[colorCol]], " ", sep = "")
+    color = data[[colorCol]]
+    addAutoLegend(map, color, colorCol, 'links')
+  }
+  if (!missing(weightCol)) {
+    if (is.null(weightCol)) {
+      weight = rep(1, nrow(data))
+    } else {
+      label = paste(label, weightCol, ": ", data[[weightCol]], sep = "")
+      weight = data[[weightCol]]
+    }
+  }
+  reStyle2(map, 'links', color = color, weight = weight, label = label, pal = palfunc(color))
+}
