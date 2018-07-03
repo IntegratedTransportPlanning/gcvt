@@ -72,7 +72,7 @@ server <- function(input, output) {
     updateZoneDisplay()
   })
 
-  observeEvent(input$map_shape_mouseover, {
+  observe({
     if (input$showCLines) {
       id = input$map_shape_mouseover$id
       if (!is.null(id)) {
