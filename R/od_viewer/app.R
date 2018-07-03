@@ -11,9 +11,10 @@ library(leaflet)
 # Get the data
 # zones = subset(read_sf("data/sensitive/initial/zones.geojson"), select = c("NAME"))
 zones = subset(read_sf("../../data/sensitive/initial/zones.geojson"), select = c("NAME"))
-zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
-
-centroids = st_centroid(zones)
+suppressWarnings({
+  zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
+  centroids = st_centroid(zones)
+})
 
 # c2clines =
 # for (c1 in centroids) {
