@@ -25,7 +25,7 @@ links = read_sf("../../data/sensitive/processed/links.gpkg", stringsAsFactors = 
 variables = sort(colnames(links))
 variables = variables[!variables == "geom"]
 continuous_variables = colnames(links)[sapply(links, is.numeric)] %>% sort()
-continuous_variables = continuous_variables[!continuous_variables == "geom"]
+continuous_variables = c("Select variable", continuous_variables[!continuous_variables == "geom"])
 
 
 # Too slow with all the links...
@@ -62,7 +62,7 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          selectInput("colourBy", "Variable", variables, selected="MODE")),
                  tags$li(class="list-group-item",
-                         selectInput("widthBy", "Set width by", continuous_variables, selected="SPEED")),
+                         selectInput("widthBy", "Set width by", continuous_variables)),
                  tags$li(class="list-group-item",
                          selectInput("linkMode", "Show mode", modes, selected=NULL)),
                  tags$li(class="list-group-item", checkboxInput("showConnectors", "Show Connectors"))
@@ -92,18 +92,19 @@ server = function(input, output) {
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addAutoLinks(data = links, colorCol = "MODE", weightCol = "SPEED")
+      addPolylines(data = links, group = "links", layerId = 1:nrow(links)) %>%
+      reStyleLinks(links, "MODE", NULL)
   })
 
-  observeEvent(input$widthBy, {
-    leafletProxy("map") %>%
-      reStyle2("links", weight = links[[input$widthBy]],
-               label = paste(input$colourBy, ": ", links[[input$colourBy]], "; ", input$widthBy, ": ", links[[input$widthBy]], sep = ""))
-  })
+  observe({
+    if (input$widthBy == continuous_variables[[1]]) {
+      widthBy = NULL
+    } else {
+      widthBy = input$widthBy
+    }
 
-  observeEvent(input$colourBy, {
     leafletProxy("map") %>%
-      reStyle("links", links[[input$colourBy]], input$colourBy, pal = autoPalette(links[[input$colourBy]], factorColors = topo.colors))
+      reStyleLinks(links, input$colourBy, widthBy)
   })
 
   observeEvent(input$linkMode, {
