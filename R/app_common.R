@@ -54,6 +54,8 @@ reStyleZones = function(map, data, skim, variable, selected = NULL) {
     values = skim[[variable]][selected,]
   }
   reStyle(map, "zones", values, variable, label = paste(data$NAME, ": ", as.character(values), sep = ""))
+  setStyleFast(map, "zones", weight = rep(1, nrow(data)))
+  if (!is.null(selected)) setStyle(map, "zones", styles = list(list(weight = 4, color = "blue")), offset = selected)
 }
 
 reStyle = function(map, group, values, title, pal = autoPalette(values), label = as.character(values)) {
