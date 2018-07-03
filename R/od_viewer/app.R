@@ -12,7 +12,8 @@ library(leaflet)
 # zones = subset(read_sf("data/sensitive/initial/zones.geojson"), select = c("NAME"))
 zones = subset(read_sf("../../data/sensitive/initial/zones.geojson"), select = c("NAME"))
 zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
-# centroids = st_centroid(zones)
+
+centroids = st_centroid(zones)
 
 # c2clines =
 # for (c1 in centroids) {
@@ -22,6 +23,8 @@ zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
 # }
 
 linesFrom = function(from, to) {
+  # Convert from to a single point
+  from = st_geometry(from)[[1]]
   st_sfc(lapply(st_geometry(to), function(point) {st_linestring(rbind(from, point))}))
 }
 
@@ -37,7 +40,8 @@ ui <- fillPage(
   leafletOutput("map", height = "100%"),
   div(class = "floater",
       selectInput("variable", "Variable", variables, selected=variables[[1]]),
-      shiny::actionButton("dbg", "DBG")
+      actionButton("dbg", "DBG"),
+      checkboxInput("showCLines", "Show centroid lines on mouseover?")
   ),
   theme = "fullscreen.css"
 )
@@ -66,6 +70,22 @@ server <- function(input, output) {
       selected <<- id
     }
     updateZoneDisplay()
+  })
+
+  observeEvent(input$map_shape_mouseover, {
+    if (input$showCLines) {
+      id = input$map_shape_mouseover$id
+      if (!is.null(id)) {
+        # Generate centroid lines
+        centroidlines = linesFrom(centroids[id,], centroids)
+        leafletProxy("map") %>%
+          clearGroup("centroidlines") %>%
+          addPolylines(data = centroidlines, group = "centroidlines", weight = 3, color = "blue")
+      }
+    } else {
+      leafletProxy("map") %>%
+        clearGroup("centroidlines")
+    }
   })
 
   observeEvent(input$variable, {
