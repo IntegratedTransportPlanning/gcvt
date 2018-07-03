@@ -60,7 +60,7 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
                  tags$li(class="list-group-item",
-                         selectInput("colourBy", "Variable", variables, selected="MODE")),
+                         selectInput("colourBy", "Colour links by", variables, selected="MODE")),
                  tags$li(class="list-group-item",
                          selectInput("widthBy", "Set width by", continuous_variables)),
                  tags$li(class="list-group-item",
