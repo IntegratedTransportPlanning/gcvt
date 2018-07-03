@@ -31,7 +31,7 @@ continuous_variables = c("Select variable", continuous_variables[!continuous_var
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
 links = links[1:1000,]
-modes = unique(links[["MODE"]])
+modes = as.character(unique(links[["MODE"]]))
 
 # Dummy var for now
 scenarios = c("Do minimum",
@@ -64,8 +64,7 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          selectInput("widthBy", "Set width by", continuous_variables)),
                  tags$li(class="list-group-item",
-                         selectInput("linkMode", "Show mode", modes, selected=NULL)),
-                 tags$li(class="list-group-item", checkboxInput("showConnectors", "Show Connectors"))
+                         selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "connector"], multiple = T))
           )))
       )
   ,
@@ -76,12 +75,6 @@ ui = fillPage(
 
 server = function(input, output) {
   source("../app_common.R")
-
-  # Keep track of which modes are shown
-  # Turn off 'connector' links by default, keeps it neat
-  visible = rep(T, times = length(modes))
-  names(visible) = modes
-  visible['connector'] = F
 
   getPopup = function (data, id) {
     stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
@@ -103,23 +96,12 @@ server = function(input, output) {
       widthBy = input$widthBy
     }
 
+    visible = links$MODE %in% input$filterMode
+
     leafletProxy("map") %>%
-      reStyleLinks(links, input$colourBy, widthBy)
+      reStyleLinks(links, input$colourBy, widthBy) %>%
+      reStyle2('links', visible = visible)
   })
-
-  observeEvent(input$linkMode, {
-    print (paste("filtering for mode:", input$linkMode))
-    visible[visible == T] = F
-    visible[input$linkMode] = T
-
-    # The below can be uncommented when reStyle(vis=) is implemented
-    # leafletProxy("map") %>%
-    #   reStyle("links",
-    #           links[[input$variable]],
-    #           input$variable,
-    #           pal = autoPalette(links[[input$variable]], factorColors = topo.colors),
-    #           vis = visible)
-  }, ignoreInit = T)
 
   observeEvent(input$map_shape_click, {
     e = input$map_shape_click
