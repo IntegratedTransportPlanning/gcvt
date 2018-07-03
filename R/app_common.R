@@ -1,6 +1,6 @@
 # Common functions for leaflet/shiny
 
-autoPalette = function(data, palette = "PuRd", factorColors = rainbow) {
+autoPalette = function(data, palette = "PuRd", factorColors = topo.colors) {
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
   } else if (is.logical(data)) {
