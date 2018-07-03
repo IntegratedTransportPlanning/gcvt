@@ -62,10 +62,13 @@ reStyle = function(map, group, values, title, pal = autoPalette(values), label =
 }
 
 # Scale a numeric vector to some range.
+# If the vector has a range of 0, return the lower bound of domain.
 scale_to_range = function(x, domain) {
   domain = range(domain)
-  size = domain[[2]] - domain[[1]]
-  (x - min(x)) / (max(x) / size) + domain[[1]]
+  if (diff(range(x)) == 0)
+    rep(domain[[1]], length(x))
+  else
+    (x - min(x)) / (max(x) / diff(domain)) + domain[[1]]
 }
 
 reStyle2 = function(map, group, color = NULL, weight = NULL,
