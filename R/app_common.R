@@ -74,7 +74,6 @@ scale_to_range = function(x, domain) {
 reStyle2 = function(map, group, color = NULL, weight = NULL,
                     pal = autoPalette(color),
                     label = NULL) {
-  if (missing(label)) { label = paste(color, weight) %>% stringr::str_trim() }
   if (!missing(weight)) { weight = scale_to_range(weight, domain = c(2, 10)) }
   if (!missing(color)) { color = pal(color) }
   map %>%
