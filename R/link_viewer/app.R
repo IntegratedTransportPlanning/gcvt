@@ -41,6 +41,19 @@ scenarios = c("Do minimum",
               "EV Freight and Rail Electrification",
               "Port Automation")
 
+stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
+meta = stripSf(links)
+
+# Dummy var for now
+scenarios = list("Do minimum" = meta,
+                 "Rail Electrification" = meta,
+                 "Operation Overlord" = meta,
+                 "Autobahn" = meta)
+
+scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0) 2 else e)
+scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
+scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
+
 # Just the geography as geojson
 # library(geojsonio)
 # gjlinks = geojson_list(subset(links, select=c("geom")))
@@ -56,7 +69,9 @@ ui = fillPage(
           div(id="collapse1", class="panel-collapse collapse in",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
-                        selectInput("scenarioPackage", "Scenario Package", scenarios)),
+                        selectInput("scenario", "Scenario Package", names(scenarios))),
+                 tags$li(class="list-group-item",
+                        selectInput("comparator", "Compare with", c("Select scenario", names(scenarios)))),
                  tags$li(class="list-group-item",
                          sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
                  tags$li(class="list-group-item",
@@ -76,9 +91,7 @@ ui = fillPage(
 server = function(input, output) {
   source("../app_common.R")
 
-  getPopup = function (data, id) {
-    stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
-    meta = stripSf(data[id,])
+  getPopup = function (meta) {
     paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
   }
 
@@ -90,23 +103,37 @@ server = function(input, output) {
   })
 
   observe({
+    base = scenarios[[input$scenario]]
+
+    if (input$comparator %in% names(scenarios)) {
+      comp = scenarios[[input$comparator]]
+      meta = base
+      coldiff = function(a, b) if (is.factor(a)) a == b else a - b
+      for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comp[[i]])
+    } else {
+      meta = base
+    }
+
     if (input$widthBy == continuous_variables[[1]]) {
       widthBy = NULL
     } else {
       widthBy = input$widthBy
     }
 
-    visible = links$MODE %in% input$filterMode
+    # Use base$MODE for filtering, not the comparison
+    visible = base$MODE %in% input$filterMode
 
     leafletProxy("map") %>%
-      reStyleLinks(links, input$colourBy, widthBy) %>%
+      reStyleLinks(meta, input$colourBy, widthBy) %>%
       reStyle2('links', visible = visible)
   })
 
   observeEvent(input$map_shape_click, {
+    meta = scenarios[[input$scenario]]
+
     e = input$map_shape_click
 
-    popupText = getPopup(links, e$id)
+    popupText = getPopup(meta[e$id,])
 
     leafletProxy("map") %>%
       addPopups(lng=e$lng, lat=e$lat, popup=popupText)
