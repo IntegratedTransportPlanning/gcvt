@@ -90,7 +90,7 @@ reStyleLinks = function(map, data, colorCol = NULL, weightCol = NULL, palfunc = 
   if (!missing(colorCol)) {
     label = paste(label, colorCol, ": ", data[[colorCol]], " ", sep = "")
     color = data[[colorCol]]
-    addAutoLegend(map, color, colorCol, 'links')
+    addAutoLegend(map, color, colorCol, 'links', pal = palfunc(color))
   }
   if (!missing(weightCol)) {
     if (is.null(weightCol)) {
