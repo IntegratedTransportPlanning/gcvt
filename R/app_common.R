@@ -102,3 +102,38 @@ reStyleLinks = function(map, data, colorCol = NULL, weightCol = NULL, palfunc = 
   }
   reStyle2(map, 'links', color = color, weight = weight, label = label, pal = palfunc(color))
 }
+
+# Apply different palettes above and below zero
+comparisonPalette = function(values, negativeramp = "red", positiveramp = "green", neutral = "white") {
+  # Generate colorBin palettes for the biggest of min or max for both +ve and -ve: this will generate a consistent colour gradient above and below 0.
+  magnitude = max(abs(min(values)), max(values))
+  negativePal = colorBin(c(negativeramp, neutral), c(-magnitude, 0), 4)
+  positivePal = colorBin(c(neutral, positiveramp), c(0, magnitude), 4)
+
+  # Then trim the bins s.t. min(values) < bins[2] and max(values) > bins[length(bins)-1]
+  bins = c(attr(negativePal, "colorArgs")$bins,
+           attr(positivePal, "colorArgs")$bins) %>% unique()
+  while (min(values) >= bins[[2]]) {
+    bins = bins[2:length(bins)]
+  }
+  while (max(values) <= bins[[length(bins)-1]]) {
+    bins = bins[1:length(bins)-1]
+  }
+
+  # Return a function that applies the appropriate palette and set two
+  # attributes that addLegend requires.
+  f = function(values2) {
+    sapply(values2, function(value) {
+      if (value < 0) {
+        negativePal(value)
+      } else if (value == 0) {
+        neutral
+      } else {
+        positivePal(value)
+      }
+    })
+  }
+  attr(f, "colorType") <- "bin"
+  attr(f, "colorArgs") <- list(bins = bins)
+  f
+}
