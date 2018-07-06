@@ -12,7 +12,6 @@ linesPerCentroid = 20
 
 # Get the data
 # zones = subset(read_sf("data/sensitive/initial/zones.geojson"), select = c("NAME"))
-setwd("/home/mark/gcvt/R/od_viewer")
 zones = subset(read_sf("../../data/sensitive/initial/zones.geojson"), select = c("NAME"))
 suppressWarnings({
   zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
