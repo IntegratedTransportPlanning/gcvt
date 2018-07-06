@@ -8,8 +8,11 @@ library(shiny)
 library(sf)
 library(leaflet)
 
+linesPerCentroid = 20
+
 # Get the data
 # zones = subset(read_sf("data/sensitive/initial/zones.geojson"), select = c("NAME"))
+setwd("/home/mark/gcvt/R/od_viewer")
 zones = subset(read_sf("../../data/sensitive/initial/zones.geojson"), select = c("NAME"))
 suppressWarnings({
   zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
@@ -42,7 +45,8 @@ ui <- fillPage(
   div(class = "floater",
       selectInput("variable", "Variable", variables, selected=variables[[1]]),
       actionButton("dbg", "DBG"),
-      checkboxInput("showCLines", "Show centroid lines on mouseover?")
+      checkboxInput("showCLines", "Show centroid lines?"),
+      checkboxInput("addLines", "Adding zones to selection?")
   ),
   theme = "fullscreen.css"
 )
@@ -63,29 +67,56 @@ server <- function(input, output) {
   }
 
   observeEvent(input$map_shape_click, {
-    id = input$map_shape_click$id
-    if (!is.null(selected) && id == selected) {
-      # Toggle off
-      selected <<- NULL
-    } else {
-      selected <<- id
-    }
-    updateZoneDisplay()
-  })
+    if (input$map_shape_click$group == "zones") {
+      id = input$map_shape_click$id
 
-  observe({
-    if (input$showCLines) {
-      id = input$map_shape_mouseover$id
-      if (!is.null(id)) {
-        # Generate centroid lines
-        centroidlines = linesFrom(centroids[id,], centroids)
-        leafletProxy("map") %>%
-          clearGroup("centroidlines") %>%
-          addPolylines(data = centroidlines, group = "centroidlines", weight = 3, color = "blue")
+      if (input$addLines) {
+        if (!is.null(selected) && (id %in% selected)) {
+          # Toggle off one by one
+          selected <<- selected[selected != id]
+        } else {
+          ## TODO get the restyle func to show multiple selected zones
+          selected <<- c(selected, id)
+        }
+      } else {
+        selected <<- id
       }
-    } else {
-      leafletProxy("map") %>%
-        clearGroup("centroidlines")
+
+      # print (paste("id",id))
+      # print (paste("selections", selected))
+
+      updateZoneDisplay()
+
+      if (input$showCLines) {
+        if (!is.null(selected)) {
+          # Get only the most important lines
+          # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+          centroidlines = NULL
+          topVals = NULL
+
+          for (matrixRow in selected) {
+            rowVals = od_skim[[input$variable]][matrixRow,]
+            nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
+            topCentroids = centroids[rowVals >= nthVal,]
+            linesForRow = linesFrom(centroids[matrixRow,], topCentroids)
+
+            centroidlines = append(centroidlines, linesForRow)
+            topVals = append(topVals, rowVals[rowVals >= nthVal])
+          }
+
+          weights = scale_to_range(topVals, c(2,10))
+
+          leafletProxy("map") %>%
+            clearGroup("centroidlines") %>%
+            addPolylines(data = centroidlines, group = "centroidlines", weight = weights, color = "blue")
+        } else {
+          leafletProxy("map") %>%
+            clearGroup("centroidlines")
+        }
+      } else {
+        leafletProxy("map") %>%
+          clearGroup("centroidlines")
+      }
     }
   })
 
