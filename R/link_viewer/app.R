@@ -110,8 +110,10 @@ server = function(input, output) {
       meta = base
       coldiff = function(a, b) if (is.factor(a)) a == b else a - b
       for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comp[[i]])
+      palfunc = comparisonPalette
     } else {
       meta = base
+      palfunc = autoPalette
     }
 
     if (input$widthBy == continuous_variables[[1]]) {
@@ -124,7 +126,7 @@ server = function(input, output) {
     visible = base$MODE %in% input$filterMode
 
     leafletProxy("map") %>%
-      reStyleLinks(meta, input$colourBy, widthBy) %>%
+      reStyleLinks(meta, input$colourBy, widthBy, palfunc) %>%
       reStyle2('links', visible = visible)
   })
 
