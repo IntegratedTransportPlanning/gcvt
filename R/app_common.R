@@ -12,7 +12,7 @@ autoPalette = function(data, palette = "PuRd", factorColors = topo.colors) {
 
 addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
   map %>%
-    addLegend(position = "bottomleft", data = data, pal = pal, values = values,
+    addLegend(position = "bottomleft", pal = pal, values = values,
               title = title, group = group, layerId = paste(group, "Legend"))
 }
 
