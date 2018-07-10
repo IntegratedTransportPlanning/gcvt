@@ -44,8 +44,7 @@ ui <- fillPage(
   div(class = "floater",
       selectInput("variable", "Variable", variables, selected=variables[[1]]),
       actionButton("dbg", "DBG"),
-      checkboxInput("showCLines", "Show centroid lines?"),
-      checkboxInput("addLines", "Adding zones to selection?")
+      checkboxInput("showCLines", "Show centroid lines?")
   ),
   theme = "fullscreen.css"
 )
@@ -66,15 +65,16 @@ server <- function(input, output) {
   }
 
   observeEvent(input$map_shape_click, {
+
     if (input$map_shape_click$group == "zones") {
       id = input$map_shape_click$id
 
-      if (input$addLines) {
+      modded = input$map_click$modifiers$ctrl
+      if (modded) {
         if (!is.null(selected) && (id %in% selected)) {
           # Toggle off one by one
           selected <<- selected[selected != id]
         } else {
-          ## TODO get the restyle func to show multiple selected zones
           selected <<- c(selected, id)
         }
       } else {

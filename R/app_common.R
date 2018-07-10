@@ -50,12 +50,18 @@ addSkimZones = function(map, data, skim, variable, selected = NULL, palfunc = au
 reStyleZones = function(map, data, skim, variable, selected = NULL) {
   if (is.null(selected)) {
     values = rowSums(skim[[variable]])
+  } else if (length(selected) > 1) {
+    # Sum of rows if several zones selected
+    values = colSums(skim[[variable]][selected,])
   } else {
     values = skim[[variable]][selected,]
   }
   reStyle(map, "zones", values, variable, label = paste(data$NAME, ": ", as.character(values), sep = ""))
   setStyleFast(map, "zones", weight = rep(1, nrow(data)))
-  if (!is.null(selected)) setStyle(map, "zones", styles = list(list(weight = 4, color = "blue")), offset = selected)
+
+  for (selectedZone in selected) {
+    map = setStyle(map, "zones", styles = list(list(weight = 4, color = "blue")), offset = selectedZone)
+  }
 }
 
 reStyle = function(map, group, values, title, pal = autoPalette(values), label = as.character(values)) {
