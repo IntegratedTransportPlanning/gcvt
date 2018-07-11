@@ -76,8 +76,10 @@ scale_to_range = function(x, domain) {
   domain = range(domain)
   if (diff(range(x)) == 0)
     rep(domain[[1]], length(x))
-  else
-    (x - min(x)) / (max(x) / diff(domain)) + domain[[1]]
+  else {
+    x = x - min(x)
+    (x / max(x)) * diff(domain) + domain[[1]]
+  }
 }
 
 # Restyle color, weight, and/or label
