@@ -104,14 +104,18 @@ server = function(input, output) {
       reStyleLinks(links, "MODE", NULL)
   })
 
+  metaDiff = function(base, comparator) {
+    meta = base
+    coldiff = function(a, b) if (is.factor(a)) a == b else a - b
+    for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comparator[[i]])
+    meta
+  }
+
   observe({
     base = scenarios[[input$scenario]]
 
     if (input$comparator %in% names(scenarios)) {
-      comp = scenarios[[input$comparator]]
-      meta = base
-      coldiff = function(a, b) if (is.factor(a)) a == b else a - b
-      for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comp[[i]])
+      meta = metaDiff(base, scenarios[[input$comparator]])
       palfunc = comparisonPalette
     } else {
       meta = base
@@ -134,6 +138,8 @@ server = function(input, output) {
 
   observeEvent(input$map_shape_click, {
     meta = scenarios[[input$scenario]]
+
+    # TODO: If comparison enabled, show more columns and colour columns by change
 
     e = input$map_shape_click
 
