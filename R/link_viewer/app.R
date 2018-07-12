@@ -48,11 +48,13 @@ meta = stripSf(links)
 scenarios = list("Do minimum" = meta,
                  "Rail Electrification" = meta,
                  "Operation Overlord" = meta,
-                 "Autobahn" = meta)
+                 "Autobahn" = meta,
+                 "Autoall" = meta)
 
 scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0) 2 else e)
 scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
 scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
+scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
 
 # Just the geography as geojson
 # library(geojsonio)
