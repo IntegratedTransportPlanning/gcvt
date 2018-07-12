@@ -48,7 +48,7 @@ addSkimZones = function(map, data, skim, variable, selected = NULL, palfunc = au
 }
 
 reStyleZones = function(map, data, skim, variable, selected = NULL) {
-  if (is.null(selected)) {
+  if (!length(selected)) {
     values = rowSums(skim[[variable]])
   } else if (length(selected) > 1) {
     # Sum of rows if several zones selected

@@ -58,10 +58,35 @@ server <- function(input, output) {
       addSkimZones(data = zones, skim = od_skim, variable = variables[[1]])
   })
 
-  selected = NULL
+  selected = numeric(0)
   updateZoneDisplay = function() {
     leafletProxy("map") %>%
       reStyleZones(data = zones, skim = od_skim, variable = input$variable, selected = selected)
+  }
+
+  updateCentroidLines = function() {
+    map = leafletProxy("map") %>% clearGroup("centroidlines")
+
+    if (input$showCLines && length(selected)) {
+      # Get only the most important lines
+      # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+      centroidlines = NULL
+      topVals = NULL
+
+      for (matrixRow in selected) {
+        rowVals = od_skim[[input$variable]][matrixRow,]
+        nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
+        topCentroids = centroids[rowVals >= nthVal,]
+        linesForRow = linesFrom(centroids[matrixRow,], topCentroids)
+
+        centroidlines = append(centroidlines, linesForRow)
+        topVals = append(topVals, rowVals[rowVals >= nthVal])
+      }
+
+      weights = scale_to_range(topVals, c(2,10))
+
+      addPolylines(map, data = centroidlines, group = "centroidlines", weight = weights, color = "blue")
+    }
   }
 
   observeEvent(input$map_shape_click, {
@@ -69,58 +94,27 @@ server <- function(input, output) {
     if (input$map_shape_click$group == "zones") {
       id = input$map_shape_click$id
 
-      modded = input$map_click$modifiers$ctrl
+      modded = input$map_shape_click$modifiers$ctrl
       if (modded) {
-        if (!is.null(selected) && (id %in% selected)) {
+        if (id %in% selected) {
           # Toggle off one by one
           selected <<- selected[selected != id]
         } else {
           selected <<- c(selected, id)
         }
       } else {
+        # Replace selection
         selected <<- id
       }
 
-      # print (paste("id",id))
-      # print (paste("selections", selected))
-
       updateZoneDisplay()
-
-      if (input$showCLines) {
-        if (!is.null(selected)) {
-          # Get only the most important lines
-          # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
-          centroidlines = NULL
-          topVals = NULL
-
-          for (matrixRow in selected) {
-            rowVals = od_skim[[input$variable]][matrixRow,]
-            nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
-            topCentroids = centroids[rowVals >= nthVal,]
-            linesForRow = linesFrom(centroids[matrixRow,], topCentroids)
-
-            centroidlines = append(centroidlines, linesForRow)
-            topVals = append(topVals, rowVals[rowVals >= nthVal])
-          }
-
-          weights = scale_to_range(topVals, c(2,10))
-
-          leafletProxy("map") %>%
-            clearGroup("centroidlines") %>%
-            addPolylines(data = centroidlines, group = "centroidlines", weight = weights, color = "blue")
-        } else {
-          leafletProxy("map") %>%
-            clearGroup("centroidlines")
-        }
-      } else {
-        leafletProxy("map") %>%
-          clearGroup("centroidlines")
-      }
+      updateCentroidLines()
     }
   })
 
-  observeEvent(input$variable, {
+  observe({
     updateZoneDisplay()
+    updateCentroidLines()
   })
 
   observeEvent(input$dbg, {browser()})
