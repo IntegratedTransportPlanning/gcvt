@@ -100,8 +100,8 @@ server = function(input, output) {
   output$map <- renderLeaflet({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addPolylines(data = links, group = "links", layerId = 1:nrow(links)) %>%
-      reStyleLinks(links, "MODE", NULL)
+      # Add data but keep it invisible for now. Observers can style it.
+      addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F)
   })
 
   metaDiff = function(base, comparator) {
@@ -132,7 +132,7 @@ server = function(input, output) {
     visible = base$MODE %in% input$filterMode
 
     leafletProxy("map") %>%
-      reStyleLinks(meta, input$colourBy, widthBy, palfunc) %>%
+      styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc) %>%
       reStyle2('links', visible = visible)
   })
 

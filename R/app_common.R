@@ -91,23 +91,30 @@ reStyle2 = function(map, group, color = NULL, weight = NULL,
     setStyleFast(group, color = color, weight = weight, label = label, stroke = visible)
 }
 
-# Overcomplicated so that you can leave out colorCol or weightCol (which doesn't currently ever happen)
-reStyleLinks = function(map, data, colorCol = NULL, weightCol = NULL, palfunc = autoPalette) {
+# Style shapes on map according to columns in a matching metadata df.
+#
+# If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
+styleByData = function(map, data, group,
+                       colorCol = NULL, colorValues = if (is.null(colorCol)) NULL else data[[colorCol]], colorDomain = colorValues,
+                       palfunc = autoPalette, pal = palfunc(colorDomain),
+                       weightCol = NULL, weightValues = if (is.null(weightCol)) NULL else data[[weightCol]], weightDomain = weightValues
+                       ) {
   label = ""
   if (!missing(colorCol)) {
-    label = paste(label, colorCol, ": ", data[[colorCol]], " ", sep = "")
-    color = data[[colorCol]]
-    addAutoLegend(map, color, colorCol, 'links', pal = palfunc(color))
+    label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+    addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
   }
   if (!missing(weightCol)) {
     if (is.null(weightCol)) {
-      weight = rep(1, nrow(data))
+      weightValues = rep(1, nrow(data))
+      weightDomain = 1
     } else {
-      label = paste(label, weightCol, ": ", data[[weightCol]], sep = "")
-      weight = data[[weightCol]]
+      label = paste(label, weightCol, ": ", weightValues, sep = "")
     }
   }
-  reStyle2(map, 'links', color = color, weight = weight, label = label, pal = palfunc(color))
+  setStyleFast(map, group, color = pal(colorValues),
+               weight = weightScale(weightValues, weightDomain),
+               label = label)
 }
 
 # Apply different palettes above and below zero
