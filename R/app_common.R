@@ -112,20 +112,39 @@ reStyleLinks = function(map, data, colorCol = NULL, weightCol = NULL, palfunc = 
 }
 
 # Apply different palettes above and below zero
+#
+# Problems:
+#   Legend is not as helpful as we'd like.
+#   Bins adjacent to zero are the same colour (e.g. neutral colour bin is double size)
 comparisonPalette = function(values, negativeramp = "red", positiveramp = "green", neutral = "white") {
-  # Generate colorBin palettes for the biggest of min or max for both +ve and -ve: this will generate a consistent colour gradient above and below 0.
-  magnitude = max(abs(min(values)), max(values))
-  negativePal = colorBin(c(negativeramp, neutral), c(-magnitude, 0), 4)
-  positivePal = colorBin(c(neutral, positiveramp), c(0, magnitude), 4)
-
-  # Then trim the bins s.t. min(values) < bins[2] and max(values) > bins[length(bins)-1]
-  bins = c(attr(negativePal, "colorArgs")$bins,
-           attr(positivePal, "colorArgs")$bins) %>% unique()
-  while (min(values) >= bins[[2]]) {
-    bins = bins[2:length(bins)]
+  if (is.logical(values)) {
+    return(colorFactor(topo.colors(2), values))
   }
-  while (max(values) <= bins[[length(bins)-1]]) {
-    bins = bins[1:length(bins)-1]
+
+  magnitude = max(abs(min(values)), max(values))
+
+  if (magnitude != 0) {
+    # Generate colorBin palettes for the biggest of min or max for both +ve and
+    # -ve: this will generate a consistent colour gradient above and below 0.
+    negativePal = colorBin(c(negativeramp, neutral), c(-magnitude, 0), 4)
+    positivePal = colorBin(c(neutral, positiveramp), c(0, magnitude), 4)
+
+    # Trim the outer bins that won't get used.
+    bins = c(attr(negativePal, "colorArgs")$bins,
+             attr(positivePal, "colorArgs")$bins) %>% unique()
+    while (min(values, 0) >= bins[[2]]) {
+      bins = bins[2:length(bins)]
+    }
+    while (max(values, 0) <= bins[[length(bins)-1]]) {
+      bins = bins[1:length(bins)-1]
+    }
+  } else {
+    # colorBin produces bad palettes if you just feed it a vector of 0s, so
+    # just don't use it.
+    # In this case the palette will throw an error if you give it a value
+    # outside range(values) wheras leaflet palettes give a warning, but that's
+    # fine.
+    bins = c(0, 0)
   }
 
   # Return a function that applies the appropriate palette and set two
