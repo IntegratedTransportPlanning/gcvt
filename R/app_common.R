@@ -70,23 +70,22 @@ reStyle = function(map, group, values, title, pal = autoPalette(values), label =
     setStyleFast(group, color = pal(values), label = label)
 }
 
-# Scale a numeric vector to some range.
-# If the vector has a range of 0, return the lower bound of domain.
-scale_to_range = function(x, domain) {
+# Scale x to a suitable width for drawing on the map.
+#
+# If the domain has no range then draw thin lines.
+weightScale = function(x, domain = x) {
   domain = range(domain)
-  if (diff(range(x)) == 0)
-    rep(domain[[1]], length(x))
-  else {
-    x = x - min(x)
-    (x / max(x)) * diff(domain) + domain[[1]]
-  }
+  if (diff(range(domain)))
+    scales::rescale(x, to = c(2,10), from = domain)
+  else
+    rep(2, length(x))
 }
 
 # Restyle color, weight, and/or label
 reStyle2 = function(map, group, color = NULL, weight = NULL,
                     pal = autoPalette(color), label = NULL,
                     visible = NULL) {
-  if (!missing(weight)) { weight = scale_to_range(weight, domain = c(2, 10)) }
+  if (!missing(weight)) { weight = weightScale(weight) }
   if (!missing(color)) { color = pal(color) }
   map %>%
     setStyleFast(group, color = color, weight = weight, label = label, stroke = visible)
