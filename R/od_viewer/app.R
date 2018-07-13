@@ -103,8 +103,12 @@ server <- function(input, output) {
           selected <<- c(selected, id)
         }
       } else {
-        # Replace selection
-        selected <<- id
+        if (length(selected) > 1 || !(id %in% selected))
+          # Replace selection
+          selected <<- id
+        else
+          # Clear selection
+          selected <<- NULL
       }
 
       updateZoneDisplay()
