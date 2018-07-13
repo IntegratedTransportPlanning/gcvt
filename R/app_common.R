@@ -16,18 +16,6 @@ addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
               title = title, group = group, layerId = paste(group, "Legend"))
 }
 
-addAutoLinks = function (map, data, colorCol, weightCol, palfunc = autoPalette) {
-  color = data[[colorCol]]
-  pal = palfunc(color)
-  map = map %>%
-    addPolylines(data = data, group = "links", color = pal(color), layerId = 1:nrow(data)) %>%
-    addAutoLegend(color, colorCol, "links", pal)
-  if (is.null(weightCol))
-    reStyle2(map, "links", weight = rep(1, nrow(data)))
-  else
-    reStyle2(map, "links", weight = data[[weightCol]], label = paste(colorCol, ": ", color, "; ", weightCol, ": ", data[[weightCol]], sep = ""))
-}
-
 addAutoPolygons = function(map, data, values, title, palfunc = autoPalette) {
   pal = autoPalette(values)
   map %>%
@@ -79,16 +67,6 @@ weightScale = function(x, domain = x) {
     scales::rescale(x, to = c(2,10), from = domain)
   else
     rep(2, length(x))
-}
-
-# Restyle color, weight, and/or label
-reStyle2 = function(map, group, color = NULL, weight = NULL,
-                    pal = autoPalette(color), label = NULL,
-                    visible = NULL) {
-  if (!missing(weight)) { weight = weightScale(weight) }
-  if (!missing(color)) { color = pal(color) }
-  map %>%
-    setStyleFast(group, color = color, weight = weight, label = label, stroke = visible)
 }
 
 # Style shapes on map according to columns in a matching metadata df.

@@ -133,7 +133,7 @@ server = function(input, output) {
 
     leafletProxy("map") %>%
       styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc) %>%
-      reStyle2('links', visible = visible)
+      setStyleFast('links', stroke = visible)
   })
 
   observeEvent(input$map_shape_click, {
