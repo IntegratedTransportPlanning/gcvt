@@ -138,3 +138,10 @@ comparisonPalette = function(values, negativeramp = "red", positiveramp = "green
     pal
   }
 }
+
+linesFrom = function(from, to) {
+  # Convert from to a single point
+  from = st_geometry(from)[[1]]
+  st_sfc(lapply(st_geometry(to), function(point) {st_linestring(rbind(from, point))}))
+}
+

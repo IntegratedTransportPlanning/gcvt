@@ -32,6 +32,22 @@ scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
 scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
 scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
 
+# Zone data
+
+zones = subset(read_sf("../../data/sensitive/initial/zones.geojson"), select = c("NAME"))
+suppressWarnings({
+  zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
+  centroids = st_centroid(zones)
+})
+
+# Fake up an od skim
+od_variables = c("Cheese (tonnes)", "Wine (tonnes)", "CO2 (tonnes)", "Time (minutes)")
+od_skim = list()
+bounds = 10:10000
+for (var in od_variables) {
+  od_skim[[var]] = matrix(sample(bounds, nrow(zones)**2, replace = T), nrow = nrow(zones), ncol = nrow(zones))
+}
+
 
 ## Define interactions and appearance
 
@@ -43,7 +59,7 @@ ui = fillPage(
       div(class="panel panel-default",
           div(id="gcvt-heading", class="panel-heading",
               a(href="#collapse1", "Toggle Controls", 'data-toggle'="collapse")),
-          div(id="collapse1", class="panel-collapse collapse in",
+          div(id="collapse1", class="panel-collapse collapse",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
                         selectInput("scenario", "Scenario Package", names(scenarios))),
@@ -57,7 +73,16 @@ ui = fillPage(
                          selectInput("widthBy", "Set width by", continuous_variables)),
                  tags$li(class="list-group-item",
                          selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "connector"], multiple = T))
-          )))
+          )),
+          div(id="gcvt-heading", class="panel-heading",
+              a(href="#collapse2", "Toggle OD controls", 'data-toggle'="collapse")),
+          div(id="collapse2", class="panel-collapse collapse",
+              tags$ul(class="list-group",
+                 tags$li(class="list-group-item",
+                         selectInput("od_variable", "OD skim variable", od_variables),
+                         checkboxInput("showCLines", "Show centroid lines?"))
+          ))
+          )
       )
   ,
   # Couldnt figure out how to provide multiple CSSs, which would have allowed use of BootSwatch
@@ -76,6 +101,10 @@ server = function(input, output) {
     isolate({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
+      addLayersControl(overlayGroups = c("links", "zones"), position = "topleft") %>%
+      #addSkimZones(data = zones, skim = od_skim, variable = od_variables[[1]]) %>%
+      #hideGroup("zones") %>%
+      #removeControl("zonesLegend") %>%
       addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F) %>%
       updateLinks()
     })
@@ -113,21 +142,82 @@ server = function(input, output) {
       setStyleFast('links', stroke = visible)
   }
 
+  selected = numeric(0)
+  updateZoneDisplay = function() {
+    leafletProxy("map") %>%
+      reStyleZones(data = zones, skim = od_skim, variable = input$od_variable, selected = selected)
+  }
+
+  linesPerCentroid = 20
+  updateCentroidLines = function() {
+    map = leafletProxy("map") %>% clearGroup("centroidlines")
+
+    if (input$showCLines && length(selected)) {
+      # Get only the most important lines
+      # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+      centroidlines = NULL
+      topVals = NULL
+
+      for (matrixRow in selected) {
+        rowVals = od_skim[[input$od_variable]][matrixRow,]
+        nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
+        topCentroids = centroids[rowVals >= nthVal,]
+        linesForRow = linesFrom(centroids[matrixRow,], topCentroids)
+
+        centroidlines = append(centroidlines, linesForRow)
+        topVals = append(topVals, rowVals[rowVals >= nthVal])
+      }
+
+      weights = weightScale(topVals)
+
+      addPolylines(map, data = centroidlines, group = "centroidlines", weight = weights, color = "blue")
+    }
+  }
+
   observe({
     updateLinks()
   })
 
+  observe({
+    updateZoneDisplay()
+    updateCentroidLines()
+  })
+
   observeEvent(input$map_shape_click, {
-    meta = scenarios[[input$scenario]]
-
-    # TODO: If comparison enabled, show more columns and colour columns by change
-
     e = input$map_shape_click
 
-    popupText = getPopup(meta[e$id,])
+    if (e$group == "links") {
+      meta = scenarios[[input$scenario]]
 
-    leafletProxy("map") %>%
-      addPopups(lng=e$lng, lat=e$lat, popup=popupText)
+      # TODO: If comparison enabled, show more columns and colour columns by change
+
+      popupText = getPopup(meta[e$id,])
+
+      leafletProxy("map") %>%
+        addPopups(lng=e$lng, lat=e$lat, popup=popupText)
+    } else if (e$group == "zones") {
+      id = e$id
+
+      modded = e$modifiers$ctrl
+      if (modded) {
+        if (id %in% selected) {
+          # Toggle off one by one
+          selected <<- selected[selected != id]
+        } else {
+          selected <<- c(selected, id)
+        }
+      } else {
+        if (length(selected) > 1 || !(id %in% selected))
+          # Replace selection
+          selected <<- id
+        else
+          # Clear selection
+          selected <<- NULL
+      }
+
+      updateZoneDisplay()
+      updateCentroidLines()
+    }
   })
 }
 
