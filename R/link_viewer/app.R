@@ -1,22 +1,4 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-
-# TODO:
-#   better colour selection in autoPalette
-#   Factor palette for integer columns that are really factors
-#   Click to view all props?
-#   Graphs
-#     Qs to answer?
-#   better UI
-#     Scenario selection
-#   Performance
-#     server side of lef() %>% addAutoLinks(links) takes ~ 5.5s
-#     derivePolygons is about half of that
-#     palette stuff isn't much of it
-#     Can avoid resending json and save draw times by restyling existing polylines
-#     OpenLayers is a bit better, but maybe not enough to matter
-
+### Link viewer app ###
 
 # Get the data
 library(sf)
@@ -55,10 +37,6 @@ scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0)
 scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
 scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
 scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
-
-# Just the geography as geojson
-# library(geojsonio)
-# gjlinks = geojson_list(subset(links, select=c("geom")))
 
 library(shiny)
 
