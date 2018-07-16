@@ -38,6 +38,17 @@ for (var in variables) {
   od_less[[var]] = od_skim[[var]] * 0.5
 }
 
+# Get the skims
+# library(readr)
+# library(reshape2)
+
+# IDs don't align at the mo. Need to add some missing polygons (or cut some data from the matrices).
+
+# metamat = read_csv("data/sensitive/13-July/ReportMat_Base_2018.csv")
+# variables = names(metamat)[3:length(metamat)]
+# od_skim = lapply(variables, function(var) acast(metamat, Orig~Dest, value.var = var))
+# names(od_skim)<-variables
+
 scenariosZones = list("Do minimum" = od_skim,
                       "Lower numbers" = od_less)
 

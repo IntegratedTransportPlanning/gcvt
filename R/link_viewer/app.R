@@ -4,22 +4,27 @@
 
 library(sf)
 library(leaflet)
+library(readr)
 
-links = read_sf("../../data/sensitive/processed/links.gpkg", stringsAsFactors = T)
-variables = sort(colnames(links))
-variables = variables[!variables == "geom"]
-continuous_variables = colnames(links)[sapply(links, is.numeric)] %>% sort()
-continuous_variables = c("Select variable", continuous_variables[!continuous_variables == "geom"])
+links = read_sf("../../data/sensitive/processed/nulinks.gpkg", stringsAsFactors = T)
+
 
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
-links = links[1:1000,]
-modes = as.character(unique(links[["MODE"]]))
+#links = links[1:1000,]
 
 # Fake up some scenarios
 
 stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
 meta = stripSf(links)
+
+meta$MODE = as.factor(meta$LinkType)
+levels(meta$MODE)<-read_csv("../../data/sensitive/linktype_lookup.csv")$Description
+modes = levels(meta$MODE)
+
+variables = sort(colnames(meta))
+continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
+continuous_variables = c("Select variable", continuous_variables)
 
 scenarios = list("Do minimum" = meta,
                  "Rail Electrification" = meta,
@@ -27,10 +32,10 @@ scenarios = list("Do minimum" = meta,
                  "Autobahn" = meta,
                  "Autoall" = meta)
 
-scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0) 2 else e)
-scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
-scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
-scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
+# scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0) 2 else e)
+# scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
+# scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
+# scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
 
 # Zone data
 
