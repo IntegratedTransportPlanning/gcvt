@@ -25,19 +25,22 @@ suppressWarnings({
 #   }
 # }
 
-linesFrom = function(from, to) {
-  # Convert from to a single point
-  from = st_geometry(from)[[1]]
-  st_sfc(lapply(st_geometry(to), function(point) {st_linestring(rbind(from, point))}))
-}
-
 # Fake up an od skim
-variables = c("Cheese (tonnes)", "Wine (tonnes)", "CO2 (tonnes)", "Time (minutes)")
-od_skim = list()
-bounds = 10:10000
-for (var in variables) {
-  od_skim[[var]] = matrix(sample(bounds, nrow(zones)**2, replace = T), nrow = nrow(zones), ncol = nrow(zones))
-}
+# variables = c("Cheese (tonnes)", "Wine (tonnes)", "CO2 (tonnes)", "Time (minutes)")
+# od_skim = list()
+# bounds = 10:10000
+# for (var in variables) {
+#   od_skim[[var]] = matrix(sample(bounds, nrow(zones)**2, replace = T), nrow = nrow(zones), ncol = nrow(zones))
+# }
+
+# Get the skims
+library(readr)
+library(reshape2)
+
+metamat = read_csv("data/sensitive/13-July/ReportMat_Base_2018.csv")
+variables = names(metamat)[3:length(metamat)]
+od_skim = lapply(variables, function(var) acast(metamat, Orig~Dest, value.var = var))
+names(od_skim)<-variables
 
 ui <- fillPage(
   leafletOutput("map", height = "100%"),
@@ -83,7 +86,7 @@ server <- function(input, output) {
         topVals = append(topVals, rowVals[rowVals >= nthVal])
       }
 
-      weights = scale_to_range(topVals, c(2,10))
+      weights = weightScale(topVals)
 
       addPolylines(map, data = centroidlines, group = "centroidlines", weight = weights, color = "blue")
     }
