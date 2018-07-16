@@ -98,10 +98,12 @@ server = function(input, output) {
   }
 
   output$map <- renderLeaflet({
+    isolate({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      # Add data but keep it invisible for now. Observers can style it.
-      addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F)
+      addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F) %>%
+      updateLinks()
+    })
   })
 
   metaDiff = function(base, comparator) {
@@ -111,7 +113,7 @@ server = function(input, output) {
     meta
   }
 
-  observe({
+  updateLinks = function(map = leafletProxy("map")) {
     base = scenarios[[input$scenario]]
 
     if (input$comparator %in% names(scenarios)) {
@@ -131,9 +133,13 @@ server = function(input, output) {
     # Use base$MODE for filtering, not the comparison
     visible = base$MODE %in% input$filterMode
 
-    leafletProxy("map") %>%
+    map %>%
       styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc) %>%
       setStyleFast('links', stroke = visible)
+  }
+
+  observe({
+    updateLinks()
   })
 
   observeEvent(input$map_shape_click, {
