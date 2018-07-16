@@ -1,32 +1,26 @@
 ### Link viewer app ###
 
-# Get the data
+## Get and fake some data
+
 library(sf)
 library(leaflet)
+
 links = read_sf("../../data/sensitive/processed/links.gpkg", stringsAsFactors = T)
 variables = sort(colnames(links))
 variables = variables[!variables == "geom"]
 continuous_variables = colnames(links)[sapply(links, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables[!continuous_variables == "geom"])
 
-
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
 links = links[1:1000,]
 modes = as.character(unique(links[["MODE"]]))
 
-# Dummy var for now
-scenarios = c("Do minimum",
-              "EV Road Freight",
-              "EV Private Vehicles",
-              "Rail Electrification",
-              "EV Freight and Rail Electrification",
-              "Port Automation")
+# Fake up some scenarios
 
 stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
 meta = stripSf(links)
 
-# Dummy var for now
 scenarios = list("Do minimum" = meta,
                  "Rail Electrification" = meta,
                  "Operation Overlord" = meta,
@@ -37,6 +31,9 @@ scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0)
 scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
 scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
 scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
+
+
+## Define interactions and appearance
 
 library(shiny)
 
