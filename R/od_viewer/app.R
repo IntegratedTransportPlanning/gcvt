@@ -8,7 +8,7 @@ library(shiny)
 library(sf)
 library(leaflet)
 
-linesPerCentroid = 20
+linesPerCentroid = 100
 
 # Get the data
 # zones = subset(read_sf("data/sensitive/initial/zones.geojson"), select = c("NAME"))
@@ -32,7 +32,7 @@ linesFrom = function(from, to) {
 }
 
 # Fake up an od skim
-variables = c("Cheese (tonnes)", "Wine (tonnes)", "CO2 (tonnes)", "Time (minutes)")
+variables = c("CO2 (tonnes)", "Time (minutes)")
 od_skim = list()
 bounds = 10:10000
 for (var in variables) {
@@ -43,7 +43,7 @@ ui <- fillPage(
   leafletOutput("map", height = "100%"),
   div(class = "floater",
       selectInput("variable", "Variable", variables, selected=variables[[1]]),
-      actionButton("dbg", "DBG"),
+      # actionButton("dbg", "DBG"),
       checkboxInput("showCLines", "Show centroid lines?")
   ),
   theme = "fullscreen.css"
@@ -83,9 +83,10 @@ server <- function(input, output) {
         topVals = append(topVals, rowVals[rowVals >= nthVal])
       }
 
-      weights = scale_to_range(topVals, c(2,10))
+      weights = weightScale(topVals)
+      opacities = opacityScale(weights)
 
-      addPolylines(map, data = centroidlines, group = "centroidlines", weight = weights, color = "blue")
+      addPolylines(map, data = centroidlines, group = "centroidlines", weight = weights, opacity = opacities, color = "black")
     }
   }
 

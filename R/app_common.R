@@ -69,6 +69,21 @@ weightScale = function(x, domain = x) {
     rep(2, length(x))
 }
 
+opacityScale = function(x) {
+  opacs = rep(0.1, length(x))
+
+  for (i in 1:length(x)) {
+    if (x[i] >= 4) {1
+      opacs[i] = 0.2
+    }
+    if (x[i] >= 8) {
+      opacs[i] = 0.4
+    }
+  }
+
+  return (opacs)
+}
+
 # Style shapes on map according to columns in a matching metadata df.
 #
 # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
