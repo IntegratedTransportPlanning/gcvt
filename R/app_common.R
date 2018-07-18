@@ -35,15 +35,7 @@ addSkimZones = function(map, data, skim, variable, selected = NULL, palfunc = au
   addAutoPolygons(map, data, values, variable, palfunc)
 }
 
-reStyleZones = function(map, data, skim, variable, selected = NULL) {
-  if (!length(selected)) {
-    values = rowSums(skim[[variable]])
-  } else if (length(selected) > 1) {
-    # Sum of rows if several zones selected
-    values = colSums(skim[[variable]][selected,])
-  } else {
-    values = skim[[variable]][selected,]
-  }
+reStyleZones = function(map, data, values, variable, selected = NULL) {
   reStyle(map, "zones", values, variable, label = paste(data$NAME, ": ", as.character(values), sep = ""))
   setStyleFast(map, "zones", weight = rep(1, nrow(data)))
 

@@ -18,13 +18,6 @@ suppressWarnings({
   centroids = st_centroid(zones)
 })
 
-# c2clines =
-# for (c1 in centroids) {
-#   for (c2 in centroids) {
-#     # st_linestring doesn't take two st_points, annoyingly.
-#   }
-# }
-
 linesFrom = function(from, to) {
   # Convert from to a single point
   from = st_geometry(from)[[1]]
@@ -39,11 +32,21 @@ for (var in variables) {
   od_skim[[var]] = matrix(sample(bounds, nrow(zones)**2, replace = T), nrow = nrow(zones), ncol = nrow(zones))
 }
 
+# Another fake one to compare against
+od_less = list()
+for (var in variables) {
+  od_less[[var]] = od_skim[[var]] * 0.5
+}
+
+scenariosZones = list("Do minimum" = od_skim,
+                      "Lower numbers" = od_less)
+
 ui <- fillPage(
   leafletOutput("map", height = "100%"),
   div(class = "floater",
+      selectInput("scenarioOD", "Scenario Package", names(scenariosZones)),
+      selectInput("comparatorOD", "Compare with", c("Select scenario...", names(scenariosZones))),
       selectInput("variable", "Variable", variables, selected=variables[[1]]),
-      # actionButton("dbg", "DBG"),
       checkboxInput("showCLines", "Show centroid lines?")
   ),
   theme = "fullscreen.css"
@@ -59,9 +62,50 @@ server <- function(input, output) {
   })
 
   selected = numeric(0)
+
   updateZoneDisplay = function() {
+    base = scenariosZones[[input$scenarioOD]]
+    variable = input$variable
+
+    values = NULL
+    if ((input$comparatorOD %in% names(scenariosZones)) &&
+        (input$comparatorOD != input$scenarioOD)) {
+      ## TODO ^ check we are doing something sensible if the user is trying to compare the same two scenarios
+      compareZones = scenariosZones[[input$comparatorOD]]
+
+      baseVals = NULL
+      compVals = NULL
+      if (!length(selected)) {
+        # Nothing selected, show comparison of 'from' for zones
+        baseVals = rowSums(base[[variable]])
+        compVals = rowSums(compareZones[[variable]])
+      } else if (length(selected) > 1) {
+        # Sum of rows if several zones selected
+        baseVals = colSums(base[[variable]][selected,])
+        compVals = colSums(compareZones[[variable]][selected,])
+      } else {
+        # Just one selected, show comparison of its 'to' data
+        baseVals = base[[variable]][selected,]
+        compVals = compareZones[[variable]][selected,]
+      }
+      values = compVals - baseVals
+      variable = paste("Scenario difference in ", input$variable)
+
+      ## TODO palette
+    } else {
+      if (!length(selected)) {
+        values = rowSums(base[[variable]])
+      } else if (length(selected) > 1) {
+        # Sum of rows if several zones selected
+        values = colSums(base[[variable]][selected,])
+      } else {
+        values = base[[variable]][selected,]
+      }
+      ## TODO palette
+    }
+
     leafletProxy("map") %>%
-      reStyleZones(data = zones, skim = od_skim, variable = input$variable, selected = selected)
+      reStyleZones(data = zones, values = values, variable = variable, selected = selected)
   }
 
   updateCentroidLines = function() {
@@ -70,6 +114,7 @@ server <- function(input, output) {
     if (input$showCLines && length(selected)) {
       # Get only the most important lines
       # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+      # TODO what do we do if we are showing comparison? Does it make sense?
       centroidlines = NULL
       topVals = NULL
 
