@@ -9,7 +9,7 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
 
     /* Scroll */
     overflow: auto;
-    height: 95vh;
+    max-height: 95vh;
 }
 
 
