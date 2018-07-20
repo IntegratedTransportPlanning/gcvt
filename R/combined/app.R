@@ -6,21 +6,27 @@ library(sf)
 library(leaflet)
 library(readr)
 
-links = read_sf("../../data/sensitive/processed/nulinks.gpkg", stringsAsFactors = T)
-
+# TODO my 'example' file wouldn't load columns for some reason. And didn't have nulinks available.
+linksFile = "../../data/sensitive/processed/links.gpkg"
+if (F) { ## dir.exists("data/sensitive/processed")) {
+  linksFile = "../../data/sensitive/processed/nulinks.gpkg"
+}
+print(linksFile)
+links = read_sf(linksFile, stringsAsFactors = T)
 
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
 links = links[1:1000,]
 
 # Fake up some scenarios
-
 stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
 meta = stripSf(links)
 
 # Too many modes in new dataset. Need fewer.
-meta$MODE = as.factor(meta$LinkType)
-levels(meta$MODE)<-read_csv("../../data/sensitive/linktype_lookup.csv")$Description
+if (is.null(meta$MODE)) {
+  meta$MODE = as.factor(meta$LinkType)
+  levels(meta$MODE)<-read_csv("../../data/sensitive/linktype_lookup.csv")$Description
+}
 modes = levels(as.factor(as.character(meta$MODE)))
 
 variables = sort(colnames(meta))
