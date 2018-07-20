@@ -18,12 +18,6 @@ suppressWarnings({
   centroids = st_centroid(zones)
 })
 
-linesFrom = function(from, to) {
-  # Convert from to a single point
-  from = st_geometry(from)[[1]]
-  st_sfc(lapply(st_geometry(to), function(point) {st_linestring(rbind(from, point))}))
-}
-
 # Fake up an od skim
 variables = c("CO2 (tonnes)", "Time (minutes)")
 od_skim = list()
