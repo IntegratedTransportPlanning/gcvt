@@ -6,6 +6,10 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
     position: absolute;
     top: 15px;
     right: 15px;
+
+    /* Scroll */
+    overflow: auto;
+    max-height: 95%;
 }
 
 
