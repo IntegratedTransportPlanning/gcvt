@@ -35,8 +35,3 @@ A combined tool can be run as follows, after the package has been installed:
 ```{r example, eval=FALSE}
 shiny::runApp("R/combined/")
 ```
-
-```{r, echo=FALSE}
-webshot::appshot("R/combined/")
-```
-

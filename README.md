@@ -15,12 +15,11 @@ You can install gcvt from github with:
 devtools::install_github("IntegratedTransportPlanning/gcvt")
 ```
 
-Example
--------
+Combined app
+------------
 
-This is a basic example which shows you how to solve a common problem:
+There are various components of the tool. A combined tool can be run as follows, after the package has been installed:
 
 ``` r
-library(sf)
-#> Linking to GEOS 3.5.1, GDAL 2.2.2, proj.4 4.9.2
+shiny::runApp("R/combined/")
 ```
