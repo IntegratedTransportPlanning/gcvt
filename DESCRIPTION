@@ -19,5 +19,7 @@ Imports: eurostat,
     leaflet,
     dplyr,
     sf
+Remotes:
+    cmcaine/leaflet
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.0.1
