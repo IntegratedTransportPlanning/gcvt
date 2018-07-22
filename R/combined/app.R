@@ -6,12 +6,8 @@ library(sf)
 library(leaflet)
 library(readr)
 
-# TODO my 'example' file wouldn't load columns for some reason. And didn't have nulinks available.
-linksFile = "../../data/sensitive/processed/links.gpkg"
-if (F) { ## dir.exists("data/sensitive/processed")) {
-  linksFile = "../../data/sensitive/processed/nulinks.gpkg"
-}
-print(linksFile)
+# TODO my 'example' file wouldn't load columns for some reason.
+linksFile = "../../data/sensitive/processed/nulinks.gpkg"
 links = read_sf(linksFile, stringsAsFactors = T)
 
 # Too slow with all the links...
