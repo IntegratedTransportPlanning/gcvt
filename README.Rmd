@@ -1,0 +1,42 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-"
+)
+```
+
+# gcvt
+
+The goal of gcvt is to provide data and functions for visualising
+    road networks. Specifically it is focussed on the TEN-T European
+    road network.
+
+## Installation
+
+You can install gcvt from github with:
+
+```{r gh-installation, eval = FALSE}
+# install.packages("devtools")
+devtools::install_github("IntegratedTransportPlanning/gcvt")
+```
+
+## Combined app
+
+There are various components of the tool.
+A combined tool can be run as follows, after the package has been installed:
+
+```{r example, eval=FALSE}
+shiny::runApp("R/combined/")
+```
+
+```{r, echo=FALSE}
+webshot::appshot("R/combined/")
+```
+
