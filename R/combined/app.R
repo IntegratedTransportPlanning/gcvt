@@ -5,6 +5,8 @@
 library(sf)
 library(leaflet)
 library(readr)
+library(shinyWidgets)
+library(shinythemes)
 
 # TODO my 'example' file wouldn't load columns for some reason.
 linksFile = "../../data/sensitive/processed/nulinks.gpkg"
@@ -72,11 +74,14 @@ scenariosZones = list("Do minimum" = od_skim,
 library(shiny)
 
 ui = fillPage(
+  includeCSS('www/fullscreen.css'),
   leafletOutput("map", height = "100%"),
   div(class="panel-group floater",
       div(class="panel panel-default",
-          div(id="gcvt-heading", class="panel-heading",
-              a(href="#collapse1", "Toggle Controls", 'data-toggle'="collapse")),
+          div(class="panel-heading",
+              materialSwitch("showLinks", status="info", inline=T),
+              h4(class="gcvt-toggle-label", "Network links "),
+              a(href="#collapse1", "[ + ]", 'data-toggle'="collapse")),
           div(id="collapse1", class="panel-collapse collapse",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
@@ -92,22 +97,27 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "Connectors"], multiple = T))
           )),
-          div(id="gcvt-heading", class="panel-heading",
-              a(href="#collapse2", "Toggle OD controls", 'data-toggle'="collapse")),
+          div(class="panel-heading",
+              materialSwitch("showZones", status="info", inline=T),
+              h4(class="gcvt-toggle-label", "Matrix zones "),
+              a(href="#collapse2", "[ + ]", 'data-toggle'="collapse")),
           div(id="collapse2", class="panel-collapse collapse",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
                          selectInput("od_scenario", "Scenario Package", names(scenariosZones)),
                          selectInput("od_comparator", "Compare with", c("Select scenario...", names(scenariosZones))),
                          selectInput("od_variable", "OD skim variable", od_variables),
-                         checkboxInput("showCLines", "Show centroid lines?"))
+                         checkboxInput("showCLines", "Show centroid lines?"),
+                         htmlOutput("zoneHint", inline=T)
+                         )
+
           ))
           )
       )
   ,
   # Couldnt figure out how to provide multiple CSSs, which would have allowed use of BootSwatch
   # shinythemes lets you switch in bootswatch, but then you have to replace the below
-  theme = "fullscreen.css"
+  theme = shinytheme("darkly")
 )
 
 server = function(input, output) {
@@ -121,7 +131,6 @@ server = function(input, output) {
     isolate({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addLayersControl(overlayGroups = c("links", "zones"), position = "topleft") %>%
       addSkimZones(data = zones, skim = od_skim, variable = od_variables[[1]]) %>%
       hideGroup("zones") %>%
       removeControl("zonesLegend") %>%
@@ -135,6 +144,16 @@ server = function(input, output) {
     coldiff = function(a, b) if (is.factor(a)) a == b else a - b
     for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comparator[[i]])
     meta
+  }
+
+  toggleGroup = function(group, state) {
+    if (state) {
+      leafletProxy("map") %>%
+        showGroup(group)
+    } else {
+      leafletProxy("map") %>%
+        hideGroup(group)
+    }
   }
 
   updateLinks = function(map = leafletProxy("map")) {
@@ -175,34 +194,49 @@ server = function(input, output) {
 
       baseVals = NULL
       compVals = NULL
+      zoneHintMsg = ""
       if (!length(selected)) {
         # Nothing selected, show comparison of 'from' for zones
         baseVals = rowSums(base[[variable]])
         compVals = rowSums(compareZones[[variable]])
+        zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
+
       } else if (length(selected) > 1) {
         # Sum of rows if several zones selected
         baseVals = colSums(base[[variable]][selected,])
         compVals = colSums(compareZones[[variable]][selected,])
+        zoneHintMsg = "shaded by aggregated difference in 'to' statistics for the selected zones"
+
       } else {
         # Just one selected, show comparison of its 'to' data
         baseVals = base[[variable]][selected,]
         compVals = compareZones[[variable]][selected,]
+        zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
+
       }
       values = compVals - baseVals
-      variable = paste("Scenario difference in ", input$variable)
+      variable = paste("Scenario difference in ", variable)
+
 
       ## TODO palette
     } else {
       if (!length(selected)) {
         values = rowSums(base[[variable]])
+        zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
+
       } else if (length(selected) > 1) {
         # Sum of rows if several zones selected
         values = colSums(base[[variable]][selected,])
+        zoneHintMsg = "shaded by the aggregated 'to' statistic for the selected zones"
+
       } else {
         values = base[[variable]][selected,]
+        zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
+
       }
       ## TODO palette
     }
+    output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 
     leafletProxy("map") %>%
       reStyleZones(data = zones, values = values, variable = variable, selected = selected)
@@ -243,6 +277,11 @@ server = function(input, output) {
   observe({
     updateZoneDisplay()
     updateCentroidLines()
+  })
+
+  observe({
+    toggleGroup("links", input$showLinks)
+    toggleGroup("zones", input$showZones)
   })
 
   observeEvent(input$map_shape_click, {

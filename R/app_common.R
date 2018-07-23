@@ -1,6 +1,6 @@
 # Common functions for leaflet/shiny
 
-autoPalette = function(data, palette = "PuRd", factorColors = topo.colors) {
+autoPalette = function(data, palette = "PuBu", factorColors = topo.colors) {
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
   } else if (is.logical(data)) {
@@ -40,7 +40,7 @@ reStyleZones = function(map, data, values, variable, selected = NULL) {
   setStyleFast(map, "zones", weight = rep(1, nrow(data)))
 
   for (selectedZone in selected) {
-    map = setStyle(map, "zones", styles = list(list(weight = 4, color = "blue")), offset = selectedZone)
+    map = setStyle(map, "zones", styles = list(list(weight = 2, color = "black")), offset = selectedZone)
   }
 }
 

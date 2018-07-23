@@ -30,6 +30,15 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
     background-color: #eeeeee;
 }
 
-#gcvt-heading {
-    text-align: right;
+.gcvt-toggle-label {
+  display: inline;
+}
+
+.material-switch {
+  display: inline;
+}
+
+#zoneHint {
+  display: inline-block;
+  width: 300px;
 }
