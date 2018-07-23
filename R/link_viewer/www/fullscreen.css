@@ -34,6 +34,11 @@ html, body, .container-fluid, .tabbable, .tab-pane.active, .row, .row > div {
   display: inline;
 }
 
+.gcvt-panel-box {
+  padding: 15px;
+  width: 350px;
+}
+
 .material-switch {
   display: inline;
 }

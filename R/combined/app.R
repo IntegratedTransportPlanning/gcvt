@@ -79,6 +79,13 @@ ui = fillPage(
   div(class="panel-group floater",
       div(class="panel panel-default",
           div(class="panel-heading",
+              a(href="#collapse-about", h4("Greener Connectivity Visualisation Tool"), 'data-toggle'="collapse")),
+          div(id="collapse-about", class="panel-collapse collapse",
+              p(class="gcvt-panel-box", "The GCVT is a tool for viewing data from strategic transport models, using both network link data and OD zone skims.",
+                   a(href="https://github.com/IntegratedTransportPlanning/gcvt", "More info...")
+                   )
+              ),
+          div(class="panel-heading",
               materialSwitch("showLinks", status="info", inline=T),
               h4(class="gcvt-toggle-label", "Network links "),
               a(href="#collapse1", "[ + ]", 'data-toggle'="collapse")),
