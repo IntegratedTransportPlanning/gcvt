@@ -1,77 +1,71 @@
 ### Link viewer app ###
 
-## Get and fake some data
+## Get data
 
 library(sf)
-library(leaflet)
 library(readr)
-library(shinyWidgets)
-library(shinythemes)
+library(reshape2)
 
 # TODO my 'example' file wouldn't load columns for some reason.
-linksFile = "../../data/sensitive/processed/nulinks.gpkg"
+linksFile = "../../data/sensitive/processed/cropped_links.gpkg"
 links = read_sf(linksFile, stringsAsFactors = T)
 
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
 links = links[1:1000,]
 
-# Fake up some scenarios
-stripSf = function(sfdf) (sfdf %>% st_set_geometry(NULL))
-meta = stripSf(links)
+# Load scenarios
 
-# Too many modes in new dataset. Need fewer.
-if (is.null(meta$MODE)) {
-  meta$MODE = as.factor(meta$LinkType)
-  levels(meta$MODE)<-read_csv("../../data/sensitive/linktype_lookup.csv")$Description
-}
-modes = levels(as.factor(as.character(meta$MODE)))
+# Load and crop metadata
+scenarios = list(
+  base = read.csv("../../data/sensitive/output20180724/Link_Base_2017.csv", stringsAsFactors = T),
+  "base (2025)" = read.csv("../../data/sensitive/output20180724/Link_Y2025_2025.csv", stringsAsFactors = T),
+  "Extend TEN-T (2025)" = read.csv("../../data/sensitive/output20180724/Link_Y2025_RoTent_2025.csv", stringsAsFactors = T)
+)
+scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link_ID),])
+
+# Drop unused LType levels.
+scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
+
+meta = scenarios[[1]]
+modes = levels(meta$LType)
 
 variables = sort(colnames(meta))
 continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables)
 
-scenarios = list("Do minimum" = meta,
-                 "Rail Electrification" = meta,
-                 "Operation Overlord" = meta,
-                 "Autobahn" = meta,
-                 "Autoall" = meta)
-
-# These would need to be changed for the new data.
-# scenarios[[2]]$ELECTRIF = sapply(scenarios[[2]]$ELECTRIF, function(e) if (e > 0) 2 else e)
-# scenarios[[3]]$MODE[meta$MODE == "ferry"] = "rail"
-# scenarios[[4]]$SPEED[meta$MODE == "road"] = meta$SPEED[meta$MODE == "road"] + 30
-# scenarios[[5]]$SPEED = sample(1:10 * 10, length(meta$SPEED), replace = T)
-
 # Zone data
 
-zones = subset(read_sf("../../data/sensitive/initial/zones.geojson"), select = c("NAME"))
+zones = read_sf("../../data/sensitive/final/zones.gpkg")
 suppressWarnings({
-  zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
+  # zones = st_simplify(zones, preserveTopology = T, dTolerance = 0.1)
   centroids = st_centroid(zones)
 })
 
-# Fake up an od skim
-od_variables = c("Cheese (tonnes)", "Wine (tonnes)", "CO2 (tonnes)", "Time (minutes)")
-od_skim = list()
-bounds = 10:10000
-for (var in od_variables) {
-  od_skim[[var]] = matrix(sample(bounds, nrow(zones)**2, replace = T), nrow = nrow(zones), ncol = nrow(zones))
+# Get the skims
+
+extract_matrix <- function(filename) {
+  metamat = read_csv(filename)
+  variables = names(metamat)[3:length(metamat)]
+  od_skim = lapply(variables, function(var) acast(metamat, Orig~Dest, value.var = var))
+  names(od_skim)<-variables
+  od_skim
 }
 
-# Another fake one to compare against
-od_less = list()
-for (var in od_variables) {
-  od_less[[var]] = od_skim[[var]] * 0.5
-}
-
-scenariosZones = list("Do minimum" = od_skim,
-                      "Lower numbers" = od_less)
+od_scenarios = list(
+  base = extract_matrix("../../data/sensitive/output20180724/Matrix_Base_2017.csv"),
+  "base (2025)" = extract_matrix("../../data/sensitive/output20180724/Matrix_Y2025_2025.csv"),
+  "Extend TEN-T (2025)" = extract_matrix("../../data/sensitive/output20180724/Matrix_Y2025_RoTent_2025.csv")
+)
+od_variables = names(od_scenarios[[1]])
 
 
 ## Define interactions and appearance
 
 library(shiny)
+library(shinyWidgets)
+library(shinythemes)
+library(leaflet)
 
 ui = fillPage(
   includeCSS('www/fullscreen.css'),
@@ -98,7 +92,7 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
                  tags$li(class="list-group-item",
-                         selectInput("colourBy", "Colour links by", variables, selected="MODE")),
+                         selectInput("colourBy", "Colour links by", variables, selected="LType")),
                  tags$li(class="list-group-item",
                          selectInput("widthBy", "Set width by", continuous_variables)),
                  tags$li(class="list-group-item",
@@ -111,8 +105,8 @@ ui = fillPage(
           div(id="collapse2", class="panel-collapse collapse",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
-                         selectInput("od_scenario", "Scenario Package", names(scenariosZones)),
-                         selectInput("od_comparator", "Compare with", c("Select scenario...", names(scenariosZones))),
+                         selectInput("od_scenario", "Scenario Package", names(od_scenarios)),
+                         selectInput("od_comparator", "Compare with", c("Select scenario...", names(od_scenarios))),
                          selectInput("od_variable", "OD skim variable", od_variables),
                          checkboxInput("showCLines", "Show centroid lines?"),
                          htmlOutput("zoneHint", inline=T)
@@ -180,8 +174,8 @@ server = function(input, output) {
       widthBy = input$widthBy
     }
 
-    # Use base$MODE for filtering, not the comparison
-    visible = base$MODE %in% input$filterMode
+    # Use base$LType for filtering, not the comparison
+    visible = base$LType %in% input$filterMode
 
     map %>%
       styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc) %>%
@@ -190,14 +184,14 @@ server = function(input, output) {
 
   selected = numeric(0)
   updateZoneDisplay = function() {
-    base = scenariosZones[[input$od_scenario]]
+    base = od_scenarios[[input$od_scenario]]
     variable = input$od_variable
 
     values = NULL
-    if ((input$od_comparator %in% names(scenariosZones)) &&
+    if ((input$od_comparator %in% names(od_scenarios)) &&
         (input$od_comparator != input$od_scenario)) {
       ## TODO ^ check we are doing something sensible if the user is trying to compare the same two scenarios
-      compareZones = scenariosZones[[input$od_comparator]]
+      compareZones = od_scenarios[[input$od_comparator]]
 
       baseVals = NULL
       compVals = NULL
