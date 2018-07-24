@@ -136,7 +136,8 @@ server = function(input, output) {
       hideGroup("zones") %>%
       removeControl("zonesLegend") %>%
       addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F) %>%
-      updateLinks()
+      updateLinks() %>%
+      fitBounds(21.66, 43.45, 39.92, 53.20)
     })
   })
 
