@@ -47,9 +47,9 @@ extract_matrix <- function(filename) {
 }
 
 od_scenarios = list(
-  base = extract_matrix("../../data/sensitive/output20180724/Matrix_Base_2017.csv"),
-  "base (2025)" = extract_matrix("../../data/sensitive/output20180724/Matrix_Y2025_2025.csv"),
-  "Extend TEN-T (2025)" = extract_matrix("../../data/sensitive/output20180724/Matrix_Y2025_RoTent_2025.csv")
+  base = extract_matrix("../../data/sensitive/final/Matrix_Base_2017.csv"),
+  "base (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_2025.csv"),
+  "Extend TEN-T (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Tent_2025.csv")
 )
 od_variables = names(od_scenarios[[1]])
 
