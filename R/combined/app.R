@@ -71,7 +71,8 @@ ui = fillPage(
           div(id="collapse-about", class="panel-collapse collapse",
               p(class="gcvt-panel-box", "The GCVT is a tool for viewing data from strategic transport models, using both network link data and OD zone skims.",
                    a(href="https://github.com/IntegratedTransportPlanning/gcvt", "More info...")
-                   )
+                   ),
+              actionButton("dbg", "Debug now")
               ),
           div(class="panel-heading",
               materialSwitch("showLinks", status="info", inline=T),
@@ -117,6 +118,7 @@ ui = fillPage(
 
 server = function(input, output) {
   source("../app_common.R")
+  observeEvent(input$dbg, {browser()})
 
   getPopup = function (meta) {
     paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
