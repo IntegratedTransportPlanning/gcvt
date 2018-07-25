@@ -17,15 +17,9 @@ links = links[1:1000,]
 # Load scenarios
 
 # Load and crop metadata
-scenarios = list(
-  base = read.csv("../../data/sensitive/output20180724/Link_Base_2017.csv", stringsAsFactors = T),
-  "base (2025)" = read.csv("../../data/sensitive/output20180724/Link_Y2025_2025.csv", stringsAsFactors = T),
-  "Extend TEN-T (2025)" = read.csv("../../data/sensitive/output20180724/Link_Y2025_RoTent_2025.csv", stringsAsFactors = T)
-)
+load("../../data/sensitive/processed/cropped_scenarios.RData")
+# Crop scenarios again to reduced geometry
 scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link_ID),])
-
-# Drop unused LType levels.
-scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
 
 meta = scenarios[[1]]
 modes = levels(meta$LType)
