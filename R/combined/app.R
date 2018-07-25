@@ -126,6 +126,7 @@ server = function(input, output) {
 
   output$map <- renderLeaflet({
     isolate({
+    bbox = st_bbox(links)
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
       addSkimZones(data = zones, skim = od_scenarios$base, variable = od_variables[[1]]) %>%
@@ -133,7 +134,7 @@ server = function(input, output) {
       removeControl("zonesLegend") %>%
       addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F) %>%
       updateLinks() %>%
-      fitBounds(21.66, 43.45, 39.92, 53.20)
+      fitBounds(bbox[[1]], bbox[[2]], bbox[[3]], bbox[[4]])
     })
   })
 
