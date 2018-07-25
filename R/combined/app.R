@@ -132,7 +132,7 @@ server = function(input, output) {
     isolate({
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addSkimZones(data = zones, skim = od_skim, variable = od_variables[[1]]) %>%
+      addSkimZones(data = zones, skim = od_scenarios$base, variable = od_variables[[1]]) %>%
       hideGroup("zones") %>%
       removeControl("zonesLegend") %>%
       addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F) %>%
@@ -252,11 +252,12 @@ server = function(input, output) {
       # Get only the most important lines
       # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
       # TODO what do we do if we are showing comparison? Does it make sense?
+      od_skim = od_scenarios[[input$od_scenario]]
       centroidlines = NULL
       topVals = NULL
 
       for (matrixRow in selected) {
-        rowVals = od_skim[[input$od_variable]][matrixRow,]
+        rowVals = as.vector(od_skim[[input$od_variable]][matrixRow,])
         nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
         topCentroids = centroids[rowVals >= nthVal,]
         linesForRow = linesFrom(centroids[matrixRow,], topCentroids)
