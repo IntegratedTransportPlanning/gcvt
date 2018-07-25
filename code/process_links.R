@@ -1,20 +1,21 @@
 library(sf)
 
-links = read_sf("data/sensitive/output20180724/ShapeGeometry/Base_links.shp", stringsAsFactors = T)
+links = read_sf("data/sensitive/final/Base_links.shp", stringsAsFactors = T)
+links = st_transform(links, 4326)
 
-# Crop to study region and transform to 4326.
-bounds = st_bbox(read_sf("data/sensitive/initial/links.geojson"))
-links = st_transform(links, st_crs(bounds))
-links = st_crop(links, bounds)
+# Crop to study area
+eapregion = st_union(read_sf("data/sensitive/eap_zones_only.geojson"))
+intersection = unlist(st_intersects(eapregion, links))
+links = links[intersection,]
 
 # Remove points
 links = links[grepl("LINESTRING", sapply(st_geometry(links), st_geometry_type)),]
 
 # Load and crop metadata
 scenarios = list(
-  base = read.csv("data/sensitive/output20180724/Link_Base_2017.csv", stringsAsFactors = T),
-  "base (2025)" = read.csv("data/sensitive/output20180724/Link_Y2025_2025.csv", stringsAsFactors = T),
-  "Extend TEN-T (2025)" = read.csv("data/sensitive/output20180724/Link_Y2025_RoTent_2025.csv", stringsAsFactors = T)
+  base = read.csv("data/sensitive/final/Link_Base_2017.csv", stringsAsFactors = T),
+  "base (2025)" = read.csv("data/sensitive/final/Link_Y2025_2025.csv", stringsAsFactors = T),
+  "Extend TEN-T (2025)" = read.csv("data/sensitive/final/Link_Tent_2025.csv", stringsAsFactors = T)
 )
 scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link_ID),])
 
@@ -28,3 +29,4 @@ scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link
 scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
 
 write_sf(links, "data/sensitive/processed/cropped_links.gpkg")
+save(scenarios, file = "data/sensitive/processed/cropped_scenarios.RData")
