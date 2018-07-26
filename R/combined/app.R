@@ -141,11 +141,9 @@ server = function(input, output) {
 
   metaDiff = function(base, comparator) {
     meta = base
-    coldiff = function(a, b) {
-      if (is.factor(a))
-        elseif(a == b, "same", "different")
+    coldiff = function(a, b)
+      if (is.factor(a)) as.factor(ifelse(a == b, "same", "different"))
       else a - b
-    }
     for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comparator[[i]])
     meta
   }
