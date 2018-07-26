@@ -1,4 +1,4 @@
-### Link viewer app ###
+### Combined app ###
 
 ## Get data
 
@@ -124,15 +124,16 @@ server = function(input, output) {
     paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) {as.character(col)}), "</td></tr>"), collapse=''), "</table>")
   }
 
+  selected = numeric(0)
+
   output$map <- renderLeaflet({
     isolate({
     bbox = st_bbox(links)
     leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addProviderTiles(provider = "CartoDB.Positron") %>%
-      addSkimZones(data = zones, skim = od_scenarios$base, variable = od_variables[[1]]) %>%
-      hideGroup("zones") %>%
-      removeControl("zonesLegend") %>%
-      addPolylines(data = links, group = "links", layerId = 1:nrow(links), stroke = F, fill = F) %>%
+      addPolygons(data = zones, group = "zones", layerId = 1:nrow(zones)) %>%
+      updateZoneDisplay() %>%
+      addPolylines(data = links, group = "links", layerId = 1:nrow(links)) %>%
       updateLinks() %>%
       fitBounds(bbox[[1]], bbox[[2]], bbox[[3]], bbox[[4]])
     })
@@ -149,17 +150,13 @@ server = function(input, output) {
     meta
   }
 
-  toggleGroup = function(group, state) {
-    if (state) {
-      leafletProxy("map") %>%
-        showGroup(group)
-    } else {
-      leafletProxy("map") %>%
-        hideGroup(group)
-    }
-  }
-
   updateLinks = function(map = leafletProxy("map")) {
+    if (!input$showLinks) {
+      return(map %>%
+             hideGroup("links") %>%
+             removeControl("linksLegend"))
+    }
+
     base = scenarios[[input$scenario]]
 
     if (input$comparator %in% names(scenarios)) {
@@ -181,11 +178,18 @@ server = function(input, output) {
 
     map %>%
       styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc) %>%
-      setStyleFast('links', stroke = visible)
+      setStyleFast('links', stroke = visible) %>%
+      showGroup("links")
   }
 
-  selected = numeric(0)
-  updateZoneDisplay = function() {
+  updateZoneDisplay = function(map = leafletProxy("map")) {
+    if (!input$showZones) {
+      map = map %>%
+        hideGroup("zones") %>%
+        removeControl("zonesLegend")
+      return(map)
+    }
+
     base = od_scenarios[[input$od_scenario]]
     variable = input$od_variable
 
@@ -220,8 +224,8 @@ server = function(input, output) {
       values = compVals - baseVals
       variable = paste("Scenario difference in ", variable)
 
-
-      ## TODO palette
+      # Comparison palette is washed out by outliers :(
+      pal = comparisonPalette(values, "red", "blue", "yellow", bins = 21)
     } else {
       if (!length(selected)) {
         values = rowSums(base[[variable]])
@@ -237,12 +241,13 @@ server = function(input, output) {
         zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
 
       }
-      ## TODO palette
+      pal = autoPalette(values, "RdYlBu")
     }
     output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 
-    leafletProxy("map") %>%
-      reStyleZones(data = zones, values = values, variable = variable, selected = selected)
+    map %>%
+      reStyleZones(data = zones, values = values, variable = variable, selected = selected, pal = pal) %>%
+      showGroup("zones")
   }
 
   linesPerCentroid = 20
@@ -281,11 +286,6 @@ server = function(input, output) {
   observe({
     updateZoneDisplay()
     updateCentroidLines()
-  })
-
-  observe({
-    toggleGroup("links", input$showLinks)
-    toggleGroup("zones", input$showZones)
   })
 
   observeEvent(input$map_shape_click, {

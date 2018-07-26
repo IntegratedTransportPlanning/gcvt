@@ -13,7 +13,7 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors) {
 addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
   map %>%
     addLegend(position = "bottomleft", pal = pal, values = values,
-              title = title, group = group, layerId = paste(group, "Legend"))
+              title = title, group = group, layerId = paste(group, "Legend", sep = ""))
 }
 
 addAutoPolygons = function(map, data, values, title, palfunc = autoPalette) {
@@ -35,13 +35,14 @@ addSkimZones = function(map, data, skim, variable, selected = NULL, palfunc = au
   addAutoPolygons(map, data, values, variable, palfunc)
 }
 
-reStyleZones = function(map, data, values, variable, selected = NULL) {
-  reStyle(map, "zones", values, variable, pal = autoPalette(values, "RdYlBu"), label = paste(data$NAME, ": ", as.character(values), sep = ""))
-  setStyleFast(map, "zones", weight = rep(1, nrow(data)))
+reStyleZones = function(map, data, values, variable, selected = NULL, pal = autoPalette(values)) {
+  map = reStyle(map, "zones", values, variable, pal = pal, label = paste(data$NAME, ": ", as.character(values), sep = ""))
+  map = setStyleFast(map, "zones", weight = rep(1, nrow(data)))
 
   for (selectedZone in selected) {
     map = setStyle(map, "zones", styles = list(list(weight = 2, color = "black")), offset = selectedZone)
   }
+  map
 }
 
 reStyle = function(map, group, values, title, pal = autoPalette(values), label = as.character(values)) {
@@ -87,7 +88,7 @@ styleByData = function(map, data, group,
   label = ""
   if (!missing(colorCol)) {
     label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-    addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
+    map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
   }
   if (!missing(weightCol)) {
     if (is.null(weightCol)) {
@@ -105,7 +106,7 @@ styleByData = function(map, data, group,
 # Apply different palettes above and below zero
 #
 # Use a colorBin with an odd number of bins. Round bins slightly for prettiness.
-comparisonPalette = function(values, negativeramp = "red", positiveramp = "green", neutral = "white") {
+comparisonPalette = function(values, negativeramp = "red", positiveramp = "green", neutral = "white", bins = 7) {
   # Do something different with factors and booleans.
   if (is.logical(values) || is.factor(values)) {
     return(colorFactor(topo.colors(2), values))
@@ -123,7 +124,7 @@ comparisonPalette = function(values, negativeramp = "red", positiveramp = "green
     # colorBin palette centered on 0.
     magnitude = max(abs(min(values)), max(values))
     pal = colorBin(c(negativeramp, neutral, positiveramp), c(-magnitude, magnitude),
-                   bins = seq(from = -magnitude, to = magnitude, length.out = 8) %>% signif(2))
+                   bins = seq(from = -magnitude, to = magnitude, length.out = bins + 1) %>% signif(2))
 
     # Trim the outer bins that won't get used (makes the legend look nicer)
     bins = attr(pal, "colorArgs")$bins
