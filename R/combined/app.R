@@ -5,6 +5,7 @@
 library(sf)
 library(readr)
 library(reshape2)
+library(RColorBrewer)
 
 # TODO my 'example' file wouldn't load columns for some reason.
 linksFile = "../../data/sensitive/processed/cropped_links.gpkg"
@@ -28,6 +29,7 @@ variables = sort(colnames(meta))
 continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables)
 
+palettes_avail = rownames(brewer.pal.info)
 
 # Zone data
 
@@ -93,7 +95,10 @@ ui = fillPage(
                  tags$li(class="list-group-item",
                          selectInput("widthBy", "Set width by", continuous_variables)),
                  tags$li(class="list-group-item",
-                         selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "Connectors"], multiple = T))
+                         selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "Connectors"], multiple = T)),
+                 tags$li(class="list-group-item",
+                         selectInput("linkPalette", "Colour palette", palettes_avail, selected = "YlOrRd"),
+                         checkboxInput("revLinkPalette", "Reverse Palette", value=F))
           )),
           div(class="panel-heading",
               materialSwitch("showZones", status="info", inline=T),
@@ -106,6 +111,8 @@ ui = fillPage(
                          selectInput("od_comparator", "Compare with", c("Select scenario...", names(od_scenarios))),
                          selectInput("od_variable", "OD skim variable", od_variables),
                          checkboxInput("showCLines", "Show centroid lines?"),
+                         selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
+                         checkboxInput("revZonePalette", "Reverse palette", value=F),
                          htmlOutput("zoneHint", inline=T)
                          )
 
@@ -164,7 +171,13 @@ server = function(input, output) {
       palfunc = comparisonPalette
     } else {
       meta = base
-      palfunc = autoPalette
+
+      # TODO Think there might be a better way to do the below, need to check with CC :)
+      palfunc = function(data, palette) {
+        autoPalette(data,
+            palette = input$linkPalette,
+            reverse = input$revLinkPalette)
+      }
     }
 
     if (input$widthBy == continuous_variables[[1]]) {
@@ -241,7 +254,7 @@ server = function(input, output) {
         zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
 
       }
-      pal = autoPalette(values, "RdYlBu")
+      pal = autoPalette(values, palette = input$zonePalette, reverse = input$revZonePalette)
     }
     output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 

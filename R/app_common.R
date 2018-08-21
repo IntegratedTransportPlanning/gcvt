@@ -1,12 +1,12 @@
 # Common functions for leaflet/shiny
 
-autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors) {
+autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, reverse=F) {
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
   } else if (is.logical(data)) {
     colorFactor(factorColors(2), data)
   } else {
-    colorNumeric(palette = palette, domain = data)
+    colorNumeric(palette = palette, domain = data, reverse = reverse)
   }
 }
 
