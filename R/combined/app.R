@@ -12,7 +12,7 @@ links = read_sf(linksFile, stringsAsFactors = T)
 
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
-links = links[1:1000,]
+links = links[1:5000,]
 
 # Load scenarios
 
@@ -27,6 +27,7 @@ modes = levels(meta$LType)
 variables = sort(colnames(meta))
 continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables)
+
 
 # Zone data
 
@@ -48,8 +49,9 @@ extract_matrix <- function(filename) {
 
 od_scenarios = list(
   base = extract_matrix("../../data/sensitive/final/Matrix_Base_2017.csv"),
-  "base (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_2025.csv"),
-  "Extend TEN-T (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Tent_2025.csv")
+  "Do Nothing (2020)" = extract_matrix("../../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
+  "Do Nothing (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
+  "Do Nothing (2030)" = extract_matrix("../../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
 )
 od_variables = names(od_scenarios[[1]])
 

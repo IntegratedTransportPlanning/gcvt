@@ -14,8 +14,9 @@ links = links[grepl("LINESTRING", sapply(st_geometry(links), st_geometry_type)),
 # Load and crop metadata
 scenarios = list(
   base = read.csv("data/sensitive/final/Link_Base_2017.csv", stringsAsFactors = T),
-  "base (2025)" = read.csv("data/sensitive/final/Link_Y2025_2025.csv", stringsAsFactors = T),
-  "Extend TEN-T (2025)" = read.csv("data/sensitive/final/Link_Tent_2025.csv", stringsAsFactors = T)
+  "Do Nothing (2020)" = read.csv("data/sensitive/final/Link_Y2020_DoNothing_2020.csv", stringsAsFactors = T),
+  "Do Nothing (2025)" = read.csv("data/sensitive/final/Link_Y2025_DoNothing_2025.csv", stringsAsFactors = T),
+  "Do Nothing (2030)" = read.csv("data/sensitive/final/Link_Y2030_DoNothing_2030.csv", stringsAsFactors = T)
 )
 scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link_ID),])
 
