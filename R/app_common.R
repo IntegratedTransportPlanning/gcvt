@@ -10,7 +10,7 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
     # works out a sensible number of bins based on data
 
     # Remove all the erroneous zeroes and duplicated data
-    cleaned = c(0, data[data != 0])
+    cleaned = data[data != 0]
 
     targetBins = 7
 
@@ -24,14 +24,17 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
     }
 
     # rounded the bins to avoid having multiple 0s in legend (which seems to round for us).
-    # the following stops the very top value becoming NA
+    # the following stops the very edge values becoming NA
     bins[length(bins)] = bins[length(bins)] + 1
+    if (bins[1] > 0) {
+      bins[1] = bins[1] - 1
+    }
 
     if (targetBins > 1) {
       colorBin(palette = palette, domain = cleaned, bins = bins, reverse = reverse)
     } else {
       # Produce something, even if it's not sensible, saves crashing
-      colorNumeric(palette = palette, domain = cleaned, reverse = reverse)
+      colorNumeric(palette = palette, domain = cleaned, reverse = reverse, na.color="#eeeeee")
     }
   } else {
     colorNumeric(palette = palette, domain = data, reverse = reverse)
