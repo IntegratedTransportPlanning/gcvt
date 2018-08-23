@@ -13,7 +13,7 @@ links = read_sf(linksFile, stringsAsFactors = T)
 
 # Too slow with all the links...
 #links = links[sample(1:nrow(links), 3000),]
-links = links[1:5000,]
+links = links[1:1000,]
 
 # Load scenarios
 
@@ -98,7 +98,8 @@ ui = fillPage(
                          selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "Connectors"], multiple = T)),
                  tags$li(class="list-group-item",
                          selectInput("linkPalette", "Colour palette", palettes_avail, selected = "YlOrRd"),
-                         checkboxInput("revLinkPalette", "Reverse Palette", value=F))
+                         checkboxInput("revLinkPalette", "Reverse palette", value=F),
+                         checkboxInput("linkPalQuantile", "Quantile palette", value=F))
           )),
           div(class="panel-heading",
               materialSwitch("showZones", status="info", inline=T),
@@ -113,6 +114,7 @@ ui = fillPage(
                          checkboxInput("showCLines", "Show centroid lines?"),
                          selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
                          checkboxInput("revZonePalette", "Reverse palette", value=F),
+                         checkboxInput("zonePalQuantile", "Quantile palette", value=F),
                          htmlOutput("zoneHint", inline=T)
                          )
 
@@ -142,7 +144,7 @@ server = function(input, output) {
       addProviderTiles(provider = "CartoDB.Positron") %>%
       addPolygons(data = zones, group = "zones", layerId = 1:nrow(zones)) %>%
       updateZoneDisplay() %>%
-      addPolylines(data = links, group = "links", layerId = 1:nrow(links)) %>%
+      addPolylines(data = links, group = "links", layerId = 1:nrow(links), opacity=1) %>%
       updateLinks() %>%
       fitBounds(bbox[[1]], bbox[[2]], bbox[[3]], bbox[[4]])
     })
@@ -176,7 +178,8 @@ server = function(input, output) {
       palfunc = function(data, palette) {
         autoPalette(data,
             palette = input$linkPalette,
-            reverse = input$revLinkPalette)
+            reverse = input$revLinkPalette,
+            quantile = input$linkPalQuantile)
       }
     }
 
@@ -254,7 +257,10 @@ server = function(input, output) {
         zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
 
       }
-      pal = autoPalette(values, palette = input$zonePalette, reverse = input$revZonePalette)
+      pal = autoPalette(values,
+                        palette = input$zonePalette,
+                        reverse = input$revZonePalette,
+                        quantile = input$zonePalQuantile)
     }
     output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 

@@ -1,19 +1,59 @@
 # Common functions for leaflet/shiny
 
-autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, reverse=F) {
+autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, reverse=F, quantile=F) {
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
   } else if (is.logical(data)) {
     colorFactor(factorColors(2), data)
+  } else if (quantile) {
+    # From  https://github.com/rstudio/leaflet/issues/94
+    # works out a sensible number of bins based on data
+
+    # Remove all the erroneous zeroes and duplicated data
+    cleaned = c(0, data[data != 0])
+
+    targetBins = 7
+
+    probs <- seq(0, 1, length.out = targetBins + 1)
+    bins <- round(quantile(cleaned, probs, na.rm = TRUE, names = FALSE))
+
+    while (length(unique(bins)) != length(bins)) {
+      targetBins = targetBins - 1
+      probs <- seq(0, 1, length.out = targetBins + 1)
+      bins <- round(quantile(cleaned, probs, na.rm = TRUE, names = FALSE))
+    }
+
+    # rounded the bins to avoid having multiple 0s in legend (which seems to round for us).
+    # the following stops the very top value becoming NA
+    bins[length(bins)] = bins[length(bins)] + 1
+
+    if (targetBins > 1) {
+      colorBin(palette = palette, domain = cleaned, bins = bins, reverse = reverse)
+    } else {
+      # Produce something, even if it's not sensible, saves crashing
+      colorNumeric(palette = palette, domain = cleaned, reverse = reverse)
+    }
   } else {
     colorNumeric(palette = palette, domain = data, reverse = reverse)
   }
 }
 
 addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
-  map %>%
-    addLegend(position = "bottomleft", pal = pal, values = values,
-              title = title, group = group, layerId = paste(group, "Legend", sep = ""))
+
+  if(attr(pal, "colorType") == "quantile") {
+    # Some faffing to make quantiles come out nicely in legend
+    map %>%
+      addLegend(position = "bottomleft", pal = pal, values = values,
+                title = title, group = group, layerId = paste(group, "Legend", sep = ""),
+                labFormat = function(type, cuts, p) {
+                  n = length(cuts)
+                  paste0(as.integer(cuts)[-n], " &ndash; ", as.integer(cuts)[-1])
+                })
+  } else {
+    map %>%
+      addLegend(position = "bottomleft", pal = pal, values = values,
+                title = title, group = group, layerId = paste(group, "Legend", sep = ""))
+  }
 }
 
 addAutoPolygons = function(map, data, values, title, palfunc = autoPalette) {
