@@ -31,14 +31,19 @@ shinyApp(
     tags$script(src = 'app.js'),
     div(class="panel-group floater",
         div(class="panel panel-default",
-          actionButton('doit', 'Do it!'),
+          actionButton('rainbow', 'Taste the rainbow!'),
+          actionButton('bland', 'Default colour'),
           selectInput('variable', 'variable', continuous_variables)
           )
         )
   ),
   server = function(input, output, session) {
-    observeEvent(input$doit, {
+    observeEvent(input$rainbow, {
+      # You have to send a message even if the function doesn't take any arg
       session$sendCustomMessage("rotateColours", 0)
+    })
+    observeEvent(input$bland, {
+      session$sendCustomMessage("colourLinks", "blue")
     })
 
     observeEvent(input$variable, {

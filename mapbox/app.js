@@ -34,7 +34,7 @@ export async function loadLinks() {
     })
     weightLinks(5)
     // let colours = itertools.take(json.features.length, marquee())
-    // colorLinks()
+    // colourLinks()
 }
 
 const tic = () => {
@@ -48,7 +48,7 @@ const toc = () => {
 }
 const atId = data => ['at', ['id'], ["literal", data]]
 
-export const colorLinks = colours => {
+export const colourLinks = colours => {
     if (Array.isArray(colours)) {
         colours = atId(colours)
     }
@@ -97,7 +97,7 @@ export function rotateColours() {
     itertools.take(++index, marq)
     let colours = itertools.take(jlinks.features.length, marq)
     tic()
-    colorLinks(colours)
+    colourLinks(colours)
     let once = function self() {
         console.log(toc())
     }
@@ -109,7 +109,7 @@ import * as self from './app'
 Object.assign(window, {
     tic,
     toc,
-    colorLinks,
+    colourLinks,
     weightLinks,
     randInt,
     loadLinks,
