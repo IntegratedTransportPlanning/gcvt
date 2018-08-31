@@ -1,13 +1,14 @@
 import * as itertools from 'itertools'
 import links from '../data/sensitive/processed/cropped_links.geojson'
 
-let map
+export let map
 export function init() {
     mapboxgl.accessToken = 'pk.eyJ1IjoiY21jYWluZSIsImEiOiJjamxncGk5eXAwZGphM2tvMGpsOXA5c3kwIn0.i1g0SB88ni86cs0ZVOVG2w';
     map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/light-v9'
     })
+    top.map = map
     map.on('load', loadLinks)
 }
 
@@ -63,12 +64,8 @@ export const colourLinks = colours => {
  *
  */
 export const weightLinks = weights => {
-    let offset
     if (Array.isArray(weights)) {
-        offset = Math.max(...weights)
         weights = atId(weights)
-    } else if (Number.isFinite(weights)) {
-        offset = weights
     }
 
     map.setPaintProperty('links', 'line-width',
@@ -114,7 +111,6 @@ Object.assign(window, {
     randInt,
     loadLinks,
     rotateColours,
-    map,
     itertools,
     app: self,
 })
