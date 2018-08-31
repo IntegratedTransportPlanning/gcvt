@@ -57,13 +57,20 @@ export const colourLinks = colours => {
         ['to-color', colours])
 }
 
+// debug
+export let data
 /**
  * Weight links, adjusting offset and interpolating by zoom
  *
  * Don't know which links are paired with which other links (for now), so maintaining an exact offset is tricky.
  *
+ * V_total_ton, etc look OK with these settings, but Speed_freeflow looks crap. More experimentation required. Experiment in console with:
+ *   app.weightLinks(app.data, 10, 20)
+ *
  */
-export const weightLinks = weights => {
+export function weightLinks(weights, wFalloff = 4, oFalloff = 5) {
+    // debug
+    data = weights
     if (Array.isArray(weights)) {
         weights = atId(weights)
     }
@@ -72,16 +79,22 @@ export const weightLinks = weights => {
         ['interpolate',
             ['linear'],
             ['zoom'],
-            4, ['/', weights, 10],
+            4, ['/', weights, wFalloff],
             10, weights
         ])
-    map.setPaintProperty('links', 'line-offset',
-        ['interpolate',
-            ['linear'],
-            ['zoom'],
-            4, ['/', offset, 10],
-            10, offset
-        ])
+
+    // Only show an offset if weight varies.
+    if (Array.isArray(weights)) {
+        map.setPaintProperty('links', 'line-offset',
+            ['interpolate',
+                ['linear'],
+                ['zoom'],
+                4, ['/', weights, oFalloff],
+                10, weights
+            ])
+    } else {
+        map.setPaintProperty('links', 'line-offset', 0)
+    }
 }
 
 const randInt = (lo, hi) =>
