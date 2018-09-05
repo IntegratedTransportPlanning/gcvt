@@ -12,3 +12,33 @@
     /* Scroll */
     max-height: 95%;
 }
+
+.gcvt-td {
+    padding: 2px;
+}
+.gcvt-popup-tr:nth-child(even) {
+    background-color: #eeeeee;
+}
+
+.gcvt-toggle-label {
+  display: inline;
+}
+
+.gcvt-panel-box {
+  padding: 15px;
+  width: 350px;
+}
+
+.material-switch {
+  display: inline;
+}
+
+#zoneHint {
+  display: inline-block;
+  width: 300px;
+}
+
+.panel {
+  max-height: 95vh;
+  overflow-y: auto;
+}

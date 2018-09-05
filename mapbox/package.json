@@ -12,8 +12,8 @@
     "typescript": "^3.0.3"
   },
   "scripts": {
-    "build": "parcel build app.js style.css --out-dir www",
-    "watch": "parcel watch app.js style.css --out-dir www"
+    "build": "parcel build app.js style.css --out-dir www --no-minify",
+    "watch": "parcel watch app.js style.css --out-dir www --no-minify"
   },
   "browserslist": [
     "Firefox >= 54"

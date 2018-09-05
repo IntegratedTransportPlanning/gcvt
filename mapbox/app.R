@@ -1,6 +1,8 @@
 library(shiny)
 library(leaflet)
 
+# {{{ Prepare data
+
 # Load metadata
 load("../data/sensitive/processed/cropped_scenarios.RData")
 
@@ -10,6 +12,97 @@ modes = levels(meta$LType)
 variables = sort(colnames(meta))
 continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables)
+
+library(RColorBrewer)
+palettes_avail = rownames(brewer.pal.info)
+
+# }}}
+
+# {{{ Drawing functions
+
+
+# }}}
+
+# {{{ UI
+
+library(shinyWidgets)
+library(shinythemes)
+
+ui = fillPage(
+  tags$script(src='mapbox-gl.js'),
+  tags$link(href='mapbox-gl.css', rel='stylesheet'),
+  tags$link(href='style.css', rel='stylesheet'),
+  tags$div(id = 'map'),
+  tags$script(src = 'app.js'),
+  div(class="panel-group floater",
+      div(class="panel panel-default",
+          div(class="panel-heading",
+              a(href="#collapse-about", h4("Greener Connectivity Visualisation Tool"), 'data-toggle'="collapse")),
+          div(id="collapse-about", class="panel-collapse collapse",
+              p(class="gcvt-panel-box", "The GCVT is a tool for viewing data from strategic transport models, using both network link data and OD zone skims.",
+                   a(href="https://github.com/IntegratedTransportPlanning/gcvt", "More info...")
+                   ),
+              actionButton("dbg", "Debug now"),
+              actionButton('rainbow', 'Taste the rainbow!'),
+              actionButton('bland', 'Default colour'),
+              selectInput('variable', 'variable', continuous_variables)
+              ),
+          div(class="panel-heading",
+              materialSwitch("showLinks", status="info", inline=T),
+              h4(class="gcvt-toggle-label", "Network links "),
+              a(href="#collapse1", "[ + ]", 'data-toggle'="collapse")),
+          div(id="collapse1", class="panel-collapse collapse",
+              tags$ul(class="list-group",
+                 tags$li(class="list-group-item",
+                        selectInput("scenario", "Scenario Package", names(scenarios))),
+                 tags$li(class="list-group-item",
+                        selectInput("comparator", "Compare with", c("Select scenario", names(scenarios)))),
+                 tags$li(class="list-group-item",
+                         sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
+                 tags$li(class="list-group-item",
+                         selectInput("colourBy", "Colour links by", variables, selected="LType")),
+                 tags$li(class="list-group-item",
+                         selectInput("widthBy", "Set width by", continuous_variables)),
+                 tags$li(class="list-group-item",
+                         selectInput("filterMode", "Show modes", modes, selected = modes[!modes == "Connectors"], multiple = T)),
+                 tags$li(class="list-group-item",
+                         selectInput("linkPalette", "Colour palette", palettes_avail, selected = "YlOrRd"),
+                         checkboxInput("revLinkPalette", "Reverse palette", value=F),
+                         checkboxInput("linkPalQuantile", "Quantile palette", value=F))
+          # )),
+          # div(class="panel-heading",
+          #     materialSwitch("showZones", status="info", inline=T),
+          #     h4(class="gcvt-toggle-label", "Matrix zones "),
+          #     a(href="#collapse2", "[ + ]", 'data-toggle'="collapse")),
+          # div(id="collapse2", class="panel-collapse collapse",
+          #     tags$ul(class="list-group",
+          #        tags$li(class="list-group-item",
+          #                selectInput("od_scenario", "Scenario Package", names(od_scenarios)),
+          #                selectInput("od_comparator", "Compare with", c("Select scenario...", names(od_scenarios))),
+          #                selectInput("od_variable", "OD skim variable", od_variables),
+          #                checkboxInput("showCLines", "Show centroid lines?"),
+          #                selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
+          #                checkboxInput("revZonePalette", "Reverse palette", value=F),
+          #                checkboxInput("zonePalQuantile", "Quantile palette", value=F),
+          #                htmlOutput("zoneHint", inline=T)
+          #                )
+
+          ))
+          )
+      ),
+  # Couldnt figure out how to provide multiple CSSs, which would have allowed use of BootSwatch
+  # shinythemes lets you switch in bootswatch, but then you have to replace the below
+  theme = shinytheme("darkly")
+)
+
+# }}}
+
+# {{{ server
+
+server = function(input, output, session) {
+  observeEvent(input$dbg, {browser()})
+
+source('../R/app_common.R')
 
 # Scale x to a suitable width for drawing on the map.
 #
@@ -22,33 +115,107 @@ weightScale = function(x, domain = x) {
     rep(2, length(x))
 }
 
-shinyApp(
-  ui = fillPage(
-    tags$script(src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.48.0/mapbox-gl.js'),
-    tags$link(href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.48.0/mapbox-gl.css', rel='stylesheet'),
-    tags$link(href='style.css', rel='stylesheet'),
-    tags$div(id = 'map'),
-    tags$script(src = 'app.js'),
-    div(class="panel-group floater",
-        div(class="panel panel-default",
-          actionButton('rainbow', 'Taste the rainbow!'),
-          actionButton('bland', 'Default colour'),
-          selectInput('variable', 'variable', continuous_variables)
-          )
-        )
-  ),
-  server = function(input, output, session) {
-    observeEvent(input$rainbow, {
-      # You have to send a message even if the function doesn't take any arg
-      session$sendCustomMessage("rotateColours", 0)
-    })
-    observeEvent(input$bland, {
-      session$sendCustomMessage("colourLinks", "blue")
-    })
 
-    observeEvent(input$variable, {
-      weights = weightScale(scenarios$base[[input$variable]])
-      session$sendCustomMessage("weightLinks", weights)
-    })
+mb = list(
+  hideLayer = function(layername) {
+    session$sendCustomMessage("hideLayer", list(layer = layername))
+  },
+  showLayer = function(layername) {
+    session$sendCustomMessage("showLayer", list(layer = layername))
+  },
+  setVisible = function(layername, idVisibilities) {
+    session$sendCustomMessage("setVisible", list(layer = layername, data = idVisibilities))
+  },
+  setColor = function(layer, color) {
+    session$sendCustomMessage("setColor", list(layer = layer, color = color))
+  },
+  setWeight = function(layer, weight) {
+    session$sendCustomMessage("setWeight", list(layer = layer, weight = weight))
+  },
+  # Style shapes on map according to columns in a matching metadata df.
+  #
+  # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
+  styleByData = function(data, group,
+                         colorCol = NULL, colorValues = if (is.null(colorCol)) NULL else data[[colorCol]], colorDomain = colorValues,
+                         palfunc = autoPalette, pal = palfunc(colorDomain),
+                         weightCol = NULL, weightValues = if (is.null(weightCol)) NULL else data[[weightCol]], weightDomain = weightValues
+                         ) {
+    label = ""
+    if (!missing(colorCol)) {
+      label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+      # map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
+      mb$setColor('links', pal(colorValues))
+    }
+    if (!missing(weightCol)) {
+      if (is.null(weightCol)) {
+        mb$setWeight(group, 5)
+      } else {
+        label = paste(label, weightCol, ": ", weightValues, sep = "")
+        mb$setWeight(group, weightScale(weightValues, weightDomain))
+      }
+    }
+
+    # setStyleFast(map, group, color = pal(colorValues),
+    #              weight = weightScale(weightValues, weightDomain),
+    #              label = label)
+  })
+
+  updateLinks = function() {
+    if (!input$showLinks) {
+      mb$hideLayer('links')
+      return()
+    }
+
+    base = scenarios[[input$scenario]]
+
+    if (input$comparator %in% names(scenarios)) {
+      meta = metaDiff(base, scenarios[[input$comparator]])
+      palfunc = comparisonPalette
+    } else {
+      meta = base
+
+      # TODO Think there might be a better way to do the below, need to check with CC :)
+      palfunc = function(data, palette) {
+        autoPalette(data,
+            palette = input$linkPalette,
+            reverse = input$revLinkPalette,
+            quantile = input$linkPalQuantile)
+      }
+    }
+
+    if (input$widthBy == continuous_variables[[1]]) {
+      widthBy = NULL
+    } else {
+      widthBy = input$widthBy
+    }
+
+    # Use base$LType for filtering, not the comparison
+    visible = base$LType %in% input$filterMode
+
+    mb$setVisible('links', visible)
+    mb$styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc)
+    mb$showLayer('links')
   }
+
+  observe({updateLinks()})
+
+  observeEvent(input$rainbow, {
+    # You have to send a message even if the function doesn't take any arg
+    session$sendCustomMessage("rotateColours", 0)
+  })
+  observeEvent(input$bland, {
+    session$sendCustomMessage("colourLinks", "blue")
+  })
+
+  observeEvent(input$variable, {
+    weights = weightScale(scenarios$base[[input$variable]])
+    session$sendCustomMessage("weightLinks", weights)
+  })
+}
+
+# }}}
+
+shinyApp(
+  ui = ui,
+  server = server
 )
