@@ -188,3 +188,12 @@ linesFrom = function(from, to) {
   from = st_geometry(from)[[1]]
   st_sfc(lapply(st_geometry(to), function(point) {st_linestring(rbind(from, point))}))
 }
+
+metaDiff = function(base, comparator) {
+  meta = base
+  coldiff = function(a, b)
+    if (is.factor(a)) as.factor(ifelse(a == b, "same", "different"))
+    else a - b
+  for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comparator[[i]])
+  meta
+}
