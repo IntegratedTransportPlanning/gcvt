@@ -64,6 +64,11 @@ library(shiny)
 library(shinyWidgets)
 library(shinythemes)
 library(leaflet)
+has_leaflet_dev = grepl("9", packageVersion("leaflet"))
+if(!has_leaflet_dev) {
+  message("Dev (cmcaine/leaflet) version of leaflet not installed. Attempting to install it:")
+  devtools::install_github("cmcaine/leaflet")
+}
 
 ui = fillPage(
   includeCSS('www/fullscreen.css'),
