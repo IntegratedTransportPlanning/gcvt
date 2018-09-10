@@ -1,5 +1,6 @@
 import * as itertools from 'itertools'
 import links from '../data/sensitive/processed/cropped_links.geojson'
+import zones from '../data/sensitive/processed/zones.geojson'
 
 import * as mb from './mb.js'
 
@@ -26,10 +27,12 @@ export async function init() {
     // debug
     top.map = map
     map.on('load', loadLinks)
+    map.on('load', loadZones)
 }
 
 const listeners = new Map()
 let linkLayerReady = false
+let zoneLayerReady = false
 
 /**
  * Load the link geojson.
@@ -60,9 +63,30 @@ export async function loadLinks() {
     itertools.map(listeners, ([func, args]) => func(args))
 }
 
+export async function loadZones() {
+    // zones loading
+    let json = await (await fetch(zones)).json()
+    top.jzones = json
+    map.addLayer({
+        id: 'zones',
+        type: 'fill',
+        source: {
+            type: 'geojson',
+            data: json,
+        },
+        paint: {
+            'fill-color': 'blue',
+            'fill-outline-color': '#888',
+        },
+    })
+    zoneLayerReady = true
+    itertools.map(listeners, ([func, args]) => func(args))
+}
+
 import * as self from './app'
 Object.assign(window, {
     loadLinks,
+    loadZones,
     itertools,
     app: self,
     mb
@@ -77,7 +101,7 @@ Object.keys(mb).forEach(name =>
             console.log(name, msg)
             top.lastmsg = msg
         }
-        if (linkLayerReady) {
+        if (linkLayerReady && zoneLayerReady) {
             mb[name](msg)
         } else {
             // If map is not loaded, save the function to call and its arguments.

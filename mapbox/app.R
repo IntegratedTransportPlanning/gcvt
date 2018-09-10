@@ -1,9 +1,11 @@
 library(shiny)
 library(leaflet)
+library(readr)
+library(reshape2)
 
 # {{{ Prepare data
 
-# Load metadata
+# Links: Load metadata
 load("../data/sensitive/processed/cropped_scenarios.RData")
 
 meta = scenarios[[1]]
@@ -15,6 +17,25 @@ continuous_variables = c("Select variable", continuous_variables)
 
 library(RColorBrewer)
 palettes_avail = rownames(brewer.pal.info)
+
+# Zone data: Get the skims
+
+extract_matrix <- function(filename) {
+  metamat = read_csv(filename)
+  variables = names(metamat)[3:length(metamat)]
+  od_skim = lapply(variables, function(var) acast(metamat, Orig~Dest, value.var = var))
+  names(od_skim)<-variables
+  od_skim
+}
+
+od_scenarios = list(
+  base = extract_matrix("../data/sensitive/final/Matrix_Base_2017.csv"),
+  "Do Nothing (2020)" = extract_matrix("../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
+  "Do Nothing (2025)" = extract_matrix("../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
+  "Do Nothing (2030)" = extract_matrix("../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
+)
+od_variables = names(od_scenarios[[1]])
+
 
 # }}}
 
@@ -69,29 +90,27 @@ ui = fillPage(
                          selectInput("linkPalette", "Colour palette", palettes_avail, selected = "YlOrRd"),
                          checkboxInput("revLinkPalette", "Reverse palette", value=F),
                          checkboxInput("linkPalQuantile", "Quantile palette", value=F))
-          # )),
-          # div(class="panel-heading",
-          #     materialSwitch("showZones", status="info", inline=T),
-          #     h4(class="gcvt-toggle-label", "Matrix zones "),
-          #     a(href="#collapse2", "[ + ]", 'data-toggle'="collapse")),
-          # div(id="collapse2", class="panel-collapse collapse",
-          #     tags$ul(class="list-group",
-          #        tags$li(class="list-group-item",
-          #                selectInput("od_scenario", "Scenario Package", names(od_scenarios)),
-          #                selectInput("od_comparator", "Compare with", c("Select scenario...", names(od_scenarios))),
-          #                selectInput("od_variable", "OD skim variable", od_variables),
-          #                checkboxInput("showCLines", "Show centroid lines?"),
-          #                selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
-          #                checkboxInput("revZonePalette", "Reverse palette", value=F),
-          #                checkboxInput("zonePalQuantile", "Quantile palette", value=F),
-          #                htmlOutput("zoneHint", inline=T)
-          #                )
+          )),
+          div(class="panel-heading",
+              materialSwitch("showZones", status="info", inline=T),
+              h4(class="gcvt-toggle-label", "Matrix zones "),
+              a(href="#collapse2", "[ + ]", 'data-toggle'="collapse")),
+          div(id="collapse2", class="panel-collapse collapse",
+              tags$ul(class="list-group",
+                 tags$li(class="list-group-item",
+                         selectInput("od_scenario", "Scenario Package", names(od_scenarios)),
+                         selectInput("od_comparator", "Compare with", c("Select scenario...", names(od_scenarios))),
+                         selectInput("od_variable", "OD skim variable", od_variables),
+                         checkboxInput("showCLines", "Show centroid lines?"),
+                         selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
+                         checkboxInput("revZonePalette", "Reverse palette", value=F),
+                         checkboxInput("zonePalQuantile", "Quantile palette", value=F),
+                         htmlOutput("zoneHint", inline=T)
+                         )
 
           ))
           )
       ),
-  # Couldnt figure out how to provide multiple CSSs, which would have allowed use of BootSwatch
-  # shinythemes lets you switch in bootswatch, but then you have to replace the below
   theme = shinytheme("darkly")
 )
 
@@ -135,16 +154,26 @@ mb = list(
   # Style shapes on map according to columns in a matching metadata df.
   #
   # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
-  styleByData = function(data, group,
-                         colorCol = NULL, colorValues = if (is.null(colorCol)) NULL else data[[colorCol]], colorDomain = colorValues,
-                         palfunc = autoPalette, pal = palfunc(colorDomain),
-                         weightCol = NULL, weightValues = if (is.null(weightCol)) NULL else data[[weightCol]], weightDomain = weightValues
+  styleByData = function(data,
+                         group,
+                         colorCol = NULL,
+                         colorValues = if (is.null(colorCol)) NULL else data[[colorCol]],
+                         colorDomain = colorValues,
+                         palfunc = autoPalette,
+                         pal = palfunc(colorDomain),
+                         weightCol = NULL,
+                         weightValues = if (is.null(weightCol)) NULL else data[[weightCol]],
+                         weightDomain = weightValues
                          ) {
     label = ""
     if (!missing(colorCol)) {
       label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
       # map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
-      mb$setColor('links', pal(colorValues))
+      mb$setColor(group, pal(colorValues))
+    } else {
+      # TODO handle skims better than this
+      colorValues = data
+      mb$setColor(group, pal(colorValues))
     }
     if (!missing(weightCol)) {
       if (is.null(weightCol)) {
@@ -197,8 +226,29 @@ mb = list(
     mb$showLayer('links')
   }
 
+
+  updateZones = function() {
+    if (!input$showZones) {
+      mb$hideLayer('zones')
+      return()
+    }
+
+    base = od_scenarios[[input$scenario]]
+    variable = input$od_variable
+    values = rowSums(base[[variable]])
+
+    # mb$setVisible('zones', T)
+
+    mb$styleByData(values, 'zones')
+    mb$showLayer('zones')
+  }
+
+
   observe({updateLinks()})
 
+  observe({updateZones()})
+
+  # Am I right in thinking these can be removed?
   observeEvent(input$rainbow, {
     # You have to send a message even if the function doesn't take any arg
     session$sendCustomMessage("rotateColours", 0)

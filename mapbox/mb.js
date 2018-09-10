@@ -5,6 +5,9 @@
 
 const atId = data => ['at', ['id'], ["literal", data]]
 
+// Really should find a neater way than this. Easiest would be to require data to supply id
+const atFid = data => ['at', ['get', 'fid'], ["literal", data]]
+
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
 }
@@ -25,11 +28,23 @@ export function setVisible({ layer, data }) {
 }
 
 export function setColor({ layer, color }) {
-    if (Array.isArray(color)) {
+    // Avoid attempting to set wrong property
+    if (map.getLayer(layer).type === 'line') {
+      if (Array.isArray(color)) {
         color = atId(color)
+      }
+
+      map.setPaintProperty(layer, 'line-color',
+          ['to-color', color])
     }
-    map.setPaintProperty(layer, 'line-color',
-        ['to-color', color])
+    if (map.getLayer(layer).type === 'fill') {
+      if (Array.isArray(color)) {
+        color = atFid(color)
+      }
+
+      map.setPaintProperty(layer, 'fill-color',
+          ['to-color', color]) // will not work, defaults to black
+    }
 }
 
 /**
