@@ -121,73 +121,83 @@ ui = fillPage(
 server = function(input, output, session) {
   observeEvent(input$dbg, {browser()})
 
-source('../R/app_common.R')
+  source('../R/app_common.R')
 
-# Scale x to a suitable width for drawing on the map.
-#
-# If the domain has no range then draw thin lines.
-weightScale = function(x, domain = x) {
-  domain = range(domain)
-  if (diff(range(domain)))
-    scales::rescale(x, to = c(2,15), from = domain)
-  else
-    rep(2, length(x))
-}
+  selected = numeric(0)
 
-
-mb = list(
-  hideLayer = function(layername) {
-    session$sendCustomMessage("hideLayer", list(layer = layername))
-  },
-  showLayer = function(layername) {
-    session$sendCustomMessage("showLayer", list(layer = layername))
-  },
-  setVisible = function(layername, idVisibilities) {
-    session$sendCustomMessage("setVisible", list(layer = layername, data = idVisibilities))
-  },
-  setColor = function(layer, color) {
-    session$sendCustomMessage("setColor", list(layer = layer, color = color))
-  },
-  setWeight = function(layer, weight) {
-    session$sendCustomMessage("setWeight", list(layer = layer, weight = weight))
-  },
-  # Style shapes on map according to columns in a matching metadata df.
+  # Scale x to a suitable width for drawing on the map.
   #
-  # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
-  styleByData = function(data,
-                         group,
-                         colorCol = NULL,
-                         colorValues = if (is.null(colorCol)) NULL else data[[colorCol]],
-                         colorDomain = colorValues,
-                         palfunc = autoPalette,
-                         pal = palfunc(colorDomain),
-                         weightCol = NULL,
-                         weightValues = if (is.null(weightCol)) NULL else data[[weightCol]],
-                         weightDomain = weightValues
-                         ) {
-    label = ""
-    if (!missing(colorCol)) {
-      label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-      # map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
-      mb$setColor(group, pal(colorValues))
-    } else {
-      # TODO handle skims better than this
-      colorValues = data
-      mb$setColor(group, pal(colorValues))
-    }
-    if (!missing(weightCol)) {
-      if (is.null(weightCol)) {
-        mb$setWeight(group, 5)
-      } else {
-        label = paste(label, weightCol, ": ", weightValues, sep = "")
-        mb$setWeight(group, weightScale(weightValues, weightDomain))
-      }
-    }
+  # If the domain has no range then draw thin lines.
+  weightScale = function(x, domain = x) {
+    domain = range(domain)
+    if (diff(range(domain)))
+      scales::rescale(x, to = c(2,15), from = domain)
+    else
+      rep(2, length(x))
+  }
 
-    # setStyleFast(map, group, color = pal(colorValues),
-    #              weight = weightScale(weightValues, weightDomain),
-    #              label = label)
-  })
+
+  mb = list(
+    hideLayer = function(layername) {
+      session$sendCustomMessage("hideLayer", list(layer = layername))
+    },
+    showLayer = function(layername) {
+      session$sendCustomMessage("showLayer", list(layer = layername))
+    },
+    setVisible = function(layername, idVisibilities) {
+      session$sendCustomMessage("setVisible", list(layer = layername, data = idVisibilities))
+    },
+    setColor = function(layer, color) {
+      session$sendCustomMessage("setColor", list(layer = layer, color = color))
+    },
+    setWeight = function(layer, weight) {
+      session$sendCustomMessage("setWeight", list(layer = layer, weight = weight))
+    },
+    setSelected = function(layer, selected) {
+      session$sendCustomMessage("setSelected", list(layer = layer, selected = selected))
+    },
+    # Style shapes on map according to columns in a matching metadata df.
+    #
+    # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
+    styleByData = function(data,
+                           group,
+                           colorCol = NULL,
+                           colorValues = if (is.null(colorCol)) NULL else data[[colorCol]],
+                           colorDomain = colorValues,
+                           palfunc = autoPalette,
+                           pal = palfunc(colorDomain),
+                           weightCol = NULL,
+                           weightValues = if (is.null(weightCol)) NULL else data[[weightCol]],
+                           weightDomain = weightValues
+                           ) {
+      label = ""
+      if (!missing(colorCol)) {
+        label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+        # map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
+        mb$setColor(group, pal(colorValues))
+      } else {
+        # TODO handle skims better than this (?)
+        # eg need to draw selection
+        colorValues = data
+        mb$setColor(group, pal(colorValues))
+
+        if (length(selected) > 0) {
+          mb$setSelected(group, selected)
+        }
+      }
+      if (!missing(weightCol)) {
+        if (is.null(weightCol)) {
+          mb$setWeight(group, 5)
+        } else {
+          label = paste(label, weightCol, ": ", weightValues, sep = "")
+          mb$setWeight(group, weightScale(weightValues, weightDomain))
+        }
+      }
+
+      # setStyleFast(map, group, color = pal(colorValues),
+      #              weight = weightScale(weightValues, weightDomain),
+      #              label = label)
+    })
 
   updateLinks = function() {
     if (!input$showLinks) {
@@ -235,11 +245,65 @@ mb = list(
 
     base = od_scenarios[[input$scenario]]
     variable = input$od_variable
-    values = rowSums(base[[variable]])
+    values = NULL
 
-    # mb$setVisible('zones', T)
+    ### TODO go through each of the six types of behaviour and integrate one at a time
+    if ((input$od_comparator %in% names(od_scenarios)) &&
+        (input$od_comparator != input$od_scenario)) {
+      ## TODO ^ check we are doing something sensible if the user is trying to compare the same two scenarios
+      compareZones = od_scenarios[[input$od_comparator]]
 
-    mb$styleByData(values, 'zones')
+      baseVals = NULL
+      compVals = NULL
+      zoneHintMsg = ""
+      if (!length(selected)) {
+        # Nothing selected, show comparison of 'from' for zones
+        baseVals = rowSums(base[[variable]])
+        compVals = rowSums(compareZones[[variable]])
+        zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
+
+      } else if (length(selected) > 1) {
+        # Sum of rows if several zones selected
+        baseVals = colSums(base[[variable]][selected,])
+        compVals = colSums(compareZones[[variable]][selected,])
+        zoneHintMsg = "shaded by aggregated difference in 'to' statistics for the selected zones"
+
+      } else {
+        # Just one selected, show comparison of its 'to' data
+        baseVals = base[[variable]][selected,]
+        compVals = compareZones[[variable]][selected,]
+        zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
+
+      }
+      values = compVals - baseVals
+      variable = paste("Scenario difference in ", variable)
+
+      # Comparison palette is washed out by outliers :(
+      pal = comparisonPalette(values, "red", "blue", "yellow", bins = 21)
+    } else {
+      if (!length(selected)) {
+        values = rowSums(base[[variable]])
+        zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
+
+      } else if (length(selected) > 1) {
+        # Sum of rows if several zones selected
+        values = colSums(base[[variable]][selected,])
+        zoneHintMsg = "shaded by the aggregated 'to' statistic for the selected zones"
+
+      } else {
+        values = base[[variable]][selected,]
+        zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
+      }
+      # browser()
+      pal = autoPalette(values,
+                        palette = input$zonePalette,
+                        reverse = input$revZonePalette,
+                        quantile = input$zonePalQuantile)
+    }
+
+    output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
+
+    mb$styleByData(values, 'zones', pal = pal)
     mb$showLayer('zones')
   }
 
@@ -247,6 +311,45 @@ mb = list(
   observe({updateLinks()})
 
   observe({updateZones()})
+
+  observeEvent(input$mapPolyClick, {
+    event = input$mapPolyClick
+
+    if (F) { # e$group == "links"
+      # TODO link click (for popup)
+      # meta = scenarios[[input$scenario]]
+      #
+      # # TODO: If comparison enabled, show more columns and colour columns by change
+      #
+      # popupText = getPopup(meta[e$id,])
+      #
+      # leafletProxy("map") %>%
+      #   addPopups(lng=e$lng, lat=e$lat, popup=popupText)
+    } else if (T) {
+      id = event$zoneId
+
+      modded = event$altPressed
+      if (modded) {
+        if (id %in% selected) {
+          # Toggle off one by one
+          selected <<- selected[selected != id]
+        } else {
+          selected <<- c(selected, id)
+        }
+      } else {
+        if (length(selected) > 1 || !(id %in% selected))
+          # Replace selection
+          selected <<- id
+        else
+          # Clear selection
+          selected <<- NULL
+      }
+
+      # Be careful with these!
+      updateZones()
+      #updateCentroidLines()
+    }
+  })
 
   # Am I right in thinking these can be removed?
   observeEvent(input$rainbow, {

@@ -28,6 +28,17 @@ export async function init() {
     top.map = map
     map.on('load', loadLinks)
     map.on('load', loadZones)
+
+    map.on('click', 'zones', function (event) {
+      let message = {
+        ctrlPressed: event.originalEvent.ctrlKey,
+        shiftPressed: event.originalEvent.shiftKey,
+        altPressed: event.originalEvent.altKey,
+        zoneId: event.features[0].properties.fid
+      }
+      console.log(message)
+      Shiny.setInputValue('mapPolyClick', message, {priority: 'event'})
+    })
 }
 
 const listeners = new Map()
@@ -76,7 +87,7 @@ export async function loadZones() {
         },
         paint: {
             'fill-color': 'blue',
-            'fill-outline-color': '#888',
+            'fill-outline-color': '#aaa',
         },
     })
     zoneLayerReady = true

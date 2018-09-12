@@ -12,29 +12,34 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
     # Remove all the erroneous zeroes and duplicated data
     cleaned = data[data != 0]
 
-    targetBins = 7
+    if (length(cleaned) > 0) {
+      targetBins = 7
 
-    probs <- seq(0, 1, length.out = targetBins + 1)
-    bins <- round(quantile(cleaned, probs, na.rm = TRUE, names = FALSE))
-
-    while (length(unique(bins)) != length(bins)) {
-      targetBins = targetBins - 1
       probs <- seq(0, 1, length.out = targetBins + 1)
       bins <- round(quantile(cleaned, probs, na.rm = TRUE, names = FALSE))
-    }
 
-    # rounded the bins to avoid having multiple 0s in legend (which seems to round for us).
-    # the following stops the very edge values becoming NA
-    bins[length(bins)] = bins[length(bins)] + 1
-    if (bins[1] > 0) {
-      bins[1] = bins[1] - 1
-    }
+      while (length(unique(bins)) != length(bins)) {
+        targetBins = targetBins - 1
+        probs <- seq(0, 1, length.out = targetBins + 1)
+        bins <- round(quantile(cleaned, probs, na.rm = TRUE, names = FALSE))
+      }
 
-    if (targetBins > 1) {
-      colorBin(palette = palette, domain = cleaned, bins = bins, reverse = reverse)
+      # rounded the bins to avoid having multiple 0s in legend (which seems to round for us).
+      # the following stops the very edge values becoming NA
+      bins[length(bins)] = bins[length(bins)] + 1
+      if (bins[1] > 0) {
+        bins[1] = bins[1] - 1
+      }
+
+      if (targetBins > 1) {
+        colorBin(palette = palette, domain = cleaned, bins = bins, reverse = reverse)
+      } else {
+        # Produce something, even if it's not sensible, saves crashing
+        colorNumeric(palette = palette, domain = cleaned, reverse = reverse, na.color="#eeeeee")
+      }
+
     } else {
-      # Produce something, even if it's not sensible, saves crashing
-      colorNumeric(palette = palette, domain = cleaned, reverse = reverse, na.color="#eeeeee")
+      colorNumeric(palette = palette, domain = data, reverse = reverse)
     }
   } else {
     colorNumeric(palette = palette, domain = data, reverse = reverse)

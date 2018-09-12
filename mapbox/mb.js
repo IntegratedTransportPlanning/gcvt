@@ -43,7 +43,22 @@ export function setColor({ layer, color }) {
       }
 
       map.setPaintProperty(layer, 'fill-color',
-          ['to-color', color]) // will not work, defaults to black
+          ['to-color', color])
+    }
+}
+
+export function setSelected({ layer, selected }) {
+    if (map.getLayer(layer).type === 'fill') {
+        // Take a list of FIDs and case-else them
+        let filtered = ['match',
+                          ['get','fid'],
+                          selected,
+                          '#000',
+                          '#aaa'
+                          ]
+
+        map.setPaintProperty(layer, 'fill-outline-color',
+            ['to-color', filtered])
     }
 }
 
