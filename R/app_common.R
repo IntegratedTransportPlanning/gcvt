@@ -1,6 +1,7 @@
 # Common functions for leaflet/shiny
 
 autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, reverse=F, quantile=F) {
+  # All of these colorXX ramps come from leaflet, but no reason not to use them for convenience
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
   } else if (is.logical(data)) {
@@ -46,22 +47,86 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
   }
 }
 
-addAutoLegend = function(map, values, title, group, pal = autoPalette(values)) {
+addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
+  #
+  # Construct an HTML table to use as legend
+  #
+  print ("call to addAutoLegend")
+  print (paste(length(values), ",", group, ",", friendlyGroupName))
+  thisLegend = list(h5(friendlyGroupName))
 
-  if(attr(pal, "colorType") == "quantile") {
-    # Some faffing to make quantiles come out nicely in legend
-    map %>%
-      addLegend(position = "bottomleft", pal = pal, values = values,
-                title = title, group = group, layerId = paste(group, "Legend", sep = ""),
-                labFormat = function(type, cuts, p) {
-                  n = length(cuts)
-                  paste0(as.integer(cuts)[-n], " &ndash; ", as.integer(cuts)[-1])
-                })
-  } else {
-    map %>%
-      addLegend(position = "bottomleft", pal = pal, values = values,
-                title = title, group = group, layerId = paste(group, "Legend", sep = ""))
+  if (attr(palette, 'colorType') == 'numeric') {
+    min = palette(min(values))
+    max = palette(max(values))
+
+    # TODO Where does the middle color get drawn? it's not the median
+    tableRows = list()
+
+    tableRows[[1]] = tags$tr(
+                        tags$td(class="legend-item",
+                                rowspan=5,
+                                style=paste("background: linear-gradient(",min,",",max,")")),
+                        tags$td(class="legend-item",
+                                min(values))
+                      )
+    tableRows[[2]] = tags$tr(
+      tags$td(class="legend-item",
+              " ")
+      )
+
+    tableRows[[3]] = tags$tr(
+      tags$td(class="legend-item",
+              " ")  ## TODO mid value here
+    )
+
+    tableRows[[4]] = tags$tr(
+      tags$td(class="legend-item",
+              " ")
+    )
+
+    tableRows[[5]] = tags$tr(
+      tags$td(class="legend-item",
+              max(values))
+    )
+
+    thisLegend[[2]] = tags$table(tableRows)
   }
+  else {
+    if (attr(palette, 'colorType') == 'factor') {
+      # Work out each factor and color accordingly
+      boundaries = levels(values)
+      boundaryColours = sapply(boundaries, palette)
+    }
+
+    if (attr(palette, 'colorType') == 'bin') {
+      # Work out bin pos, plus whether NA is present
+      boundaries = attr(palette, 'colorArgs')$bins[-1]
+      boundaryColours = sapply(boundaries - 1, palette)
+    }
+    tableRows = list()
+
+    # Loop over bins and add a box, label for each
+    for (i in 1:length(boundaries)) {
+      listPos = length(tableRows) + 1
+      tableRows[[listPos]] = tags$tr(
+        tags$td(class="legend-item",
+                div(class="legend-block", style=paste("background:",boundaryColours[[i]]))),
+        tags$td(class="legend-item",
+                boundaries[[i]]))
+    }
+    na = attr(palette, 'colorArgs')$na
+
+    if(!is.null(na)) {
+      tableRows[[length(tableRows) + 1]] = tags$tr(
+        tags$td(class="legend-item",
+                div(class="legend-block", style=paste("background:",boundaryColours[[i]]))),
+        tags$td(class="legend-item",
+                boundaries[[i]]))
+    }
+    thisLegend[[2]] = tags$table(tableRows)
+  }
+
+  thisLegend
 }
 
 addAutoPolygons = function(map, data, values, title, palfunc = autoPalette) {

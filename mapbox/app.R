@@ -2,6 +2,7 @@ library(shiny)
 library(leaflet)
 library(readr)
 library(reshape2)
+library(stringr)
 
 # {{{ Prepare data
 
@@ -37,6 +38,9 @@ od_scenarios = list(
 od_variables = names(od_scenarios[[1]])
 
 
+linksLegend = ""
+zonesLegend = ""
+
 # }}}
 
 # {{{ Drawing functions
@@ -55,6 +59,10 @@ ui = fillPage(
   tags$link(href='style.css', rel='stylesheet'),
   tags$div(id = 'map'),
   tags$script(src = 'app.js'),
+  img(id="kggtf", src='kggtf.jpg'),
+  img(id="wb", src='world-bank.jpg'),
+  div(class="panel legend",
+      uiOutput("builtLegend", inline=T, container=div)),
   div(class="panel-group floater",
       div(class="panel panel-default",
           div(class="panel-heading",
@@ -173,17 +181,16 @@ server = function(input, output, session) {
       label = ""
       if (!missing(colorCol)) {
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-        # map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
         mb$setColor(group, pal(colorValues))
+
       } else {
-        # TODO handle skims better than this (?)
-        # eg need to draw selection
         colorValues = data
         mb$setColor(group, pal(colorValues))
 
         if (length(selected) > 0) {
           mb$setSelected(group, selected)
         }
+
       }
       if (!missing(weightCol)) {
         if (is.null(weightCol)) {
@@ -194,9 +201,26 @@ server = function(input, output, session) {
         }
       }
 
-      # setStyleFast(map, group, color = pal(colorValues),
-      #              weight = weightScale(weightValues, weightDomain),
-      #              label = label)
+      # Build and draw the legend, but only for the layer we need
+      legendData = addAutoLegend(pal,
+                                  colorValues,
+                                  group,
+                                  friendlyGroupName = str_to_title(group))
+
+
+      if (group == "links") {
+        linksLegend = legendData
+      }
+      if (group == "zones") {
+        zonesLegend = legendData
+      }
+
+      ## TODO try and figure out what is going wrong with this, for some reason
+      # contents of vars are getting messed up (regardless of scope)
+      output$builtLegend <- renderUI({
+        tagList(linksLegend,
+             zonesLegend)
+        })
     })
 
   updateLinks = function() {
@@ -247,7 +271,6 @@ server = function(input, output, session) {
     variable = input$od_variable
     values = NULL
 
-    ### TODO go through each of the six types of behaviour and integrate one at a time
     if ((input$od_comparator %in% names(od_scenarios)) &&
         (input$od_comparator != input$od_scenario)) {
       ## TODO ^ check we are doing something sensible if the user is trying to compare the same two scenarios

@@ -13,6 +13,41 @@
     max-height: 95%;
 }
 
+#wb {
+  position: absolute;
+  top: 15px;
+  left: 240px;
+  height: 90px;
+  border-radius: 5px;
+}
+
+#kggtf {
+  position: absolute;
+  top: 15px;
+  left: 75px;
+  height: 90px;
+  border-radius: 5px;
+}
+
+.legend {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    padding: 3px;
+}
+
+.legend-block {
+  width: 25px;
+  height: 25px;
+}
+
+.legend-item {
+  padding-left: 3px;
+  padding-right: 3px;
+  min-width: 25px;
+  height:10px;
+}
+
 .gcvt-td {
     padding: 2px;
 }
