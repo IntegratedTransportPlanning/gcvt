@@ -179,7 +179,7 @@ server = function(input, output, session) {
       if (!missing(colorCol)) {
         # Links
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-        mb$setColor(group, pal(colorValues))
+        mb$setColor(group, pal(colorValues), NULL)
 
       } else {
         # Zones

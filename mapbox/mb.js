@@ -27,7 +27,7 @@ export function setVisible({ layer, data }) {
     map.setPaintProperty(layer, 'line-opacity', atId(data.map(vis => vis ? 1 : 0)))
 }
 
-export function setColor({ layer, color, selected }) {
+export function setColor({ layer, color, selected = [] }) {
     // Avoid attempting to set wrong property
     if (map.getLayer(layer).type === 'line') {
       if (Array.isArray(color)) {
