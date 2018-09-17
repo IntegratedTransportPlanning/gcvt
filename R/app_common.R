@@ -51,8 +51,6 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
   #
   # Construct an HTML table to use as legend
   #
-  print ("call to addAutoLegend")
-  print (paste(length(values), ",", group, ",", friendlyGroupName))
   thisLegend = list(h5(friendlyGroupName))
 
   if (attr(palette, 'colorType') == 'numeric') {

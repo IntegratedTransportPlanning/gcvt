@@ -155,14 +155,11 @@ server = function(input, output, session) {
     setVisible = function(layername, idVisibilities) {
       session$sendCustomMessage("setVisible", list(layer = layername, data = idVisibilities))
     },
-    setColor = function(layer, color) {
-      session$sendCustomMessage("setColor", list(layer = layer, color = color))
+    setColor = function(layer, color, selected) {
+      session$sendCustomMessage("setColor", list(layer = layer, color = color, selected = selected))
     },
     setWeight = function(layer, weight) {
       session$sendCustomMessage("setWeight", list(layer = layer, weight = weight))
-    },
-    setSelected = function(layer, selected) {
-      session$sendCustomMessage("setSelected", list(layer = layer, selected = selected))
     },
     # Style shapes on map according to columns in a matching metadata df.
     #
@@ -180,17 +177,14 @@ server = function(input, output, session) {
                            ) {
       label = ""
       if (!missing(colorCol)) {
+        # Links
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
         mb$setColor(group, pal(colorValues))
 
       } else {
+        # Zones
         colorValues = data
-        mb$setColor(group, pal(colorValues))
-
-        if (length(selected) > 0) {
-          mb$setSelected(group, selected)
-        }
-
+        mb$setColor(group, pal(colorValues), selected)
       }
       if (!missing(weightCol)) {
         if (is.null(weightCol)) {
@@ -273,7 +267,6 @@ server = function(input, output, session) {
 
     if ((input$od_comparator %in% names(od_scenarios)) &&
         (input$od_comparator != input$od_scenario)) {
-      ## TODO ^ check we are doing something sensible if the user is trying to compare the same two scenarios
       compareZones = od_scenarios[[input$od_comparator]]
 
       baseVals = NULL

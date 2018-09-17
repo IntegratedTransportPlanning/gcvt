@@ -36,7 +36,7 @@ export async function init() {
         altPressed: event.originalEvent.altKey,
         zoneId: event.features[0].properties.fid
       }
-      console.log(message)
+
       Shiny.setInputValue('mapPolyClick', message, {priority: 'event'})
     })
 }

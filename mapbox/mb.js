@@ -27,7 +27,7 @@ export function setVisible({ layer, data }) {
     map.setPaintProperty(layer, 'line-opacity', atId(data.map(vis => vis ? 1 : 0)))
 }
 
-export function setColor({ layer, color }) {
+export function setColor({ layer, color, selected }) {
     // Avoid attempting to set wrong property
     if (map.getLayer(layer).type === 'line') {
       if (Array.isArray(color)) {
@@ -38,7 +38,17 @@ export function setColor({ layer, color }) {
           ['to-color', color])
     }
     if (map.getLayer(layer).type === 'fill') {
+      // TODO remove the id/fid distinction
+
       if (Array.isArray(color)) {
+        if (Array.isArray(selected)) {
+          selected.forEach(function (zoneColor) {
+            color[zoneColor] = '#ffcc00'
+          })
+        } else if (typeof selected == 'number') { // R is a pain :)
+          color[selected] = '#ffcc00'
+        }
+
         color = atFid(color)
       }
 
@@ -47,20 +57,6 @@ export function setColor({ layer, color }) {
     }
 }
 
-export function setSelected({ layer, selected }) {
-    if (map.getLayer(layer).type === 'fill') {
-        // Take a list of FIDs and case-else them
-        let filtered = ['match',
-                          ['get','fid'],
-                          selected,
-                          '#000',
-                          '#aaa'
-                          ]
-
-        map.setPaintProperty(layer, 'fill-outline-color',
-            ['to-color', filtered])
-    }
-}
 
 /**
  * Weight links, adjusting offset and interpolating by zoom
