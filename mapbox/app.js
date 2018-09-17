@@ -88,6 +88,7 @@ export async function loadZones() {
         paint: {
             'fill-color': 'blue',
             'fill-outline-color': '#aaa',
+            'fill-opacity': 0.8,
         },
     })
     zoneLayerReady = true
