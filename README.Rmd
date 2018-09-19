@@ -3,6 +3,7 @@ output: github_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- Generate with R -e 'rmarkdown::render("README.Rmd")' -->
 
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(
@@ -40,7 +41,7 @@ shiny::runApp("R/combined/")
 
 Setup:
 
-```{sh}
+```{sh, eval=FALSE}
 cd mapbox
 npm install
 npm run build
@@ -48,6 +49,6 @@ npm run build
 
 Run the app:
 
-```{sh}
+```{sh, eval=FALSE}
 R -e 'shiny::runApp(".", port=6619)'
 ```
