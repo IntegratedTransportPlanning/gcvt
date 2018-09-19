@@ -48,3 +48,21 @@ NULL
 #' @name eap_region
 #' @usage data(eap_region)
 #' @format An `sf` dataset
+NULL
+
+# elec = read.csv("data/sensitive/21-Aug/Link_Base_2017.csv", stringsAsFactors = TRUE)
+# names(elec)
+# library(dplyr)
+# elec_diff = elec %>%
+#   mutate_if(is.double, function(x) x * 2)
+#
+# head(elec$Capacity)
+# head(elec_diff$Capacity)
+# sapply(elec_diff, class)
+# sapply(elec, class)
+#
+# write.csv(elec_diff, "data/sensitive/21-Aug/Link_doubles_2025.csv")
+#
+# elec_diff_2020 = elec %>% mutate_if(is.double, function(x) x * 1.5) %>% write.csv("data/sensitive/21-Aug/Link_doubles_2020.csv")
+# elec_diff_2020 = elec %>% mutate_if(is.double, function(x) x * 3) %>% write.csv("data/sensitive/21-Aug/Link_doubles_2030.csv")
+
