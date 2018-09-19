@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "immutable": "^3.8.2",
     "itertools": "^1.3.0",
     "mapbox-gl": "^0.48.0"
   },

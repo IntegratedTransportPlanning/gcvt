@@ -1,4 +1,5 @@
 import * as itertools from 'itertools'
+import * as immutable from 'immutable'
 import links from '../data/sensitive/processed/cropped_links.geojson'
 import zones from '../data/sensitive/processed/zones.geojson'
 
@@ -43,7 +44,7 @@ export async function init() {
     })
 }
 
-const listeners = new Map()
+let listeners = new immutable.Map()
 let linkLayerReady = false
 let zoneLayerReady = false
 
@@ -66,6 +67,7 @@ export async function loadLinks() {
         layout: {
             'line-cap': 'round',
             'line-join': 'round',
+            visibility: 'none',
         },
         paint: {
             'line-opacity': .8,
@@ -73,7 +75,9 @@ export async function loadLinks() {
         },
     })
     linkLayerReady = true
-    itertools.map(listeners, ([func, args]) => func(args))
+    listeners
+        .filter((_, [f, layer]) => layer == 'links')
+        .map((args, [func, layer]) => func(args))
 }
 
 export async function loadZones() {
@@ -94,7 +98,10 @@ export async function loadZones() {
         },
     })
     zoneLayerReady = true
-    itertools.map(listeners, ([func, args]) => func(args))
+    listeners
+        .filter((_, [f, layer]) => layer == 'zones')
+        .map((args, [func, layer]) => func(args))
+    // listeners.map(([args, [func, _]]) => func(args))
 }
 
 import * as self from './app'
@@ -122,7 +129,7 @@ Object.keys(mb).forEach(name =>
             // The call will be made when the map is loaded.
             //
             // These functions are not stateful, so we only need to remember
-            // the most recent call.
-            listeners.set(mb[name], msg)
+            // the most recent call of each function for each layer.
+            listeners = listeners.set([mb[name], msg.layer], msg)
         }
     }))
