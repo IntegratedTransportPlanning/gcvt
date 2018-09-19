@@ -5,6 +5,8 @@
 
 # gcvt
 
+Work in progress (imagine a web1.0 yellow roadwork sign here).
+
 The goal of gcvt is to provide data and functions for visualising road
 networks. Specifically it is focussed on the TEN-T European road
 network.
@@ -18,18 +20,24 @@ You can install gcvt from github with:
 devtools::install_github("IntegratedTransportPlanning/gcvt")
 ```
 
-## Combined app
+## Apps
 
-There are various components of the tool. A combined tool can be run as
-follows, after the package has been installed:
+This repo contains a number of shiny apps that view our data in
+different ways. The two most developed are `combined_viewer_mapbox` and
+`combined_viewer_leaflet`.
+
+The leaflet version is currently less buggy. The mapbox version has link
+offsetting (so you can see the direction of links).
+
+To run the apps locally use:
 
 ``` r
-shiny::runApp("R/combined/")
+shiny::runApp("R/combined_viewer_leaflet/")
 ```
 
-## Mapbox app
+### Mapbox app
 
-Setup:
+The mapbox app requires some additional setup:
 
 ``` sh
 cd R/combined_viewer_mapbox
@@ -37,7 +45,7 @@ npm install
 npm run build
 ```
 
-Run the app:
+I run the app like so, you can run it from rstudio if you prefer:
 
 ``` sh
 R -e 'shiny::runApp(".", port=6619)'
