@@ -32,7 +32,7 @@ shiny::runApp("R/combined/")
 Setup:
 
 ``` sh
-cd mapbox
+cd R/combined_viewer_mapbox
 npm install
 npm run build
 ```
