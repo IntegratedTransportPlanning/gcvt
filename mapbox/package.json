@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "cssnano": "^4.1.0",
+    "parcel": "^1.9.7",
     "typescript": "^3.0.3"
   },
   "scripts": {

@@ -35,3 +35,19 @@ A combined tool can be run as follows, after the package has been installed:
 ```{r example, eval=FALSE}
 shiny::runApp("R/combined/")
 ```
+
+## Mapbox app
+
+Setup:
+
+```{sh}
+cd mapbox
+npm install
+npm run build
+```
+
+Run the app:
+
+```{sh}
+R -e 'shiny::runApp(".", port=6619)'
+```
