@@ -20,7 +20,9 @@ export async function init() {
         mapboxgl.accessToken = 'pk.eyJ1IjoiY21jYWluZSIsImEiOiJjamxncGk5eXAwZGphM2tvMGpsOXA5c3kwIn0.i1g0SB88ni86cs0ZVOVG2w';
         map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/mapbox/light-v9'
+            style: 'mapbox://styles/mapbox/light-v9',
+            zoom: 4,
+            center: [32, 48]
         })
     }
 
