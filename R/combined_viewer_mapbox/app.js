@@ -1,7 +1,7 @@
 import * as itertools from 'itertools'
 import * as immutable from 'immutable'
-import links from '../data/sensitive/processed/cropped_links.geojson'
-import zones from '../data/sensitive/processed/zones.geojson'
+import links from '../../data/sensitive/processed/cropped_links.geojson'
+import zones from '../../data/sensitive/processed/zones.geojson'
 
 import * as mb from './mb.js'
 

@@ -43,6 +43,27 @@ The mapbox app requires some additional setup:
 cd R/combined_viewer_mapbox
 npm install
 npm run build
+#> npm WARN mapbox@1.0.0 No description
+#> npm WARN mapbox@1.0.0 No repository field.
+#> npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@1.2.4 (node_modules/fsevents):
+#> npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@1.2.4: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+#> 
+#> audited 9036 packages in 5.396s
+#> found 0 vulnerabilities
+#> 
+#> 
+#> > mapbox@1.0.0 build /home/colin/projects/gcvt/R/combined_viewer_mapbox
+#> > parcel build app.js style.css --out-dir www --no-minify
+#> 
+#> ✨  Built in 744ms.
+#> 
+#> www/cropped_links.2ea4e8ce.geojson    ⚠️  45.05 MB    295ms
+#> www/zones.3d7caecc.geojson             ⚠️  9.75 MB     92ms
+#> www/app.map                             455.57 KB     77ms
+#> www/app.js                              274.77 KB    230ms
+#> www/blankstyle.71754c95.js                3.85 KB     19ms
+#> www/blankstyle.71754c95.map               1.42 KB      6ms
+#> www/style.css                               954 B     23ms
 ```
 
 I run the app like so, you can run it from rstudio if you prefer:

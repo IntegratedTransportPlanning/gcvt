@@ -38,7 +38,7 @@ The leaflet version is currently less buggy. The mapbox version has link offsett
 
 To run the apps locally use:
 
-```{r example, eval=FALSE}
+```{r, eval=FALSE}
 shiny::runApp("R/combined_viewer_leaflet/")
 ```
 
@@ -46,7 +46,7 @@ shiny::runApp("R/combined_viewer_leaflet/")
 
 The mapbox app requires some additional setup:
 
-```{sh, eval=FALSE}
+```{sh}
 cd R/combined_viewer_mapbox
 npm install
 npm run build
