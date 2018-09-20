@@ -7,7 +7,7 @@ library(stringr)
 # {{{ Prepare data
 
 # Links: Load metadata
-load("../data/sensitive/processed/cropped_scenarios.RData")
+load("../../data/sensitive/processed/cropped_scenarios.RData")
 
 meta = scenarios[[1]]
 modes = levels(meta$LType)
@@ -30,10 +30,10 @@ extract_matrix <- function(filename) {
 }
 
 od_scenarios = list(
-  base = extract_matrix("../data/sensitive/final/Matrix_Base_2017.csv"),
-  "Do Nothing (2020)" = extract_matrix("../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
-  "Do Nothing (2025)" = extract_matrix("../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
-  "Do Nothing (2030)" = extract_matrix("../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
+  base = extract_matrix("../../data/sensitive/final/Matrix_Base_2017.csv"),
+  "Do Nothing (2020)" = extract_matrix("../../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
+  "Do Nothing (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
+  "Do Nothing (2030)" = extract_matrix("../../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
 )
 od_variables = names(od_scenarios[[1]])
 
@@ -129,7 +129,7 @@ ui = fillPage(
 server = function(input, output, session) {
   observeEvent(input$dbg, {browser()})
 
-  source('../R/app_common.R')
+  source('../../R/app_common.R')
 
   selected = numeric(0)
 
@@ -160,6 +160,9 @@ server = function(input, output, session) {
     },
     setWeight = function(layer, weight) {
       session$sendCustomMessage("setWeight", list(layer = layer, weight = weight))
+    },
+    setCentroidLines = function(lines) {
+      session$sendCustomMessage("setCentroidLines", list(lines = lines))
     },
     # Style shapes on map according to columns in a matching metadata df.
     #
@@ -323,6 +326,43 @@ server = function(input, output, session) {
     mb$showLayer('zones')
   }
 
+  linesPerCentroid = 20
+  updateCentroidLines = function() {
+    if (input$showCLines && length(selected)) {
+      # Get only the most important lines
+      # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+      od_skim = od_scenarios[[input$od_scenario]]
+      centroidlines = list()
+      numLines = 1
+      topVals = NULL
+
+      for (matrixRow in selected) {
+        rowVals = as.vector(od_skim[[input$od_variable]][matrixRow,])
+        nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
+        topCentroids = which(rowVals >= nthVal)
+
+        for (destPoint in topCentroids) {
+          centroidlines[[numLines]] = c(matrixRow, destPoint, rowVals[destPoint])
+          numLines = numLines + 1
+        }
+
+        topVals = append(topVals, rowVals[rowVals >= nthVal])
+      }
+
+      # Would be neater to do this in front end, but leaving here for now
+      weights = weightScale(topVals)
+      opacities = opacityScale(weights)
+
+      for (cLine in 1:length(centroidlines)) {
+        centroidlines[[cLine]] = c(centroidlines[[cLine]], weights[cLine], opacities[cLine])
+      }
+
+      mb$setCentroidLines(centroidlines)
+    } else {
+      # TODO clear centroid lines: same call but with no data?
+    }
+
+  }
 
   observe({updateLinks()})
 
@@ -361,25 +401,11 @@ server = function(input, output, session) {
           selected <<- NULL
       }
 
-      # Be careful with these!
       updateZones()
-      #updateCentroidLines()
+      updateCentroidLines()
     }
   })
 
-  # Am I right in thinking these can be removed?
-  observeEvent(input$rainbow, {
-    # You have to send a message even if the function doesn't take any arg
-    session$sendCustomMessage("rotateColours", 0)
-  })
-  observeEvent(input$bland, {
-    session$sendCustomMessage("colourLinks", "blue")
-  })
-
-  observeEvent(input$variable, {
-    weights = weightScale(scenarios$base[[input$variable]])
-    session$sendCustomMessage("weightLinks", weights)
-  })
 }
 
 # }}}

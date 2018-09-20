@@ -1,3 +1,5 @@
+import * as turf from '@turf/turf'
+
 // Basic data-driven interface to mapbox.
 //
 // At the moment, `map` is coming from the window, but these functions should
@@ -93,3 +95,56 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
         map.setPaintProperty(layer, 'line-offset', 0)
     }
 }
+
+
+/**
+ * Draw centroid lines or turn them off
+ *
+ * The centroids are now calculated by Turf and not sf
+ *
+ */
+export function setCentroidLines({ lines = [] }) {
+  if (!Array.isArray(lines)) {
+    lines = [lines]
+  }
+
+  if (lines.length > 0) {
+    let clines = []
+
+    // Shiny passes tuples of [o, d, value, weight, opacity] when the user requests them
+    // Ultimately should have JS (rather than Shiny) calulating the latter stuff for display
+    lines.forEach(function(pair) {
+      let oPt = top.centroids.find(pt => {
+        return pt.properties.fid === pair[0]
+      })
+      let dPt = top.centroids.find(pt => {
+        return pt.properties.fid === pair[1]
+      })
+
+      let props = {
+        weight:  pair[3],
+        opacity: pair[4]
+      }
+
+      let cline = turf.lineString([
+            oPt.geometry.coordinates,
+            dPt.geometry.coordinates
+          ],
+          props
+        )
+
+      clines.push(cline)
+    })
+
+    map.getSource('centroidlines').setData(turf.featureCollection(clines))
+    map.setPaintProperty('centroidlines','line-width', ['get', 'weight'])
+    map.setPaintProperty('centroidlines','line-opacity', ['get', 'opacity'])
+    map.moveLayer('centroidlines')
+
+    showLayer({layer: 'centroidlines'})
+  } else {
+    hideLayer({layer: 'centroidlines'})
+  }
+
+}
+
