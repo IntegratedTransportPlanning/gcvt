@@ -47,6 +47,17 @@ export async function init() {
 
       Shiny.setInputValue('mapPolyClick', message, {priority: 'event'})
     })
+
+    map.on('click', 'links', function (event) {
+      let message = {
+        // This does not yet handle overlaid features
+        feature: event.features[0].id,
+        lng: event.lngLat.lng,
+        lat: event.lngLat.lat
+      }
+
+      Shiny.setInputValue('mapLinkClick', message, {priority: 'event'})
+    })
 }
 
 let listeners = new immutable.Map()

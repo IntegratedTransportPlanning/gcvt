@@ -72,8 +72,6 @@ ui = fillPage(
                    a(href="https://github.com/IntegratedTransportPlanning/gcvt", "More info...")
                    ),
               actionButton("dbg", "Debug now"),
-              actionButton('rainbow', 'Taste the rainbow!'),
-              actionButton('bland', 'Default colour'),
               selectInput('variable', 'variable', continuous_variables)
               ),
           div(class="panel-heading",
@@ -144,6 +142,9 @@ server = function(input, output, session) {
       rep(2, length(x))
   }
 
+  getPopup = function (meta) {
+    paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) { as.character(col) }), "</td></tr>"), collapse=''), "</table>")
+  }
 
   mb = list(
     hideLayer = function(layername) {
@@ -163,6 +164,9 @@ server = function(input, output, session) {
     },
     setCentroidLines = function(lines) {
       session$sendCustomMessage("setCentroidLines", list(lines = lines))
+    },
+    setPopup = function(text, lng, lat) {
+      session$sendCustomMessage("setPopup", list(text = text, lng = lng, lat = lat))
     },
     # Style shapes on map according to columns in a matching metadata df.
     #
@@ -368,42 +372,39 @@ server = function(input, output, session) {
 
   observe({updateZones()})
 
+  observeEvent(input$mapLinkClick, {
+    event = input$mapLinkClick
+    meta = scenarios[[input$scenario]]
+
+    # TODO: If comparison enabled, show more columns and colour columns by change
+    popupText = getPopup(meta[event$feature,])
+
+    mb$setPopup(popupText, lng=event$lng, lat=event$lat)
+  })
+
   observeEvent(input$mapPolyClick, {
     event = input$mapPolyClick
+    id = event$zoneId
 
-    if (F) { # e$group == "links"
-      # TODO link click (for popup)
-      # meta = scenarios[[input$scenario]]
-      #
-      # # TODO: If comparison enabled, show more columns and colour columns by change
-      #
-      # popupText = getPopup(meta[e$id,])
-      #
-      # leafletProxy("map") %>%
-      #   addPopups(lng=e$lng, lat=e$lat, popup=popupText)
-    } else if (T) {
-      id = event$zoneId
-
-      modded = event$altPressed
-      if (modded) {
-        if (id %in% selected) {
-          # Toggle off one by one
-          selected <<- selected[selected != id]
-        } else {
-          selected <<- c(selected, id)
-        }
+    modded = event$altPressed
+    if (modded) {
+      if (id %in% selected) {
+        # Toggle off one by one
+        selected <<- selected[selected != id]
       } else {
-        if (length(selected) > 1 || !(id %in% selected))
-          # Replace selection
-          selected <<- id
-        else
-          # Clear selection
-          selected <<- NULL
+        selected <<- c(selected, id)
       }
-
-      updateZones()
-      updateCentroidLines()
+    } else {
+      if (length(selected) > 1 || !(id %in% selected))
+        # Replace selection
+        selected <<- id
+      else
+        # Clear selection
+        selected <<- NULL
     }
+
+    updateZones()
+    updateCentroidLines()
   })
 
 }

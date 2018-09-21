@@ -16,7 +16,7 @@
 #wb {
   position: absolute;
   top: 15px;
-  left: 240px;
+  left: 180px;
   height: 90px;
   border-radius: 5px;
 }
@@ -24,9 +24,20 @@
 #kggtf {
   position: absolute;
   top: 15px;
-  left: 75px;
+  left: 15px;
   height: 90px;
   border-radius: 5px;
+}
+
+#itp {
+  position: absolute;
+  top: 15px;
+  left: 405px;
+  height: 90px;
+  border-radius: 5px;
+
+  background: white;
+  padding: 5px
 }
 
 .legend {
@@ -48,11 +59,12 @@
   height:10px;
 }
 
-.gcvt-td {
-    padding: 2px;
+.mapboxgl-popup-content {
+  background-color: #333;
 }
+
 .gcvt-popup-tr:nth-child(even) {
-    background-color: #eeeeee;
+    background-color: #555;
 }
 
 .gcvt-toggle-label {

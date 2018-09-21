@@ -12,6 +12,10 @@ const atFid = data => ['at', ['get', 'fid'], ["literal", data]]
 
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
+
+    if (layer === 'links') {
+      top.popup.remove()
+    }
 }
 
 export function showLayer({ layer }) {
@@ -145,6 +149,14 @@ export function setCentroidLines({ lines = [] }) {
   } else {
     hideLayer({layer: 'centroidlines'})
   }
-
 }
 
+/**
+ * Show a popup
+ */
+export function setPopup ({text, lng, lat}) {
+  top.popup = new mapboxgl.Popup()
+    .setLngLat({lng: lng, lat: lat})
+    .setHTML(text)
+    .addTo(map)
+}
