@@ -365,6 +365,7 @@ server = function(input, output, session) {
       mb$setCentroidLines(centroidlines)
     } else {
       # TODO clear centroid lines: same call but with no data?
+      mb$setCentroidLines(list())
     }
 
   }
