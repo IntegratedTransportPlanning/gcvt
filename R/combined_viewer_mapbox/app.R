@@ -61,6 +61,7 @@ ui = fillPage(
   tags$script(src = 'app.js'),
   img(id="kggtf", src='kggtf.jpg'),
   img(id="wb", src='world-bank.jpg'),
+  img(id="itp", src='itp.png'),
   div(class="panel legend",
       uiOutput("builtLegend", inline=T, container=div)),
   div(class="panel-group floater",
