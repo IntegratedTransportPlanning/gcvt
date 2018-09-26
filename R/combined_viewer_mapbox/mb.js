@@ -7,7 +7,7 @@ import * as turf from '@turf/turf'
 const atId = data => ['at', ['id'], ["literal", data]]
 
 // Really should find a neater way than this. Easiest would be to require data to supply id
-const atFid = data => ['at', ['get', 'fid'], ["literal", data]]
+const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
