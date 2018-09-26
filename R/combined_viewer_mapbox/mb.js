@@ -48,10 +48,10 @@ export function setColor({ layer, color, selected = [] }) {
       if (Array.isArray(color)) {
         if (Array.isArray(selected)) {
           selected.forEach(function (zoneColor) {
-            color[zoneColor] = '#ffcc00'
+            color[zoneColor - 1] = '#ffcc00'
           })
         } else if (typeof selected == 'number') { // R is a pain :)
-          color[selected] = '#ffcc00'
+          color[selected - 1] = '#ffcc00'
         }
 
         color = atFid(color)
