@@ -2,7 +2,6 @@ import * as itertools from 'itertools'
 import * as immutable from 'immutable'
 import * as turf from '@turf/turf'
 
-// I had to correct the two lines below, need to check I am not building wrong
 import links from '../../data/sensitive/processed/cropped_links.geojson'
 import zones from '../../data/sensitive/processed/zones.geojson'
 import dummyline from './dummyline.geojson'
@@ -58,12 +57,34 @@ export async function init() {
 
       Shiny.setInputValue('mapLinkClick', message, {priority: 'event'})
     })
+
+    map.on('mousemove', 'zones', function (event) {
+      mb.setHover({coordinates: event.lngLat,
+                    layer: 'zones',
+                    feature: event.features[0].properties.fid - 1}) // TODO ugly
+    })
+
+    map.on('mouseleave', 'zones', function (event) {
+      top.hover.remove()
+    })
+
+    map.on('mousemove', 'links', function (event) {
+      mb.setHover({coordinates: event.lngLat,
+                    layer: 'links',
+                    feature: event.features[0].id})
+    })
+
+    map.on('mouseleave', 'links', function (event) {
+      top.hover.remove()
+    })
+
 }
 
 let listeners = new immutable.Map()
 let linkLayerReady = false
 let zoneLayerReady = false
 let centroidLayerReady = false
+
 
 /**
  * Load the link geojson.
@@ -152,8 +173,6 @@ export async function setupLines() {
   })
   centroidLayerReady = true
 }
-
-
 
 import * as self from './app'
 Object.assign(window, {

@@ -169,6 +169,9 @@ server = function(input, output, session) {
     setPopup = function(text, lng, lat) {
       session$sendCustomMessage("setPopup", list(text = text, lng = lng, lat = lat))
     },
+    setHints = function(layer, hints) {
+      session$sendCustomMessage("setHoverData", list(layer = layer, hints = hints))
+    },
     # Style shapes on map according to columns in a matching metadata df.
     #
     # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
@@ -185,13 +188,7 @@ server = function(input, output, session) {
                            ) {
       label = ""
       if (!missing(colorCol)) {
-        # Links
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-        mb$setColor(group, pal(colorValues), NULL)
-
-      } else {
-        # Zones
-        colorValues = data
         mb$setColor(group, pal(colorValues), selected)
       }
       if (!missing(weightCol)) {
@@ -202,6 +199,9 @@ server = function(input, output, session) {
           mb$setWeight(group, weightScale(weightValues, weightDomain))
         }
       }
+
+      # Set hover data
+      mb$setHints(group, label)
 
       # Build and draw the legend, but only for the layer we need
       legendData = addAutoLegend(pal,
@@ -327,7 +327,7 @@ server = function(input, output, session) {
 
     output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 
-    mb$styleByData(values, 'zones', pal = pal)
+    mb$styleByData(values, 'zones', pal = pal, colorValues = values, colorCol = input$od_variable)
     mb$showLayer('zones')
   }
 
@@ -364,7 +364,6 @@ server = function(input, output, session) {
 
       mb$setCentroidLines(centroidlines)
     } else {
-      # TODO clear centroid lines: same call but with no data?
       mb$setCentroidLines(list())
     }
 

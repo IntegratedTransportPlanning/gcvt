@@ -4,7 +4,6 @@ import * as turf from '@turf/turf'
 //
 // At the moment, `map` is coming from the window, but these functions should
 // really take it as a parameter.
-
 const atId = data => ['at', ['id'], ["literal", data]]
 
 // Really should find a neater way than this. Easiest would be to require data to supply id
@@ -100,7 +99,6 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
     }
 }
 
-
 /**
  * Draw centroid lines or turn them off
  *
@@ -159,4 +157,28 @@ export function setPopup ({text, lng, lat}) {
     .setLngLat({lng: lng, lat: lat})
     .setHTML(text)
     .addTo(map)
+}
+
+export function setHover({coordinates, layer, feature}) {
+  if (top.hover !== undefined) {
+    // Need to remove explicitly, not just overwrite
+    top.hover.remove()
+  }
+
+  top.hover = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false
+  })
+
+  top.hover.setLngLat(coordinates)
+    .setHTML(top.hints[layer][feature])
+    .addTo(map)
+}
+
+/**
+ * Prepare data for hover, save generating a Shiny request on each mouseover
+ */
+export function setHoverData({layer, hints}) {
+  top.hints = top.hints || {}
+  top.hints[layer] = hints
 }
