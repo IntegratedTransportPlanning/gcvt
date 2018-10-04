@@ -318,7 +318,7 @@ server = function(input, output, session) {
         values = base[[variable]][selected,]
         zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
       }
-      # browser()
+
       pal = autoPalette(values,
                         palette = input$zonePalette,
                         reverse = input$revZonePalette,
@@ -340,29 +340,32 @@ server = function(input, output, session) {
       centroidlines = list()
       numLines = 1
       topVals = NULL
+      targetLineCount = linesPerCentroid * length(selected)
 
       for (matrixRow in selected) {
+        # Works by generating all zone pairs plus their vals, then later finding the top (say) 20,40, or 60
         rowVals = as.vector(od_skim[[input$od_variable]][matrixRow,])
-        nthVal = sort(rowVals, decreasing=T)[linesPerCentroid]
-        topCentroids = which(rowVals >= nthVal)
 
-        for (destPoint in topCentroids) {
+        for (destPoint in 1:length(rowVals)) {
           centroidlines[[numLines]] = c(matrixRow, destPoint, rowVals[destPoint])
           numLines = numLines + 1
         }
-
-        topVals = append(topVals, rowVals[rowVals >= nthVal])
       }
+
+      # Get  K * |selected|  from all possible lines
+      ordered = centroidlines[order(sapply(centroidlines,function(x) x[[3]]), decreasing = T)]
+      topLines = ordered[1:targetLineCount]
+      topVals = sapply(topLines, function(x) x[[3]])
 
       # Would be neater to do this in front end, but leaving here for now
       weights = weightScale(topVals)
       opacities = opacityScale(weights)
 
-      for (cLine in 1:length(centroidlines)) {
-        centroidlines[[cLine]] = c(centroidlines[[cLine]], weights[cLine], opacities[cLine])
+      for (cLine in 1:length(topLines)) {
+        topLines[[cLine]] = c(topLines[[cLine]], weights[cLine], opacities[cLine])
       }
 
-      mb$setCentroidLines(centroidlines)
+      mb$setCentroidLines(topLines)
     } else {
       mb$setCentroidLines(list())
     }
