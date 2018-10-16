@@ -1,15 +1,20 @@
+import * as turf from '@turf/turf'
+
 // Basic data-driven interface to mapbox.
 //
 // At the moment, `map` is coming from the window, but these functions should
 // really take it as a parameter.
-
 const atId = data => ['at', ['id'], ["literal", data]]
 
 // Really should find a neater way than this. Easiest would be to require data to supply id
-const atFid = data => ['at', ['get', 'fid'], ["literal", data]]
+const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
+
+    if (layer === 'links') {
+      top.popup.remove()
+    }
 }
 
 export function showLayer({ layer }) {
@@ -43,10 +48,10 @@ export function setColor({ layer, color, selected = [] }) {
       if (Array.isArray(color)) {
         if (Array.isArray(selected)) {
           selected.forEach(function (zoneColor) {
-            color[zoneColor] = '#ffcc00'
+            color[zoneColor - 1] = '#ffcc00'
           })
         } else if (typeof selected == 'number') { // R is a pain :)
-          color[selected] = '#ffcc00'
+          color[selected - 1] = '#ffcc00'
         }
 
         color = atFid(color)
@@ -92,4 +97,88 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
     } else {
         map.setPaintProperty(layer, 'line-offset', 0)
     }
+}
+
+/**
+ * Draw centroid lines or turn them off
+ *
+ * The centroids are now calculated by Turf and not sf
+ *
+ */
+export function setCentroidLines({ lines = [] }) {
+  if (!Array.isArray(lines)) {
+    lines = [lines]
+  }
+
+  if (lines.length > 0) {
+    let clines = []
+
+    // Shiny passes tuples of [o, d, value, weight, opacity] when the user requests them
+    // Ultimately should have JS (rather than Shiny) calulating the latter stuff for display
+    lines.forEach(function(pair) {
+      let oPt = top.centroids.find(pt => {
+        return pt.properties.fid === pair[0]
+      })
+      let dPt = top.centroids.find(pt => {
+        return pt.properties.fid === pair[1]
+      })
+
+      let props = {
+        weight:  pair[3],
+        opacity: pair[4]
+      }
+
+      let cline = turf.lineString([
+            oPt.geometry.coordinates,
+            dPt.geometry.coordinates
+          ],
+          props
+        )
+
+      clines.push(cline)
+    })
+
+    map.getSource('centroidlines').setData(turf.featureCollection(clines))
+    map.setPaintProperty('centroidlines','line-width', ['get', 'weight'])
+    map.setPaintProperty('centroidlines','line-opacity', ['get', 'opacity'])
+    map.moveLayer('centroidlines')
+
+    showLayer({layer: 'centroidlines'})
+  } else {
+    hideLayer({layer: 'centroidlines'})
+  }
+}
+
+/**
+ * Show a popup
+ */
+export function setPopup ({text, lng, lat}) {
+  top.popup = new mapboxgl.Popup()
+    .setLngLat({lng: lng, lat: lat})
+    .setHTML(text)
+    .addTo(map)
+}
+
+export function setHover({coordinates, layer, feature}) {
+  if (top.hover !== undefined) {
+    // Need to remove explicitly, not just overwrite
+    top.hover.remove()
+  }
+
+  top.hover = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false
+  })
+
+  top.hover.setLngLat(coordinates)
+    .setHTML(top.hints[layer][feature])
+    .addTo(map)
+}
+
+/**
+ * Prepare data for hover, save generating a Shiny request on each mouseover
+ */
+export function setHoverData({layer, hints}) {
+  top.hints = top.hints || {}
+  top.hints[layer] = hints
 }

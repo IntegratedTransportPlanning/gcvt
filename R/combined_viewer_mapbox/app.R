@@ -61,6 +61,7 @@ ui = fillPage(
   tags$script(src = 'app.js'),
   img(id="kggtf", src='kggtf.jpg'),
   img(id="wb", src='world-bank.jpg'),
+  img(id="itp", src='itp.png'),
   div(class="panel legend",
       uiOutput("builtLegend", inline=T, container=div)),
   div(class="panel-group floater",
@@ -72,8 +73,6 @@ ui = fillPage(
                    a(href="https://github.com/IntegratedTransportPlanning/gcvt", "More info...")
                    ),
               actionButton("dbg", "Debug now"),
-              actionButton('rainbow', 'Taste the rainbow!'),
-              actionButton('bland', 'Default colour'),
               selectInput('variable', 'variable', continuous_variables)
               ),
           div(class="panel-heading",
@@ -144,6 +143,9 @@ server = function(input, output, session) {
       rep(2, length(x))
   }
 
+  getPopup = function (meta) {
+    paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) { as.character(col) }), "</td></tr>"), collapse=''), "</table>")
+  }
 
   mb = list(
     hideLayer = function(layername) {
@@ -161,6 +163,15 @@ server = function(input, output, session) {
     setWeight = function(layer, weight) {
       session$sendCustomMessage("setWeight", list(layer = layer, weight = weight))
     },
+    setCentroidLines = function(lines) {
+      session$sendCustomMessage("setCentroidLines", list(lines = lines))
+    },
+    setPopup = function(text, lng, lat) {
+      session$sendCustomMessage("setPopup", list(text = text, lng = lng, lat = lat))
+    },
+    setHints = function(layer, hints) {
+      session$sendCustomMessage("setHoverData", list(layer = layer, hints = hints))
+    },
     # Style shapes on map according to columns in a matching metadata df.
     #
     # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
@@ -177,13 +188,7 @@ server = function(input, output, session) {
                            ) {
       label = ""
       if (!missing(colorCol)) {
-        # Links
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-        mb$setColor(group, pal(colorValues), NULL)
-
-      } else {
-        # Zones
-        colorValues = data
         mb$setColor(group, pal(colorValues), selected)
       }
       if (!missing(weightCol)) {
@@ -194,6 +199,9 @@ server = function(input, output, session) {
           mb$setWeight(group, weightScale(weightValues, weightDomain))
         }
       }
+
+      # Set hover data
+      mb$setHints(group, label)
 
       # Build and draw the legend, but only for the layer we need
       legendData = addAutoLegend(pal,
@@ -310,7 +318,7 @@ server = function(input, output, session) {
         values = base[[variable]][selected,]
         zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
       }
-      # browser()
+
       pal = autoPalette(values,
                         palette = input$zonePalette,
                         reverse = input$revZonePalette,
@@ -319,67 +327,90 @@ server = function(input, output, session) {
 
     output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 
-    mb$styleByData(values, 'zones', pal = pal)
+    mb$styleByData(values, 'zones', pal = pal, colorValues = values, colorCol = input$od_variable)
     mb$showLayer('zones')
   }
 
+  linesPerCentroid = 20
+  updateCentroidLines = function() {
+    if (input$showCLines && length(selected)) {
+      # Get only the most important lines
+      # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+      od_skim = od_scenarios[[input$od_scenario]]
+      centroidlines = list()
+      numLines = 1
+      topVals = NULL
+      targetLineCount = linesPerCentroid * length(selected)
+
+      for (matrixRow in selected) {
+        # Works by generating all zone pairs plus their vals, then later finding the top (say) 20,40, or 60
+        rowVals = as.vector(od_skim[[input$od_variable]][matrixRow,])
+
+        for (destPoint in 1:length(rowVals)) {
+          centroidlines[[numLines]] = c(matrixRow, destPoint, rowVals[destPoint])
+          numLines = numLines + 1
+        }
+      }
+
+      # Get  K * |selected|  from all possible lines
+      ordered = centroidlines[order(sapply(centroidlines,function(x) x[[3]]), decreasing = T)]
+      topLines = ordered[1:targetLineCount]
+      topVals = sapply(topLines, function(x) x[[3]])
+
+      # Would be neater to do this in front end, but leaving here for now
+      weights = weightScale(topVals)
+      opacities = opacityScale(weights)
+
+      for (cLine in 1:length(topLines)) {
+        topLines[[cLine]] = c(topLines[[cLine]], weights[cLine], opacities[cLine])
+      }
+
+      mb$setCentroidLines(topLines)
+    } else {
+      mb$setCentroidLines(list())
+    }
+
+  }
 
   observe({updateLinks()})
 
   observe({updateZones()})
 
+  observeEvent(input$mapLinkClick, {
+    event = input$mapLinkClick
+    meta = scenarios[[input$scenario]]
+
+    # TODO: If comparison enabled, show more columns and colour columns by change
+    popupText = getPopup(meta[event$feature,])
+
+    mb$setPopup(popupText, lng=event$lng, lat=event$lat)
+  })
+
   observeEvent(input$mapPolyClick, {
     event = input$mapPolyClick
+    id = event$zoneId
 
-    if (F) { # e$group == "links"
-      # TODO link click (for popup)
-      # meta = scenarios[[input$scenario]]
-      #
-      # # TODO: If comparison enabled, show more columns and colour columns by change
-      #
-      # popupText = getPopup(meta[e$id,])
-      #
-      # leafletProxy("map") %>%
-      #   addPopups(lng=e$lng, lat=e$lat, popup=popupText)
-    } else if (T) {
-      id = event$zoneId
-
-      modded = event$altPressed
-      if (modded) {
-        if (id %in% selected) {
-          # Toggle off one by one
-          selected <<- selected[selected != id]
-        } else {
-          selected <<- c(selected, id)
-        }
+    modded = event$altPressed
+    if (modded) {
+      if (id %in% selected) {
+        # Toggle off one by one
+        selected <<- selected[selected != id]
       } else {
-        if (length(selected) > 1 || !(id %in% selected))
-          # Replace selection
-          selected <<- id
-        else
-          # Clear selection
-          selected <<- NULL
+        selected <<- c(selected, id)
       }
-
-      # Be careful with these!
-      updateZones()
-      #updateCentroidLines()
+    } else {
+      if (length(selected) > 1 || !(id %in% selected))
+        # Replace selection
+        selected <<- id
+      else
+        # Clear selection
+        selected <<- NULL
     }
+
+    updateZones()
+    updateCentroidLines()
   })
 
-  # Am I right in thinking these can be removed?
-  observeEvent(input$rainbow, {
-    # You have to send a message even if the function doesn't take any arg
-    session$sendCustomMessage("rotateColours", 0)
-  })
-  observeEvent(input$bland, {
-    session$sendCustomMessage("colourLinks", "blue")
-  })
-
-  observeEvent(input$variable, {
-    weights = weightScale(scenarios$base[[input$variable]])
-    session$sendCustomMessage("weightLinks", weights)
-  })
 }
 
 # }}}

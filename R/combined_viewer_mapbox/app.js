@@ -1,7 +1,10 @@
 import * as itertools from 'itertools'
 import * as immutable from 'immutable'
+import * as turf from '@turf/turf'
+
 import links from '../../data/sensitive/processed/cropped_links.geojson'
 import zones from '../../data/sensitive/processed/zones.geojson'
+import dummyline from './dummyline.geojson'
 
 import * as mb from './mb.js'
 
@@ -31,6 +34,7 @@ export async function init() {
     top.map = map
     map.on('load', loadLinks)
     map.on('load', loadZones)
+    map.on('load', setupLines)
 
     map.on('click', 'zones', function (event) {
       let message = {
@@ -42,11 +46,45 @@ export async function init() {
 
       Shiny.setInputValue('mapPolyClick', message, {priority: 'event'})
     })
+
+    map.on('click', 'links', function (event) {
+      let message = {
+        // This does not yet handle overlaid features
+        feature: event.features[0].id,
+        lng: event.lngLat.lng,
+        lat: event.lngLat.lat
+      }
+
+      Shiny.setInputValue('mapLinkClick', message, {priority: 'event'})
+    })
+
+    map.on('mousemove', 'zones', function (event) {
+      mb.setHover({coordinates: event.lngLat,
+                    layer: 'zones',
+                    feature: event.features[0].properties.fid - 1}) // TODO ugly
+    })
+
+    map.on('mouseleave', 'zones', function (event) {
+      top.hover.remove()
+    })
+
+    map.on('mousemove', 'links', function (event) {
+      mb.setHover({coordinates: event.lngLat,
+                    layer: 'links',
+                    feature: event.features[0].id})
+    })
+
+    map.on('mouseleave', 'links', function (event) {
+      top.hover.remove()
+    })
+
 }
 
 let listeners = new immutable.Map()
 let linkLayerReady = false
 let zoneLayerReady = false
+let centroidLayerReady = false
+
 
 /**
  * Load the link geojson.
@@ -97,11 +135,43 @@ export async function loadZones() {
             'fill-opacity': 0.8,
         },
     })
+
+    top.centroids = []
+    top.jzones.features.forEach(function (feat) {
+      top.centroids.push(turf.centroid(feat, feat.properties))
+    })
+
     zoneLayerReady = true
     listeners
         .filter((_, [f, layer]) => layer == 'zones')
         .map((args, [func, layer]) => func(args))
     // listeners.map(([args, [func, _]]) => func(args))
+}
+
+export async function setupLines() {
+  // A dummy centroid line, rather than waiting til needed to set up layer.
+  // Seems messy, but works for now
+  let tmpJson = await (await fetch(dummyline)).json()
+
+  top.jclines = tmpJson
+  map.addLayer({
+    id: 'centroidlines',
+        type: 'line',
+        source: {
+            type: 'geojson',
+            data: tmpJson,
+        },
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+        },
+        paint: {
+            'line-opacity': .8,
+            'line-color': 'black',
+            'line-width': 1,
+        },
+  })
+  centroidLayerReady = true
 }
 
 import * as self from './app'
