@@ -158,7 +158,7 @@ reStyleZones = function(map, data, values, variable, selected = NULL, pal = auto
 
 reStyle = function(map, group, values, title, pal = autoPalette(values), label = as.character(values)) {
   map %>%
-    addAutoLegend(values, title, group, pal) %>%
+    addAutoLegendLeaflet(values, title, group, pal) %>%
     setStyleFast(group, color = pal(values), label = label)
 }
 
@@ -188,6 +188,25 @@ opacityScale = function(x) {
   return (opacs)
 }
 
+
+addAutoLegendLeaflet = function(map, values, title, group, pal = autoPalette(values)) {
+
+  if(attr(pal, "colorType") == "quantile") {
+    # Some faffing to make quantiles come out nicely in legend
+    map %>%
+      addLegend(position = "bottomleft", pal = pal, values = values,
+                title = title, group = group, layerId = paste(group, "Legend", sep = ""),
+                labFormat = function(type, cuts, p) {
+                  n = length(cuts)
+                  paste0(as.integer(cuts)[-n], " &ndash; ", as.integer(cuts)[-1])
+                })
+  } else {
+    map %>%
+      addLegend(position = "bottomleft", pal = pal, values = values,
+                title = title, group = group, layerId = paste(group, "Legend", sep = ""))
+  }
+}
+
 # Style shapes on map according to columns in a matching metadata df.
 #
 # If shapes are styled by color then a legend is supplied. Weights are rescaled with weightScale. A useful label is generated.
@@ -199,7 +218,7 @@ styleByData = function(map, data, group,
   label = ""
   if (!missing(colorCol)) {
     label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-    map = addAutoLegend(map, colorDomain, colorCol, group, pal = pal)
+    map = addAutoLegendLeaflet(map, colorDomain, colorCol, group, pal = pal)
   }
   if (!missing(weightCol)) {
     if (is.null(weightCol)) {
