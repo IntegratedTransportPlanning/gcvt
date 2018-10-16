@@ -7,7 +7,7 @@ library(stringr)
 # {{{ Prepare data
 
 # Links: Load metadata
-load("../data/sensitive/processed/cropped_scenarios.RData")
+load("../../data/sensitive/processed/cropped_scenarios.RData")
 
 meta = scenarios[[1]]
 modes = levels(meta$LType)
@@ -30,10 +30,10 @@ extract_matrix <- function(filename) {
 }
 
 od_scenarios = list(
-  base = extract_matrix("../data/sensitive/final/Matrix_Base_2017.csv"),
-  "Do Nothing (2020)" = extract_matrix("../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
-  "Do Nothing (2025)" = extract_matrix("../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
-  "Do Nothing (2030)" = extract_matrix("../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
+  base = extract_matrix("../../data/sensitive/final/Matrix_Base_2017.csv"),
+  "Do Nothing (2020)" = extract_matrix("../../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
+  "Do Nothing (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
+  "Do Nothing (2030)" = extract_matrix("../../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
 )
 od_variables = names(od_scenarios[[1]])
 
@@ -129,7 +129,7 @@ ui = fillPage(
 server = function(input, output, session) {
   observeEvent(input$dbg, {browser()})
 
-  source('../R/app_common.R')
+  source('../app_common.R')
 
   selected = numeric(0)
 
