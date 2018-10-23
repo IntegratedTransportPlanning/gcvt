@@ -30,7 +30,6 @@ extract_matrix <- function(filename) {
 }
 
 od_scenarios = list(
-  base = extract_matrix("../../data/sensitive/final/Matrix_Base_2017.csv"),
   "Do Nothing (2020)" = extract_matrix("../../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
   "Do Nothing (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
   "Do Nothing (2030)" = extract_matrix("../../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
@@ -40,6 +39,30 @@ od_variables = names(od_scenarios[[1]])
 
 linksLegend = ""
 zonesLegend = ""
+
+link_scenarios_names = names(scenarios)
+od_scenarios_names = names(od_scenarios)
+
+if (length(link_scenarios_names) != length(od_scenarios_names)) {
+  # TODO the above should check that the sets are equal, not
+  # just of the same size
+  #stop("must have matching scenario list for links and zones")
+}
+
+link_scens_handles = c()
+link_scens_years = c()
+
+for (scen in link_scenarios_names[2:4]) { ###TODO remove base scenario
+  spl = strsplit(scen, "\\(")[[1]]
+  handle = trimws(spl[[1]])
+  year = as.integer(substr(spl[[2]],1,4))
+  link_scens_handles = c(handle, link_scens_handles)
+  link_scens_years = c(year, link_scens_years)
+}
+
+link_scens_handles = unique(link_scens_handles)
+link_scens_years = sort(unique(link_scens_years))
+
 
 # }}}
 
@@ -75,18 +98,27 @@ ui = fillPage(
               actionButton("dbg", "Debug now"),
               selectInput('variable', 'variable', continuous_variables)
               ),
+          div(class="panel",
+              tags$ul(class="list-group",
+                  tags$li(class="list-group-item",
+                          selectInput("scenario", "Scenario Package", link_scens_handles)),
+                  tags$li(class="list-group-item",
+                          selectInput("comparator", "Compare with", c("Select scenario", link_scens_handles))),
+                  tags$li(class="list-group-item",
+                          sliderInput("modelYear", "Model Year",
+                                      link_scens_years[1],
+                                      link_scens_years[length(link_scens_years)],
+                                      value = link_scens_years[1],
+                                      step = 5,          # Assumption
+                                      sep = ""))
+                  )
+              ),
           div(class="panel-heading",
               materialSwitch("showLinks", status="info", inline=T),
               h4(class="gcvt-toggle-label", "Network links "),
               a(href="#collapse1", "[ + ]", 'data-toggle'="collapse")),
           div(id="collapse1", class="panel-collapse collapse",
               tags$ul(class="list-group",
-                 tags$li(class="list-group-item",
-                        selectInput("scenario", "Scenario Package", names(scenarios))),
-                 tags$li(class="list-group-item",
-                        selectInput("comparator", "Compare with", c("Select scenario", names(scenarios)))),
-                 tags$li(class="list-group-item",
-                         sliderInput("modelYear", "Model Year", 2020, 2040, value=2020, step=5, sep="")),
                  tags$li(class="list-group-item",
                          selectInput("colourBy", "Colour links by", variables, selected="LType")),
                  tags$li(class="list-group-item",
@@ -105,8 +137,6 @@ ui = fillPage(
           div(id="collapse2", class="panel-collapse collapse",
               tags$ul(class="list-group",
                  tags$li(class="list-group-item",
-                         selectInput("od_scenario", "Scenario Package", names(od_scenarios)),
-                         selectInput("od_comparator", "Compare with", c("Select scenario...", names(od_scenarios))),
                          selectInput("od_variable", "OD skim variable", od_variables),
                          checkboxInput("showCLines", "Show centroid lines?"),
                          selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
@@ -145,6 +175,33 @@ server = function(input, output, session) {
 
   getPopup = function (meta) {
     paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) { as.character(col) }), "</td></tr>"), collapse=''), "</table>")
+  }
+
+  getScenarioLookup = function() {
+    scenario_lookup = paste(input$scenario, ' (', input$modelYear, ')', sep='')
+
+    # TODO this is a bit brittle: the 'scenarios' list is currently just which links
+    # files we have. however this will change as we improve file loading
+    if (!(scenario_lookup %in% names(scenarios))) {
+      # Use DoMin/DoNothing instead
+      scenario_lookup = paste('Do Nothing', ' (', input$modelYear, ')', sep='')
+    }
+    scenario_lookup
+  }
+
+  getCompScenarioLookup = function() {
+    c_scenario_lookup = NULL
+
+    if ((input$comparator %in% link_scens_handles) &&
+        (input$comparator != input$scenario)) {
+      c_scenario_lookup = paste(input$comparator, ' (', input$modelYear, ')', sep='')
+
+      if (!(c_scenario_lookup %in% names(scenarios))) {
+        # Use DoMin/DoNothing instead
+        c_scenario_lookup = paste('Do Nothing', ' (', input$modelYear, ')', sep='')
+      }
+    }
+    c_scenario_lookup
   }
 
   mb = list(
@@ -231,10 +288,13 @@ server = function(input, output, session) {
       return()
     }
 
-    base = scenarios[[input$scenario]]
+    scenario_lookup = getScenarioLookup()
+    comparator_lookup = getCompScenarioLookup()
 
-    if (input$comparator %in% names(scenarios)) {
-      meta = metaDiff(base, scenarios[[input$comparator]])
+    base = scenarios[[scenario_lookup]]
+
+    if (!is.null(comparator_lookup)) {
+      meta = metaDiff(base, scenarios[[comparator_lookup]])
       palfunc = comparisonPalette
     } else {
       meta = base
@@ -263,19 +323,21 @@ server = function(input, output, session) {
   }
 
 
-  updateZones = function() {
+  updateZones = function(scenario_lookup = NULL, comparator_lookup = NULL) {
     if (!input$showZones) {
       mb$hideLayer('zones')
       return()
     }
 
-    base = od_scenarios[[input$scenario]]
+    scenario_lookup = getScenarioLookup()
+    comparator_lookup = getCompScenarioLookup()
+
+    base = od_scenarios[[scenario_lookup]]
     variable = input$od_variable
     values = NULL
 
-    if ((input$od_comparator %in% names(od_scenarios)) &&
-        (input$od_comparator != input$od_scenario)) {
-      compareZones = od_scenarios[[input$od_comparator]]
+    if (!is.null(comparator_lookup)) {
+      compareZones = od_scenarios[[comparator_lookup]]
 
       baseVals = NULL
       compVals = NULL
@@ -333,10 +395,12 @@ server = function(input, output, session) {
 
   linesPerCentroid = 20
   updateCentroidLines = function() {
+    scenario_lookup = getScenarioLookup()
+
     if (input$showCLines && length(selected)) {
       # Get only the most important lines
       # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
-      od_skim = od_scenarios[[input$od_scenario]]
+      od_skim = od_scenarios[[scenario_lookup]]
       centroidlines = list()
       numLines = 1
       topVals = NULL
@@ -373,12 +437,11 @@ server = function(input, output, session) {
   }
 
   observe({updateLinks()})
-
   observe({updateZones()})
 
   observeEvent(input$mapLinkClick, {
     event = input$mapLinkClick
-    meta = scenarios[[input$scenario]]
+    meta = scenarios[[getScenarioLookup()]]
 
     # TODO: If comparison enabled, show more columns and colour columns by change
     popupText = getPopup(meta[event$feature,])
