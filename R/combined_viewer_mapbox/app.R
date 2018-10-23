@@ -158,7 +158,7 @@ ui = fillPage(
 server = function(input, output, session) {
   observeEvent(input$dbg, {browser()})
 
-  source('../../R/app_common.R')
+  source('../app_common.R')
 
   selected = numeric(0)
 
