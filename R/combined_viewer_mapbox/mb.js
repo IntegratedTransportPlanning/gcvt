@@ -72,8 +72,8 @@ export function setColor({ layer, color, selected = [] }) {
  *
  */
 export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
-    if (Array.isArray(weight)) {
-        weight = atId(weight)
+    if (typeof weight !== 'number'){
+        weight = getLID(weight)
     }
 
     map.setPaintProperty(layer, 'line-width',
@@ -85,7 +85,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
         ])
 
     // Only show an offset if weight varies.
-    if (Array.isArray(weight)) {
+    if (typeof weight !== 'number') {
         map.setPaintProperty(layer, 'line-offset',
             ['interpolate',
                 ['linear'],
