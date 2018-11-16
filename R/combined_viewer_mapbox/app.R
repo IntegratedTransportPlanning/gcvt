@@ -52,7 +52,7 @@ if (length(link_scenarios_names) != length(od_scenarios_names)) {
 link_scens_handles = c()
 link_scens_years = c()
 
-for (scen in link_scenarios_names[2:4]) { ###TODO remove base scenario
+for (scen in link_scenarios_names) {
   spl = strsplit(scen, "\\(")[[1]]
   handle = trimws(spl[[1]])
   year = as.integer(substr(spl[[2]],1,4))
@@ -184,7 +184,7 @@ server = function(input, output, session) {
     # files we have. however this will change as we improve file loading
     if (!(scenario_lookup %in% names(scenarios))) {
       # Use DoMin/DoNothing instead
-      scenario_lookup = paste('Do Nothing', ' (', input$modelYear, ')', sep='')
+      scenario_lookup = paste('Do Minimum', ' (', input$modelYear, ')', sep='')
     }
     scenario_lookup
   }
@@ -193,12 +193,13 @@ server = function(input, output, session) {
     c_scenario_lookup = NULL
 
     if ((input$comparator %in% link_scens_handles) &&
-        (input$comparator != input$scenario)) {
+        (input$comparator != input$scenario) &&
+        (input$scenario != "Do Minimum")) {
       c_scenario_lookup = paste(input$comparator, ' (', input$modelYear, ')', sep='')
 
       if (!(c_scenario_lookup %in% names(scenarios))) {
         # Use DoMin/DoNothing instead
-        c_scenario_lookup = paste('Do Nothing', ' (', input$modelYear, ')', sep='')
+        c_scenario_lookup = paste('Do Minimum', ' (', input$modelYear, ')', sep='')
       }
     }
     c_scenario_lookup
