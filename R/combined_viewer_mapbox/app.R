@@ -16,6 +16,8 @@ variables = sort(colnames(meta))
 continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables)
 
+links_avail = scenarios[['Do Nothing (2030)']]$Link_ID
+
 library(RColorBrewer)
 palettes_avail = rownames(brewer.pal.info)
 
@@ -173,6 +175,24 @@ server = function(input, output, session) {
       rep(2, length(x))
   }
 
+  attachIds = function(group, values) {
+    matched = list()
+    ## TODO refactor out specificity
+    if (group == 'links') {
+      for (i in 1:length(links_avail)) {
+        item = as.character(links_avail[[i]])
+        matched[[item]] = values[[i]]
+      }
+    }
+    if (group == 'zones') {
+      for (i in 1:nrow(od_scenarios[[1]]$Pax)) {
+        item = as.character(rownames(od_scenarios[[1]]$Pax)[[i]])
+        matched[[item]] = values[[i]]
+      }
+    }
+    matched
+  }
+
   getPopup = function (meta) {
     paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) { as.character(col) }), "</td></tr>"), collapse=''), "</table>")
   }
@@ -248,21 +268,8 @@ server = function(input, output, session) {
       if (!missing(colorCol)) {
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
         calcdColors = pal(colorValues)
-        colorSettings = list()
+        colorSettings = attachIds(group, calcdColors)
 
-        ## TODO refactor out specificity
-        if (group == 'links') {
-          for (i in 1:nrow(data)) {
-            item = as.character(data$Link_ID[[i]])
-            colorSettings[[item]] = calcdColors[[i]]
-          }
-        }
-        if (group == 'zones') {
-          for (i in 1:nrow(od_scenarios[[1]]$Pax)) {
-            item = as.character(rownames(od_scenarios[[1]]$Pax)[[i]])
-            colorSettings[[item]] = calcdColors[[i]]
-          }
-        }
         mb$setColor(group, colorSettings, selected)
       }
       if (!missing(weightCol)) {
@@ -270,7 +277,9 @@ server = function(input, output, session) {
           mb$setWeight(group, 5)
         } else {
           label = paste(label, weightCol, ": ", weightValues, sep = "")
-          mb$setWeight(group, weightScale(weightValues, weightDomain))
+          calcdWeightScale = weightScale(weightValues, weightDomain)
+          weightSettings = attachIds(group, calcdWeightScale)
+          mb$setWeight(group, weightSettings)
         }
       }
 
