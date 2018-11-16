@@ -246,7 +246,23 @@ server = function(input, output, session) {
       label = ""
       if (!missing(colorCol)) {
         label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
-        mb$setColor(group, pal(colorValues), selected)
+        calcdColors = pal(colorValues)
+        colorSettings = list()
+
+        ## TODO refactor out specificity
+        if (group == 'links') {
+          for (i in 1:nrow(data)) {
+            item = as.character(data$Link_ID[[i]])
+            colorSettings[[item]] = calcdColors[[i]]
+          }
+        }
+        if (group == 'zones') {
+          for (i in 1:nrow(od_scenarios[[1]]$Pax)) {
+            item = as.character(rownames(od_scenarios[[1]]$Pax)[[i]])
+            colorSettings[[item]] = calcdColors[[i]]
+          }
+        }
+        mb$setColor(group, colorSettings, selected)
       }
       if (!missing(weightCol)) {
         if (is.null(weightCol)) {

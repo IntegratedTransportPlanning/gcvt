@@ -9,6 +9,9 @@ const atId = data => ['at', ['id'], ["literal", data]]
 // Really should find a neater way than this. Easiest would be to require data to supply id
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
+const getLID = data => ['get', ['get','ID_LINK'], ["literal", data]]
+const getFID = data => ['get',['to-string', ['get','fid']], ["literal", data]]
+
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
 
@@ -35,27 +38,23 @@ export function setVisible({ layer, data }) {
 export function setColor({ layer, color, selected = [] }) {
     // Avoid attempting to set wrong property
     if (map.getLayer(layer).type === 'line') {
-      if (Array.isArray(color)) {
-        color = atId(color)
-      }
+      color = getLID(color)
 
       map.setPaintProperty(layer, 'line-color',
-          ['to-color', color])
+        ['to-color', color])
     }
     if (map.getLayer(layer).type === 'fill') {
       // TODO remove the id/fid distinction
 
-      if (Array.isArray(color)) {
-        if (Array.isArray(selected)) {
-          selected.forEach(function (zoneColor) {
-            color[zoneColor - 1] = '#ffcc00'
-          })
-        } else if (typeof selected == 'number') { // R is a pain :)
-          color[selected - 1] = '#ffcc00'
-        }
-
-        color = atFid(color)
+      if (Array.isArray(selected)) {
+        selected.forEach(function (zoneColor) {
+          color[zoneColor.toString()] = '#ffcc00'
+        })
+      } else if (typeof selected == 'number') { // R is a pain :)
+        color[selected.toString()] = '#ffcc00'
       }
+
+      color = getFID(color)
 
       map.setPaintProperty(layer, 'fill-color',
           ['to-color', color])
