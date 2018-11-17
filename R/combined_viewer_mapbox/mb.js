@@ -4,10 +4,6 @@ import * as turf from '@turf/turf'
 //
 // At the moment, `map` is coming from the window, but these functions should
 // really take it as a parameter.
-const atId = data => ['at', ['id'], ["literal", data]]
-
-// Really should find a neater way than this. Easiest would be to require data to supply id
-const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 const getLID = data => ['get', ['get','ID_LINK'], ["literal", data]]
 const getFID = data => ['get',['to-string', ['get','fid']], ["literal", data]]
@@ -94,10 +90,15 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
                 ['linear'],
                 ['zoom'],
                 4, ['/', weight, oFalloff],
-                10, weight
+                10, ['/', weight, 2]
             ])
     } else {
-        map.setPaintProperty(layer, 'line-offset', 1)
+    map.setPaintProperty('links','line-offset', ['interpolate',
+                ['linear'],
+                ['zoom'],
+                4,0.5,
+                10, 1.8
+            ])
     }
 }
 

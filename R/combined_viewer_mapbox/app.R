@@ -300,7 +300,7 @@ server = function(input, output, session) {
       }
       if (!missing(weightCol)) {
         if (is.null(weightCol)) {
-          mb$setWeight(group, 5)
+          mb$setWeight(group, 3)
         } else {
           label = paste(label, weightCol, ": ", weightValues, sep = "")
           calcdWeightScale = weightScale(weightValues, weightDomain)
