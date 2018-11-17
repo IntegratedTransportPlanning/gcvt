@@ -32,7 +32,10 @@ export function showLayer({ layer }) {
  * @param data array [id]: true|false
  */
 export function setVisible({ layer, data }) {
-    map.setPaintProperty(layer, 'line-opacity', atId(data.map(vis => vis ? 1 : 0)))
+    for (var i in data) {
+        data[i] = data[i] ? 1 : 0
+    }
+    map.setPaintProperty(layer, 'line-opacity', getLID(data))
 }
 
 export function setColor({ layer, color, selected = [] }) {
@@ -94,7 +97,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
                 10, weight
             ])
     } else {
-        map.setPaintProperty(layer, 'line-offset', 0)
+        map.setPaintProperty(layer, 'line-offset', 1)
     }
 }
 
