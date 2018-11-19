@@ -11,10 +11,32 @@ load("../../data/sensitive/processed/cropped_scenarios.RData")
 
 meta = scenarios[[1]]
 modes = levels(meta$LType)
-
-variables = sort(colnames(meta))
 continuous_variables = colnames(meta)[sapply(meta, is.numeric)] %>% sort()
 continuous_variables = c("Select variable", continuous_variables)
+
+variables = sort(colnames(meta))
+mins_links = list()
+maxs_links = list()
+
+# Find the between-scenario variable ranges for links (so we can control palettes)
+for (indicator in variables) {
+  if (indicator %in% continuous_variables) {
+    mins_links[[indicator]] = Inf
+    maxs_links[[indicator]] = -Inf
+
+    for (scen in scenarios) {
+      new_min = min(scen[indicator])
+      new_max = max(scen[indicator])
+
+      if (new_min < mins_links[[indicator]]) {
+        mins_links[[indicator]] = new_min
+      }
+      if (new_max > maxs_links[[indicator]]) {
+        maxs_links[[indicator]] = new_max
+      }
+    }
+  }
+}
 
 links_avail = scenarios[['Do Nothing (2030)']]$Link_ID
 
@@ -63,6 +85,27 @@ od_scenarios = list(
     "Do Nothing (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2030_DoNothing_2030.csv")
 )
 od_variables = names(od_scenarios[[1]])
+
+mins_zones = list()
+maxs_zones = list()
+
+# Find the between-scenario variable ranges for zones
+for (indicator in od_variables) {
+  mins_zones[[indicator]] = Inf
+  maxs_zones[[indicator]] = -Inf
+
+  for (scen in names(od_scenarios)) {
+    new_min = min(unlist(od_scenarios[[scen]][indicator]))
+    new_max = max(unlist(od_scenarios[[scen]][indicator]))
+
+    if (new_min < mins_zones[[indicator]]) {
+      mins_zones[indicator] = new_min
+    }
+    if (new_max > maxs_zones[[indicator]]) {
+      maxs_zones[indicator] = new_max
+    }
+  }
+}
 
 
 linksLegend = ""
@@ -138,7 +181,9 @@ ui = fillPage(
                                       link_scens_years[length(link_scens_years)],
                                       value = link_scens_years[1],
                                       step = 5,          # Assumption
-                                      sep = ""))
+                                      sep = ""),
+                          materialSwitch("perScensRange", status="info", inline=T),
+                          h5(class="gcvt-toggle-label", "Recalculate style for each scenario"))
                   )
               ),
           div(class="panel-heading",
@@ -351,12 +396,20 @@ server = function(input, output, session) {
     } else {
       meta = base
 
+      widerDomain = NULL
+      if ((!input$perScensRange) &&
+          (input$colourBy %in% continuous_variables)){
+        widerDomain = range(mins_links[[input$colourBy]], maxs_links[[input$colourBy]])
+        print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
+      }
+
       # TODO Think there might be a better way to do the below, need to check with CC :)
       palfunc = function(data, palette) {
         autoPalette(data,
             palette = input$linkPalette,
             reverse = input$revLinkPalette,
-            quantile = input$linkPalQuantile)
+            quantile = input$linkPalQuantile,
+            widerDomain = widerDomain)
       }
     }
 
@@ -434,10 +487,17 @@ server = function(input, output, session) {
         zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
       }
 
+      widerDomain = NULL
+      if (!input$perScensRange) {
+        widerDomain = range(mins_zones[[input$od_variable]], maxs_zones[[input$od_variable]])
+        print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
+      }
+
       pal = autoPalette(values,
                         palette = input$zonePalette,
                         reverse = input$revZonePalette,
-                        quantile = input$zonePalQuantile)
+                        quantile = input$zonePalQuantile,
+                        widerDomain = widerDomain)
     }
 
     output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })

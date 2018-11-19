@@ -1,6 +1,10 @@
 # Common functions for leaflet/shiny
 
-autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, reverse=F, quantile=F) {
+autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, reverse=F, quantile=F, widerDomain = NULL) {
+  if (is.null(widerDomain)) {
+    widerDomain = data
+  }
+
   # All of these colorXX ramps come from leaflet, but no reason not to use them for convenience
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
@@ -40,10 +44,10 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
       }
 
     } else {
-      colorNumeric(palette = palette, domain = data, reverse = reverse)
+      colorNumeric(palette = palette, domain = widerDomain, reverse = reverse)
     }
   } else {
-    colorNumeric(palette = palette, domain = data, reverse = reverse)
+    colorNumeric(palette = palette, domain = widerDomain, reverse = reverse)
   }
 }
 
