@@ -362,11 +362,11 @@ server = function(input, output, session) {
         zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
 
       }
-      values = compVals - baseVals
+      values = baseVals - compVals
       variable = paste("Scenario difference in ", variable)
 
       # Comparison palette is washed out by outliers :(
-      pal = comparisonPalette(values, "red", "blue", "yellow", bins = 21)
+      pal = comparisonPalette(values, "red", "green", "white", bins = 21)
     } else {
       if (!length(selected)) {
         values = rowSums(base[[variable]])
