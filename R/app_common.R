@@ -60,6 +60,8 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
   if (attr(palette, 'colorType') == 'numeric') {
     min = palette(min(values))
     max = palette(max(values))
+    fmtdMin = format(min(values), big.mark=",")
+    fmtdMax = format(max(values), big.mark=",")
 
     # TODO Where does the middle color get drawn? it's not the median
     tableRows = list()
@@ -69,7 +71,7 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
                                 rowspan=5,
                                 style=paste("background: linear-gradient(",min,",",max,")")),
                         tags$td(class="legend-item",
-                                min(values))
+                                fmtdMin)
                       )
     tableRows[[2]] = tags$tr(
       tags$td(class="legend-item",
@@ -88,7 +90,7 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
 
     tableRows[[5]] = tags$tr(
       tags$td(class="legend-item",
-              max(values))
+              fmtdMax)
     )
 
     thisLegend[[2]] = tags$table(tableRows)
@@ -114,7 +116,7 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
         tags$td(class="legend-item",
                 div(class="legend-block", style=paste("background:",boundaryColours[[i]]))),
         tags$td(class="legend-item",
-                boundaries[[i]]))
+                format(boundaries[[i]], big.mark=",")))
     }
     na = attr(palette, 'colorArgs')$na
 

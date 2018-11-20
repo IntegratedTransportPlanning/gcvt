@@ -337,7 +337,7 @@ server = function(input, output, session) {
                            ) {
       label = ""
       if (!missing(colorCol)) {
-        label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+        label = paste(label, colorCol, ": ", format(colorValues,big.mark=","), " ", sep = "")
         calcdColors = pal(colorValues)
         colorSettings = attachIds(group, calcdColors)
 
@@ -400,7 +400,7 @@ server = function(input, output, session) {
       if ((!input$perScensRange) &&
           (input$colourBy %in% continuous_variables)){
         widerDomain = range(mins_links[[input$colourBy]], maxs_links[[input$colourBy]])
-        print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
+        # print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
       }
 
       # TODO Think there might be a better way to do the below, need to check with CC :)
