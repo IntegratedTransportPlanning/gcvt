@@ -5,3 +5,5 @@
 *.zip
 SHAPE
 *.geojson
+
+R/combined_viewer_mapbox/server.sh
