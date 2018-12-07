@@ -532,7 +532,8 @@ server = function(input, output, session) {
     meta = scenarios[[getScenarioLookup()]]
 
     # TODO: If comparison enabled, show more columns and colour columns by change
-    popupText = getPopup(meta[event$feature,])
+    item = meta[meta$Link_ID == event$feature,]
+    popupText = getPopup(item)    
 
     mb$setPopup(popupText, lng=event$lng, lat=event$lat)
   })
