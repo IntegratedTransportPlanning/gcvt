@@ -50,7 +50,7 @@ export async function init() {
     map.on('click', 'links', function (event) {
       let message = {
         // This does not yet handle overlaid features
-        feature: event.features[0].properties.ID_LINK,
+        feature: event.features[0].id,
         lng: event.lngLat.lng,
         lat: event.lngLat.lat
       }
@@ -61,7 +61,7 @@ export async function init() {
     map.on('mousemove', 'zones', function (event) {
       mb.setHover({coordinates: event.lngLat,
                     layer: 'zones',
-                    feature: event.features[0].properties.fid}) // TODO ugly
+                    feature: event.features[0].properties.fid - 1}) // TODO ugly
     })
 
     map.on('mouseleave', 'zones', function (event) {
@@ -71,7 +71,7 @@ export async function init() {
     map.on('mousemove', 'links', function (event) {
       mb.setHover({coordinates: event.lngLat,
                     layer: 'links',
-                    feature: event.features[0].properties.ID_LINK})
+                    feature: event.features[0].id})
     })
 
     map.on('mouseleave', 'links', function (event) {

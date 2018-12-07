@@ -5,9 +5,6 @@ import * as turf from '@turf/turf'
 // At the moment, `map` is coming from the window, but these functions should
 // really take it as a parameter.
 
-const getLID = data => ['get', ['get','ID_LINK'], ["literal", data]]
-const getFID = data => ['get',['to-string', ['get','fid']], ["literal", data]]
-
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
 
@@ -28,32 +25,33 @@ export function showLayer({ layer }) {
  * @param data array [id]: true|false
  */
 export function setVisible({ layer, data }) {
-    for (var i in data) {
-        data[i] = data[i] ? 1 : 0
-    }
-    map.setPaintProperty(layer, 'line-opacity', getLID(data))
+    map.setPaintProperty(layer, 'line-opacity', atId(data.map(vis => vis ? 1 : 0)))
 }
 
 export function setColor({ layer, color, selected = [] }) {
     // Avoid attempting to set wrong property
     if (map.getLayer(layer).type === 'line') {
-      color = getLID(color)
+      if (Array.isArray(color)) {
+        color = atId(color)
+      }
 
       map.setPaintProperty(layer, 'line-color',
-        ['to-color', color])
+          ['to-color', color])
     }
     if (map.getLayer(layer).type === 'fill') {
       // TODO remove the id/fid distinction
 
-      if (Array.isArray(selected)) {
-        selected.forEach(function (zoneColor) {
-          color[zoneColor.toString()] = '#ffcc00'
-        })
-      } else if (typeof selected == 'number') { // R is a pain :)
-        color[selected.toString()] = '#ffcc00'
-      }
+      if (Array.isArray(color)) {
+        if (Array.isArray(selected)) {
+          selected.forEach(function (zoneColor) {
+            color[zoneColor - 1] = '#ffcc00'
+          })
+        } else if (typeof selected == 'number') { // R is a pain :)
+          color[selected - 1] = '#ffcc00'
+        }
 
-      color = getFID(color)
+        color = atFid(color)
+      }
 
       map.setPaintProperty(layer, 'fill-color',
           ['to-color', color])
@@ -71,8 +69,8 @@ export function setColor({ layer, color, selected = [] }) {
  *
  */
 export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
-    if (typeof weight !== 'number'){
-        weight = getLID(weight)
+    if (Array.isArray(weight)) {
+        weight = atId(weight)
     }
 
     map.setPaintProperty(layer, 'line-width',
@@ -84,7 +82,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
         ])
 
     // Only show an offset if weight varies.
-    if (typeof weight !== 'number') {
+    if (Array.isArray(weight)) {
         map.setPaintProperty(layer, 'line-offset',
             ['interpolate',
                 ['linear'],
@@ -93,7 +91,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
                 10, ['/', weight, 2]
             ])
     } else {
-    map.setPaintProperty('links','line-offset', ['interpolate',
+        map.setPaintProperty('links','line-offset', ['interpolate',
                 ['linear'],
                 ['zoom'],
                 4,0.5,

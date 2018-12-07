@@ -54,35 +54,9 @@ extract_matrix <- function(filename) {
 }
 
 od_scenarios = list(
-    "AirEfficiency (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_AirEfficiency_2030.csv"),
-    "BCP (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_BCP_2030.csv"),
-    "BCPRail (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_BCPRail_2025.csv"),
-    "BCPRail (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_BCPRail_2030.csv"),
-    "Ecodrive (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_EcoDrive_2025.csv"),
-    "Ecodrive (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_EcoDrive_2030.csv"),
-    "Fleet (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Fleet_2025.csv"),
-    "Fleet (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Fleet_2030.csv"),
-    "FleetElectric (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_FleetElectric_2025.csv"),
-    "FleetElectric (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_FleetElectric_2030.csv"),
-    "GreenPort (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenPort_2030.csv"),
-    "GreenShipping (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenShipping_2030.csv"),
-    "GreenMax (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenMax_2025.csv"),
-    "GreenMax (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenMax_2030.csv"),
-    "Logistic (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Logistic_2030.csv"),
-    "NoBorder (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_NoBorder_2030.csv"),
-    "RailTimetable (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_RailTimeTable_2025.csv"),
-    "RailTimetable (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_RailTimeTable_2030.csv"),
-    "Tent (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Tent_2030.csv"),
-    "TenTRail (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_TentRail_2030.csv"),
-    "Toll (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Toll_2030.csv"),
-    "Urban (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Urban_2025.csv"),
-    "Urban (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Urban_2030.csv"),
-    "Do Minimum (2020)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2020_DoNothing_2020.csv"),
-    "Do Minimum (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2025_DoMin_2025.csv"),
-    "Do Minimum (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2030_DoMin_2030.csv"),
-    "Do Nothing (2020)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2020_DoNothing_2020.csv"),
-    "Do Nothing (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2025_DoNothing_2025.csv"),
-    "Do Nothing (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2030_DoNothing_2030.csv")
+  "Do Nothing (2020)" = extract_matrix("../../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
+  "Do Nothing (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
+  "Do Nothing (2030)" = extract_matrix("../../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
 )
 od_variables = names(od_scenarios[[1]])
 
@@ -123,7 +97,7 @@ if (length(link_scenarios_names) != length(od_scenarios_names)) {
 link_scens_handles = c()
 link_scens_years = c()
 
-for (scen in link_scenarios_names) {
+for (scen in link_scenarios_names[2:4]) { ###TODO remove base scenario
   spl = strsplit(scen, "\\(")[[1]]
   handle = trimws(spl[[1]])
   year = as.integer(substr(spl[[2]],1,4))
@@ -246,24 +220,6 @@ server = function(input, output, session) {
       rep(2, length(x))
   }
 
-  attachIds = function(group, values) {
-    matched = list()
-    ## TODO refactor out specificity
-    if (group == 'links') {
-      for (i in 1:length(links_avail)) {
-        item = as.character(links_avail[[i]])
-        matched[[item]] = values[[i]]
-      }
-    }
-    if (group == 'zones') {
-      for (i in 1:nrow(od_scenarios[[1]]$Pax)) {
-        item = as.character(rownames(od_scenarios[[1]]$Pax)[[i]])
-        matched[[item]] = values[[i]]
-      }
-    }
-    matched
-  }
-
   getPopup = function (meta) {
     paste("<table >", paste(paste("<tr class='gcvt-popup-tr'><td class='gcvt-td'>", colnames(meta), "</td>", "<td>", sapply(meta, function(col) { as.character(col) }), "</td></tr>"), collapse=''), "</table>")
   }
@@ -275,7 +231,7 @@ server = function(input, output, session) {
     # files we have. however this will change as we improve file loading
     if (!(scenario_lookup %in% names(scenarios))) {
       # Use DoMin/DoNothing instead
-      scenario_lookup = paste('Do Minimum', ' (', input$modelYear, ')', sep='')
+      scenario_lookup = paste('Do Nothing', ' (', input$modelYear, ')', sep='')
     }
     scenario_lookup
   }
@@ -284,13 +240,12 @@ server = function(input, output, session) {
     c_scenario_lookup = NULL
 
     if ((input$comparator %in% link_scens_handles) &&
-        (input$comparator != input$scenario) &&
-        (input$scenario != "Do Minimum")) {
+        (input$comparator != input$scenario)) {
       c_scenario_lookup = paste(input$comparator, ' (', input$modelYear, ')', sep='')
 
       if (!(c_scenario_lookup %in% names(scenarios))) {
         # Use DoMin/DoNothing instead
-        c_scenario_lookup = paste('Do Minimum', ' (', input$modelYear, ')', sep='')
+        c_scenario_lookup = paste('Do Nothing', ' (', input$modelYear, ')', sep='')
       }
     }
     c_scenario_lookup
@@ -337,25 +292,20 @@ server = function(input, output, session) {
                            ) {
       label = ""
       if (!missing(colorCol)) {
-        label = paste(label, colorCol, ": ", format(colorValues,big.mark=","), " ", sep = "")
-        calcdColors = pal(colorValues)
-        colorSettings = attachIds(group, calcdColors)
-
-        mb$setColor(group, colorSettings, selected)
+        label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+        mb$setColor(group, pal(colorValues), selected)
       }
       if (!missing(weightCol)) {
         if (is.null(weightCol)) {
           mb$setWeight(group, 3)
         } else {
           label = paste(label, weightCol, ": ", weightValues, sep = "")
-          calcdWeightScale = weightScale(weightValues, weightDomain)
-          weightSettings = attachIds(group, calcdWeightScale)
-          mb$setWeight(group, weightSettings)
+          mb$setWeight(group, weightScale(weightValues, weightDomain))
         }
       }
 
       # Set hover data
-      mb$setHints(group, attachIds(group, label))
+      mb$setHints(group, label)
 
       # Build and draw the legend, but only for the layer we need
       legendData = addAutoLegend(pal,
@@ -421,9 +371,8 @@ server = function(input, output, session) {
 
     # Use base$LType for filtering, not the comparison
     visible = base$LType %in% input$filterMode
-    visSettings = attachIds('links', visible)
 
-    mb$setVisible('links', visSettings)
+    mb$setVisible('links', visible)
     mb$styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc)
     mb$showLayer('links')
   }
@@ -557,8 +506,7 @@ server = function(input, output, session) {
     meta = scenarios[[getScenarioLookup()]]
 
     # TODO: If comparison enabled, show more columns and colour columns by change
-    item = meta[meta$Link_ID == event$feature,]
-    popupText = getPopup(item)
+    popupText = getPopup(meta[event$feature,])
 
     mb$setPopup(popupText, lng=event$lng, lat=event$lat)
   })
