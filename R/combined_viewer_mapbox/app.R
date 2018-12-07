@@ -54,9 +54,35 @@ extract_matrix <- function(filename) {
 }
 
 od_scenarios = list(
-  "Do Nothing (2020)" = extract_matrix("../../data/sensitive/final/Matrix_Y2020_DoNothing_2020.csv"),
-  "Do Nothing (2025)" = extract_matrix("../../data/sensitive/final/Matrix_Y2025_DoNothing_2025.csv"),
-  "Do Nothing (2030)" = extract_matrix("../../data/sensitive/final/Matrix_Y2030_DoNothing_2030.csv")
+    "AirEfficiency (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_AirEfficiency_2030.csv"),
+    "BCP (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_BCP_2030.csv"),
+    "BCPRail (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_BCPRail_2025.csv"),
+    "BCPRail (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_BCPRail_2030.csv"),
+    "Ecodrive (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_EcoDrive_2025.csv"),
+    "Ecodrive (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_EcoDrive_2030.csv"),
+    "Fleet (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Fleet_2025.csv"),
+    "Fleet (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Fleet_2030.csv"),
+    "FleetElectric (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_FleetElectric_2025.csv"),
+    "FleetElectric (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_FleetElectric_2030.csv"),
+    "GreenPort (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenPort_2030.csv"),
+    "GreenShipping (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenShipping_2030.csv"),
+    "GreenMax (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenMax_2025.csv"),
+    "GreenMax (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_GreenMax_2030.csv"),
+    "Logistic (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Logistic_2030.csv"),
+    "NoBorder (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_NoBorder_2030.csv"),
+    "RailTimetable (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_RailTimeTable_2025.csv"),
+    "RailTimetable (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_RailTimeTable_2030.csv"),
+    "Tent (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Tent_2030.csv"),
+    "TenTRail (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_TentRail_2030.csv"),
+    "Toll (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Toll_2030.csv"),
+    "Urban (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Urban_2025.csv"),
+    "Urban (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Urban_2030.csv"),
+    "Do Minimum (2020)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2020_DoNothing_2020.csv"),
+    "Do Minimum (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2025_DoMin_2025.csv"),
+    "Do Minimum (2030)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2030_DoMin_2030.csv"),
+    "Do Nothing (2020)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2020_DoNothing_2020.csv"),
+    "Do Nothing (2025)"  = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2025_DoNothing_2025.csv"),
+    "Do Nothing (2030)" = extract_matrix("../../data/sensitive/14-Nov/Matrix_Y2030_DoNothing_2030.csv")
 )
 od_variables = names(od_scenarios[[1]])
 
