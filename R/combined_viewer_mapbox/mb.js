@@ -4,6 +4,8 @@ import * as turf from '@turf/turf'
 //
 // At the moment, `map` is coming from the window, but these functions should
 // really take it as a parameter.
+const atId = data => ['at', ['id'], ["literal", data]]
+const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 export function hideLayer({ layer }) {
     map.setLayoutProperty(layer, 'visibility', 'none')
