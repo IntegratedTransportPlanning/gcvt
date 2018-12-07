@@ -93,12 +93,13 @@ scenarios %>%
 
 # The JSON is consumed by the client side app which doesn't need to know anything but the geometry and an id
 # (which should just be contiguous ascending integers from 0), so strip all the other data.
-st_geometry(links) %>% write_sf("data/sensitive/processed/cropped_links.geojson", delete_dsn = T)
+just_geometry = st_geometry(links)
+names(just_geometry)<-0:(length(just_geometry)-1)
+just_geometry %>% write_sf("data/sensitive/processed/cropped_links.geojson", delete_dsn = T)
 
-# Due to *exciting behaviour* the geojson we just wrote won't have any ids on its features,
-# but if we read it in and write it immediately, then it will have ascending integers from 0 to nrow(links) as ids,
-# because the hidden $names attribute is set by read_sf or gdal or something.
-# It would be quite nice if SF/GDAL would act symmetrically here, but they don't.
-read_sf("data/sensitive/processed/cropped_links.geojson") %>% write_sf("data/sensitive/processed/cropped_links.geojson", delete_dsn = T)
+# You can also generate those ids by writing a sf data frame without names, reading it in, and then writing it again,
+# which is how we used to do it (unintentionally). It's a bit weird that the read driver populates default names but
+# the write driver does not. Thanks, GDAL.
 
+# Save the scenarios
 save(scenarios, file = "data/sensitive/processed/cropped_scenarios.RData")
