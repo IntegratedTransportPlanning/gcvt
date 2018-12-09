@@ -123,7 +123,7 @@ if (length(link_scenarios_names) != length(od_scenarios_names)) {
 link_scens_handles = c()
 link_scens_years = c()
 
-for (scen in link_scenarios_names[2:4]) { ###TODO remove base scenario
+for (scen in link_scenarios_names) { 
   spl = strsplit(scen, "\\(")[[1]]
   handle = trimws(spl[[1]])
   year = as.integer(substr(spl[[2]],1,4))
@@ -532,8 +532,7 @@ server = function(input, output, session) {
     meta = scenarios[[getScenarioLookup()]]
 
     # TODO: If comparison enabled, show more columns and colour columns by change
-    item = meta[meta$Link_ID == event$feature,]
-    popupText = getPopup(item)    
+    popupText = getPopup(meta[event$feature,])    
 
     mb$setPopup(popupText, lng=event$lng, lat=event$lat)
   })
