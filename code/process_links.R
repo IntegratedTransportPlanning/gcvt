@@ -1,5 +1,18 @@
 library(sf)
 
+# Read in link geometry and metadata scenarios and crop to the data of interest.
+#
+# These cropped datasets are consumed by the viewer apps.
+#
+# Links are currently of interest if and only if:
+#   - they are in the study region
+#   - they are not connectors
+#   - metadata exists for them
+#   - their link geometry is a linestring or multilinestring
+#
+# You can change this pre-processing script, but the webapps will expect to receive data for which the two assertions hold.
+# The webapps also expect the geometry to be exclusively linestrings.
+
 links = read_sf("data/sensitive/14-Nov/Base_links.shp", stringsAsFactors = T)
 links = st_transform(links, 4326)
 
@@ -11,7 +24,7 @@ links = links[intersection,]
 # Remove points
 links = links[grepl("LINESTRING", sapply(st_geometry(links), st_geometry_type)),]
 
-# Load and crop metadata
+# Load and name metadata scenarios
 scenarios = list(
 #  base = read.csv("data/sensitive/final/Link_Base_2017.csv", stringsAsFactors = T),
     "Ecodrive (2025)" = read.csv("data/sensitive/14-Nov/Link_EcoDrive_2025.csv", stringsAsFactors = T),
@@ -44,6 +57,22 @@ scenarios = list(
     "Do Minimum (2025)" = read.csv("data/sensitive/14-Nov/Link_Y2025_DoMin_2025.csv", stringsAsFactors = T),
     "Do Minimum (2030)" = read.csv("data/sensitive/14-Nov/Link_Y2030_DoMin_2030.csv", stringsAsFactors = T)
 )
+
+# Assert all scenarios contain the same columns and types
+scenarios %>%
+  lapply(function(meta) {
+    all(names(meta) == names(scenarios[[1]])) &
+      all(sapply(meta, typeof) == sapply(scenarios[[1]], typeof))
+  }) %>%
+  as.logical() %>%
+  all() %>%
+  stopifnot()
+
+# Remove all link geometries for which there is no metadata
+links = links[links$ID_LINK %in% scenarios[[1]]$Link_ID,]
+
+# Remove all metadata for which there is no geometry (e.g. the geometry was outside the study area)
+# and re-order each scenario to have the same row-order as the geometry.
 scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link_ID),])
 
 # Remove connectors from geometry
@@ -55,8 +84,22 @@ scenarios = lapply(scenarios, function(meta) meta[match(links$ID_LINK, meta$Link
 # Drop unused LType levels.
 scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
 
-# There shouldn't be any rows containing NAs, but drop if there are
-scenarios = lapply(scenarios, function(meta) {meta = meta[complete.cases(meta),] })
+# Assert all scenarios contain the same links as `links` in the same order
+scenarios %>%
+  lapply(function(meta) {all(links$ID_LINK == as.character(meta$Link_ID))}) %>%
+  as.logical() %>%
+  all() %>%
+  stopifnot()
 
-write_sf(links, "data/sensitive/processed/cropped_links.geojson")
+# The JSON is consumed by the client side app which doesn't need to know anything but the geometry and an id
+# (which should just be contiguous ascending integers from 0), so strip all the other data.
+just_geometry = st_geometry(links)
+names(just_geometry)<-0:(length(just_geometry)-1)
+just_geometry %>% write_sf("data/sensitive/processed/cropped_links.geojson", delete_dsn = T)
+
+# You can also generate those ids by writing a sf data frame without names, reading it in, and then writing it again,
+# which is how we used to do it (unintentionally). It's a bit weird that the read driver populates default names but
+# the write driver does not. Thanks, GDAL.
+
+# Save the scenarios
 save(scenarios, file = "data/sensitive/processed/cropped_scenarios.RData")
