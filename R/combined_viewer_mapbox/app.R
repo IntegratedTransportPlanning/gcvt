@@ -123,7 +123,7 @@ if (length(link_scenarios_names) != length(od_scenarios_names)) {
 link_scens_handles = c()
 link_scens_years = c()
 
-for (scen in link_scenarios_names) { 
+for (scen in link_scenarios_names) {
   spl = strsplit(scen, "\\(")[[1]]
   handle = trimws(spl[[1]])
   year = as.integer(substr(spl[[2]],1,4))
@@ -153,9 +153,6 @@ ui = fillPage(
   tags$link(href='style.css', rel='stylesheet'),
   tags$div(id = 'map'),
   tags$script(src = 'app.js'),
-  img(id="kggtf", src='kggtf.jpg'),
-  img(id="wb", src='world-bank.jpg'),
-  img(id="itp", src='itp.png'),
   div(class="panel legend",
       uiOutput("builtLegend", inline=T, container=div)),
   div(class="panel-group floater",
@@ -165,9 +162,7 @@ ui = fillPage(
           div(id="collapse-about", class="panel-collapse collapse",
               p(class="gcvt-panel-box", "The GCVT is a tool for viewing data from strategic transport models, using both network link data and OD zone skims.",
                    a(href="https://github.com/IntegratedTransportPlanning/gcvt", "More info...")
-                   ),
-              actionButton("dbg", "Debug now"),
-              selectInput('variable', 'variable', continuous_variables)
+                   )
               ),
           div(class="panel",
               tags$ul(class="list-group",
@@ -218,7 +213,11 @@ ui = fillPage(
                          htmlOutput("zoneHint", inline=T)
                          )
 
-          ))
+          )),
+          div(class="panel-heading",
+              img(id="kggtf", src='kggtf.jpg'),
+              img(id="wb", src='world-bank.jpg'),
+              img(id="itp", src='itp.png'))
           )
       ),
   theme = shinytheme("darkly")
@@ -532,7 +531,7 @@ server = function(input, output, session) {
     meta = scenarios[[getScenarioLookup()]]
 
     # TODO: If comparison enabled, show more columns and colour columns by change
-    popupText = getPopup(meta[event$feature,])    
+    popupText = getPopup(meta[event$feature,])
 
     mb$setPopup(popupText, lng=event$lng, lat=event$lat)
   })
