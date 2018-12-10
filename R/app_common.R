@@ -105,7 +105,13 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
     if (attr(palette, 'colorType') == 'bin') {
       # Work out bin pos, plus whether NA is present
       boundaries = attr(palette, 'colorArgs')$bins[-1]
-      boundaryColours = sapply(boundaries - 1, palette)
+      if (length(boundaries) > 1) {
+        boundaryColours = sapply(boundaries - 1, palette)
+      } else {
+        # Handle what to do if no difference
+        boundaryColours = c("#ffffff")
+      }
+
     }
     tableRows = list()
 
