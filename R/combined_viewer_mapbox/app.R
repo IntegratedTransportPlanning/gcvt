@@ -5,7 +5,7 @@
 # Appropriate legends for links and zones
 # Show popup when clicked
 
-# Chhhhanges
+# Ch-ch-ch-changes
 # Clear explanation of comparison mode
 # updateLinks/update should use metadata.
 #       Defaults/advanced toggle?
