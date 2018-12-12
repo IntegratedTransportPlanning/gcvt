@@ -1,6 +1,10 @@
 # Find scenarios in a directory, extract their types, names and years and put them in an (arguably) clearer directory format
 
 library(fs)
+library(stringr)
+library(tibble)
+library(tidyr)
+library(dplyr)
 
 source = "data/sensitive/14-Nov/"
 destination = "data/sensitive/GCVT_Scenario_Pack/"
