@@ -58,13 +58,16 @@ gcvt_side_panel = function(metadata, scenarios) {
 
   scenario_selection = function() {
     years = scenarios$year %>% as.numeric() %>% unique() %>% sort()
-    snames = scenarios$name %>% unique() %>% sort()
 
     # Use aliases if available
-    scenarios = left_join(scenarios, get_aliases(metadata$scenarios))
-    display_names = ifelse(is.na(scenarios$alias), scenarios$name, scenarios$alias)
-    browser()
-    snames = setNames(snames, display_names)
+    # Create a tibble of unique, sorted names and join with alias metadata.
+    snames = scenarios$name %>%
+      unique %>%
+      sort %>%
+      tibble(name = .) %>%
+      left_join(get_aliases(metadata$scenarios))
+    display_names = ifelse(is.na(snames$alias), snames$name, snames$alias)
+    snames = setNames(snames$name, display_names)
 
     div(class="panel",
       panel_list(
