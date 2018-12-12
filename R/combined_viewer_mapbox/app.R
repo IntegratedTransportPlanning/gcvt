@@ -284,11 +284,11 @@ main = function(pack_dir) {
 
       # Options
       # Combine defaults with either advanced inputs or metadata based on advanced toggle.
-      good
-      bins
-      palette
-      reverse_palette
-      quantile
+      # good
+      # bins
+      # palette
+      # reverse_palette
+      # quantile
 
 
       if (!is.null(comparator)) {
