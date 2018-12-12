@@ -1,0 +1,11 @@
+# metadata rewrite todo
+
+Aliases for links
+Styling options for links and zones.
+  Advanced toggle for options
+  Merge options function
+  Defaults object
+  Pass merged object to palette func, etc.
+
+Process zones and put them in the pack dir
+Tell app.js where the geojson is at runtime to prevent compiling (low priority)
