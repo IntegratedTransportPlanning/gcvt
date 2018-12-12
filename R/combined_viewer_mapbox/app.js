@@ -2,13 +2,13 @@ import * as itertools from 'itertools'
 import * as immutable from 'immutable'
 import * as turf from '@turf/turf'
 
-import links from '../../data/sensitive/processed/cropped_links.geojson'
+import links from '../../data/sensitive/GCVT_Scenario_Pack/processed/links.geojson'
 import zones from '../../data/sensitive/processed/zones.geojson'
 import dummyline from './dummyline.geojson'
 
 import * as mb from './mb.js'
 
-const DEBUG_ON_A_TRAIN = false
+const DEBUG_ON_A_TRAIN = true
 const DEBUG = true
 
 export let map
