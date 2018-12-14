@@ -115,7 +115,7 @@ gcvt_side_panel = function(metadata, scenarios) {
     submenu("showLinks", "Network links ",
       panel_item(selectInput("colourBy", "Colour links by", variables, selected="LType")),
       panel_item(
-        selectInput("widthBy", "Set width by", continuous_variables)),
+        selectInput("widthBy", "Set width by", c("Select variable"="", continuous_variables))),
       panel_item(
         selectInput("filterMode", "Show modes", modes, selected = modes, multiple = T)),
       ### TODO: Add a toggle that displays + enables these
