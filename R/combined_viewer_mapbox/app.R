@@ -95,8 +95,8 @@ gcvt_side_panel = function(metadata, scenarios) {
   submenu = function(switchname, name, ...) {
     list(
       div(class="panel-heading",
-        materialSwitch("showLinks", status="info", inline=T),
-        h4(class="gcvt-toggle-label", "Network links "),
+        materialSwitch(switchname, status="info", inline=T),
+        h4(class="gcvt-toggle-label", name),
         a(href="#collapse1", "[ + ]", 'data-toggle'="collapse")),
       div(id="collapse1", class="panel-collapse collapse", panel_list(...)))
   }
