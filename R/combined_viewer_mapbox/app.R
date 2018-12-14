@@ -119,11 +119,12 @@ gcvt_side_panel = function(metadata, scenarios) {
         selectInput("widthBy", "Set width by", c("Select variable"="", continuous_variables))),
       panel_item(
         selectInput("filterMode", "Show modes", modes, selected = modes, multiple = T)),
-      ### TODO: Add a toggle that displays + enables these
-      panel_item(
-        selectInput("linkPalette", "Colour palette", palettes_avail, selected = "YlOrRd"),
-        checkboxInput("revLinkPalette", "Reverse palette", value=F),
-        checkboxInput("linkPalQuantile", "Quantile palette", value=F)))
+      panel_item(checkboxInput("advancedLinkStyles", "Advanced styles")),
+      conditionalPanel(condition = "input.advancedLinkStyles == true",
+        panel_item(
+          selectInput("linkPalette", "Colour palette", palettes_avail, selected = "YlOrRd"),
+          checkboxInput("revLinkPalette", "Reverse palette", value=F),
+          checkboxInput("linkPalQuantile", "Quantile palette", value=F))))
 
   }
 
@@ -170,10 +171,12 @@ main = function(pack_dir) {
     gcvt_side_panel(metadata, scenarios))
 
   server = function(input, output, session) {
-
     # Bad legend stuff
     linksLegend = ""
     zonesLegend = ""
+
+    # ??
+    selected = numeric(0)
 
     # mb.js interaction code
     mb = list(
@@ -277,6 +280,15 @@ main = function(pack_dir) {
       }
     }
 
+    # Take a potentially incomplete set of options and combine them with the defaults, returning a new complete set respecting the senior set.
+    compute_options = function(defaults, senior) {
+      options = list()
+      for (name in names(defaults)) {
+        options[[name]] = ifelse(is.null(senior[[name]]), defaults[[name]], senior[[name]])
+      }
+      options
+    }
+
     # Update links and link legend
     updateLinks = function() {
       if (!input$showLinks) {
@@ -288,18 +300,35 @@ main = function(pack_dir) {
       comparator = comparator_scenario()
 
       # Options
-      # Combine defaults with either advanced inputs or metadata based on advanced toggle.
-      # good
-      # bins
-      # palette
-      # reverse_palette
-      # quantile
+      # Combine defaults with metadata then inputs (if advanced toggle is on).
 
+      colourBy_defaults = list(
+        good = "bigger",
+        bins = "auto",
+        palette = "YlOrRd",
+        reverse_palette = F,
+        quantile = F)
+      # Get styling metadata from yaml
+      options = metadata$links$columns[[input$colourBy]]
+      options = compute_options(colourBy_defaults, options)
+      if (input$advancedLinkStyles) {
+        # Get styling options from inputs
+        options = compute_options(
+          options,
+          list(
+            palette = input$linkPalette,
+            reverse_palette = input$revLinkPalette,
+            quantile = input$linkPalQuantile))
+            # widerDomain = widerDomain)
+      }
+
+
+      ## TODO: Use the bins option
 
       if (!is.null(comparator)) {
         meta = metaDiff(base, comparator)
 
-        if (metadata$links$columns[[input$colourBy]]$good == "smaller") {
+        if (options$good == "smaller") {
           palfunc = function(values) {
             comparisonPalette(values, "green", "red")
           }
@@ -310,18 +339,18 @@ main = function(pack_dir) {
         meta = base
 
         widerDomain = NULL
-        if ((!input$perScensRange) &&
-          (input$colourBy %in% continuous_variables)){
-          widerDomain = range(mins_links[[input$colourBy]], maxs_links[[input$colourBy]])
-          # print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
-        }
+        # if ((!input$perScensRange) &&
+        #   (input$colourBy %in% continuous_variables)){
+        #   widerDomain = range(mins_links[[input$colourBy]], maxs_links[[input$colourBy]])
+        #   # print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
+        # }
 
         # TODO Think there might be a better way to do the below, need to check with CC :)
         palfunc = function(data, palette) {
           autoPalette(data,
-            palette = input$linkPalette,
-            reverse = input$revLinkPalette,
-            quantile = input$linkPalQuantile,
+            palette = options$palette,
+            reverse = options$reverse_palette,
+            quantile = options$quantile,
             widerDomain = widerDomain)
         }
       }
@@ -340,7 +369,7 @@ main = function(pack_dir) {
       mb$showLayer('links')
     }
 
-
+    observe({updateLinks()})
   }
 
   shinyApp(ui = ui, server = server)
