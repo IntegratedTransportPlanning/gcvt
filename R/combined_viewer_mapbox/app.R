@@ -262,9 +262,9 @@ main = function(pack_dir) {
     }
 
     # Get scenario
-    current_scenario = function(type, name = input$scenario) {
+    current_scenario = function(stype, name = input$scenario) {
       scenarios %>%
-        filter(type == type & name == name & year == input$modelYear) %>%
+        filter(type == stype & name == name & year == input$modelYear) %>%
         .$dataDF %>% .[[1]]
     }
 
