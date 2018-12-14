@@ -63,16 +63,6 @@ gcvt_side_panel = function(metadata, scenarios) {
   scenario_selection = function() {
     years = scenarios$year %>% as.numeric() %>% unique() %>% sort()
 
-    # Use aliases if available
-    # Create a tibble of unique, sorted names and join with alias metadata.
-    snames = scenarios$name %>%
-      unique %>%
-      sort %>%
-      tibble(name = .) %>%
-      left_join(get_aliases(metadata$scenarios))
-    display_names = ifelse(is.na(snames$alias), snames$name, snames$alias)
-    snames = setNames(snames$name, display_names)
-
     div(class="panel",
       panel_list(
         panel_item(
@@ -521,20 +511,31 @@ main = function(pack_dir) {
       updateZones()
       updateCentroidLines()})
 
-    observeEvent(input$modelYear, {
-      snames = scenarios %>% filter(year == input$modelYear) %>% .$name %>% unique()
-      scenario_selection = if (!is.null(input$scenario) && input$scenario %in% snames) input$scenario else "DoNothing"
-      output$scenarioSelector = renderUI({
-        selectInput("scenario", "Scenario Package", snames, selected = scenario_selection)
-      })})
+
 
     observeEvent(input$modelYear, {
-      snames = scenarios %>% filter(year == input$modelYear) %>% .$name %>% unique()
+
+      # Use aliases if available
+      # Create a tibble of unique, sorted names and join with alias metadata.
+      snames_for_year = function(syear) {
+        snames = scenarios %>% filter(year == syear) %>% select(name) %>%
+          unique %>%
+          left_join(get_aliases(metadata$scenarios))
+        display_names = ifelse(is.na(snames$alias), snames$name, snames$alias)
+        snames = setNames(snames$name, display_names)
+        snames
+      }
+
+      snames = snames_for_year(input$modelYear)
+      scenario_selection = if (!is.null(input$scenario) && input$scenario %in% snames) input$scenario else "DoNothing"
+      output$scenarioSelector = renderUI({
+        selectInput("scenario", "Scenario Package", snames, selected = scenario_selection)})
+
       snames = c("Select scenario"="", snames)
       comparator_selection = if (!is.null(input$comparator) && input$comparator %in% snames) input$comparator else ""
       output$comparatorScenarioSelector = renderUI({
-        selectInput("comparator", "Compare with", snames, selected = comparator_selection)
-      })})
+        selectInput("comparator", "Compare with", snames, selected = comparator_selection)})
+      })
 
   }
 
