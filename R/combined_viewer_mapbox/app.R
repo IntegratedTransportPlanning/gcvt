@@ -19,8 +19,10 @@ library(fs)
 library(yaml)
 library(shinyWidgets)
 library(shinythemes)
+library(leaflet)
 
 source("../metadata.R")
+source("../app_common.R")
 
 # Required boilerplate and sponsor icons
 gcvt_viewer_page = function(...) {
@@ -43,6 +45,8 @@ gcvt_viewer_page = function(...) {
     legends(),
     ...)
 }
+
+continuous_variables = NULL
 
 
 # Sidebar header, scenario selection, links panel, zone panel
@@ -105,7 +109,7 @@ gcvt_side_panel = function(metadata, scenarios) {
 
     ### TODO: Use aliases when present
     variables = colnames(xample_attr)
-    continuous_variables = variables[sapply(xample_attr, is.numeric)]
+    continuous_variables <<- variables[sapply(xample_attr, is.numeric)]
     modes = levels(xample_attr$LType) # Fragile: not generic
 
     submenu("showLinks", "Network links ",
