@@ -5,7 +5,10 @@ library(fs)
 library(sf)
 library(reshape2)
 
-source("../R/metadata.R")
+BASE_DIR = "./"
+# Where to read and write everything. Eg: 
+# BASE_DIR = "/home/mark/gcvt-metadata/"
+source(paste(BASE_DIR, "R/metadata.R", sep = ""))
 
 # Return DF(name, year, type, dataDF)
 read_scenarios = function(pack_dir) {
@@ -48,7 +51,7 @@ process_links = function(geom, scenarios) {
   geom = st_transform(geom, 4326)
 
   # Crop to study area
-  eapregion = st_union(read_sf("data/sensitive/eap_zones_only.geojson"))
+  eapregion = st_union(read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")))
   intersection = unlist(st_intersects(eapregion, geom))
   geom = geom[intersection,]
 
@@ -56,6 +59,16 @@ process_links = function(geom, scenarios) {
   geom = geom[grepl("LINESTRING", sapply(st_geometry(geom), st_geometry_type)),]
 
   # Assert all scenarios contain the same columns and types
+  print (paste("scenarios is length : ", length(scenarios)))
+  for (i in 1:length(scenarios)) {
+    check_names = all(names(scenarios[[i]]) == names(scenarios[[1]]))
+    check_types = all(sapply(scenarios[[i]], typeof) == sapply(scenarios[[1]], typeof))
+    print (paste(i, ":names: ", check_names))
+    print (paste(i, ":types: ", check_types))
+    print (paste(i, ":as.logical(names):" , all(as.logical(check_names))))
+    print (paste(i, ":as.logical(types):" , all(as.logical(check_types))))
+    print (paste(i, ":all():", all(as.logical(check_names), as.logical(check_types))))
+  }
   scenarios %>%
     lapply(function(meta) {
       all(names(meta) == names(scenarios[[1]])) &
@@ -65,6 +78,7 @@ process_links = function(geom, scenarios) {
     all() %>%
     stopifnot()
 
+  print ("completed first round of assertions")
   # Remove all link geometries for which there is no metadata
   geom = geom[geom$ID_LINK %in% scenarios[[1]]$Link_ID,]
 
@@ -111,11 +125,13 @@ process_od_matrix <- function(metamat) {
 
 ### EXECUTE ###
 
-pack_dir = "data/sensitive/GCVT_Scenario_Pack/"
+pack_dir = paste(BASE_DIR, "data/sensitive/GCVT_Scenario_Pack/", sep="")
 
 scenarios = read_scenarios(pack_dir)
 geom = read_sf(path(pack_dir, "geometry", "links.shp"))
 
+print ("Link scenarios found: ")
+print (scenarios[scenarios$type=="links",]$name)
 temp = process_links(geom, scenarios[scenarios$type=="links",]$dataDF)
 geom = temp[[1]]
 scenarios[scenarios$type=="links",]$dataDF = temp[[2]]
