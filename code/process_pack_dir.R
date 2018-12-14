@@ -42,7 +42,7 @@ read_scenarios = function(pack_dir) {
 process_links = function(geom, scenarios) {
 
   # Convert all character columns to factor
-  lapply(scenarios, function(scen) {
+  scenarios = lapply(scenarios, function(scen) {
     to_convert = lapply(scen, typeof) == "character"
     scen[to_convert] = lapply(scen[to_convert], factor)
     scen
