@@ -369,7 +369,158 @@ main = function(pack_dir) {
       mb$showLayer('links')
     }
 
+    updateZones = function() {
+      if (!input$showZones) {
+        mb$hideLayer('zones')
+        return()
+      }
+
+      base = current_scenario("od_matrices")
+      compareZones = comparator_scenario("od_matrices")
+
+      variable = input$od_variable
+      values = NULL
+
+      if (!is.null(compareZones)) {
+        baseVals = NULL
+        compVals = NULL
+        zoneHintMsg = ""
+        if (!length(selected)) {
+          # Nothing selected, show comparison of 'from' for zones
+          baseVals = rowSums(base[[variable]])
+          compVals = rowSums(compareZones[[variable]])
+          zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
+
+        } else if (length(selected) > 1) {
+          # Sum of rows if several zones selected
+          baseVals = colSums(base[[variable]][selected,])
+          compVals = colSums(compareZones[[variable]][selected,])
+          zoneHintMsg = "shaded by aggregated difference in 'to' statistics for the selected zones"
+
+        } else {
+          # Just one selected, show comparison of its 'to' data
+          baseVals = base[[variable]][selected,]
+          compVals = compareZones[[variable]][selected,]
+          zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
+
+        }
+        values = baseVals - compVals
+        variable = paste("Scenario difference in ", variable)
+
+        # Comparison palette is washed out by outliers :(
+        pal = comparisonPalette(values, "red", "green", "white", bins = 21)
+      } else {
+        if (!length(selected)) {
+          values = rowSums(base[[variable]])
+          zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
+
+        } else if (length(selected) > 1) {
+          # Sum of rows if several zones selected
+          values = colSums(base[[variable]][selected,])
+          zoneHintMsg = "shaded by the aggregated 'to' statistic for the selected zones"
+
+        } else {
+          values = base[[variable]][selected,]
+          zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
+        }
+
+        widerDomain = NULL
+        # if (!input$perScensRange) {
+        #   widerDomain = range(mins_zones[[input$od_variable]], maxs_zones[[input$od_variable]])
+        #   print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
+        # }
+
+        pal = autoPalette(values,
+          palette = input$zonePalette,
+          reverse = input$revZonePalette,
+          quantile = input$zonePalQuantile,
+          widerDomain = widerDomain)
+      }
+
+      output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
+
+      mb$styleByData(values, 'zones', pal = pal, colorValues = values, colorCol = input$od_variable)
+      mb$showLayer('zones')
+    }
+
+    linesPerCentroid = 20
+    updateCentroidLines = function() {
+      if (input$showCLines && length(selected)) {
+        # Get only the most important lines
+        # Note we are assuming *highest* is what we want, need to think about relevance for GHG etc.
+        od_skim = current_scenario("od_matrices")
+        centroidlines = list()
+        numLines = 1
+        topVals = NULL
+        targetLineCount = linesPerCentroid * length(selected)
+
+        for (matrixRow in selected) {
+          # Works by generating all zone pairs plus their vals, then later finding the top (say) 20,40, or 60
+          rowVals = as.vector(od_skim[[input$od_variable]][matrixRow,])
+
+          for (destPoint in 1:length(rowVals)) {
+            centroidlines[[numLines]] = c(matrixRow, destPoint, rowVals[destPoint])
+            numLines = numLines + 1
+          }
+        }
+
+        # Get  K * |selected|  from all possible lines
+        ordered = centroidlines[order(sapply(centroidlines,function(x) x[[3]]), decreasing = T)]
+        topLines = ordered[1:targetLineCount]
+        topVals = sapply(topLines, function(x) x[[3]])
+
+        # Would be neater to do this in front end, but leaving here for now
+        weights = weightScale(topVals)
+        opacities = opacityScale(weights)
+
+        for (cLine in 1:length(topLines)) {
+          topLines[[cLine]] = c(topLines[[cLine]], weights[cLine], opacities[cLine])
+        }
+
+        mb$setCentroidLines(topLines)
+      } else {
+        mb$setCentroidLines(list())
+      }
+
+    }
+
     observe({updateLinks()})
+    observe({updateZones()})
+
+    observeEvent(input$mapLinkClick, {
+      event = input$mapLinkClick
+      meta = current_scenario("links")
+
+      # TODO: If comparison enabled, show more columns and colour columns by change
+      popupText = getPopup(meta[event$feature,])
+
+      mb$setPopup(popupText, lng=event$lng, lat=event$lat)
+          })
+
+    observeEvent(input$mapPolyClick, {
+      event = input$mapPolyClick
+      id = event$zoneId
+
+      modded = event$altPressed
+      if (modded) {
+        if (id %in% selected) {
+          # Toggle off one by one
+          selected <<- selected[selected != id]
+        } else {
+          selected <<- c(selected, id)
+        }
+      } else {
+        if (length(selected) > 1 || !(id %in% selected))
+          # Replace selection
+          selected <<- id
+        else
+          # Clear selection
+          selected <<- NULL
+      }
+
+      updateZones()
+      updateCentroidLines()
+          })
   }
 
   shinyApp(ui = ui, server = server)
