@@ -486,6 +486,7 @@ main = function(pack_dir) {
     observe({updateLinks()})
     observe({updateZones()})
 
+    # Show attributes table when links are clicked
     observeEvent(input$mapLinkClick, {
       event = input$mapLinkClick
       meta = current_scenario("links")
@@ -493,9 +494,9 @@ main = function(pack_dir) {
       # TODO: If comparison enabled, show more columns and colour columns by change
       popupText = getPopup(meta[event$feature,])
 
-      mb$setPopup(popupText, lng=event$lng, lat=event$lat)
-          })
+      mb$setPopup(popupText, lng=event$lng, lat=event$lat)})
 
+    # Change which zone is selected when a zone is clicked
     observeEvent(input$mapPolyClick, {
       event = input$mapPolyClick
       id = event$zoneId
