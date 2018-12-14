@@ -75,10 +75,6 @@ gcvt_side_panel = function(metadata, scenarios) {
 
     div(class="panel",
       panel_list(
-        panel_item(selectInput("scenario", "Scenario Package", snames)),
-        ### TODO: Add a tooltip here explaining what is compared with what (green where comparator is better), hover gives (Main - Comparison)
-        panel_item(
-          selectInput("comparator", "Compare with", c("Select scenario"="", snames))),
         panel_item(
           sliderInput("modelYear", "Model Year",
             2020,
@@ -86,6 +82,9 @@ gcvt_side_panel = function(metadata, scenarios) {
             value = 2020,
             step = 5,          # Assumption
             sep = "")),
+        panel_item(uiOutput("scenarioSelector")),
+        panel_item(uiOutput("comparatorScenarioSelector")),
+        ### TODO: Add a tooltip here explaining what is compared with what (green where comparator is better), hover gives (Main - Comparison)
         panel_item(
           materialSwitch("perScensRange", status="info", inline=T),
           h5(class="gcvt-toggle-label", "Palette width switch"))
@@ -265,9 +264,9 @@ main = function(pack_dir) {
     }
 
     # Get scenario
-    current_scenario = function(stype, name = input$scenario) {
+    current_scenario = function(stype, sname = input$scenario) {
       scenarios %>%
-        filter(type == stype & name == name & year == input$modelYear) %>%
+        filter(type == stype & name == sname & year == input$modelYear) %>%
         .$dataDF %>% .[[1]]
     }
 
@@ -519,8 +518,23 @@ main = function(pack_dir) {
       }
 
       updateZones()
-      updateCentroidLines()
-          })
+      updateCentroidLines()})
+
+    observeEvent(input$modelYear, {
+      snames = scenarios %>% filter(year == input$modelYear) %>% .$name %>% unique()
+      scenario_selection = if (!is.null(input$scenario) && input$scenario %in% snames) input$scenario else "DoNothing"
+      output$scenarioSelector = renderUI({
+        selectInput("scenario", "Scenario Package", snames, selected = scenario_selection)
+      })})
+
+    observeEvent(input$modelYear, {
+      snames = scenarios %>% filter(year == input$modelYear) %>% .$name %>% unique()
+      snames = c("Select scenario"="", snames)
+      comparator_selection = if (!is.null(input$comparator) && input$comparator %in% snames) input$comparator else ""
+      output$comparatorScenarioSelector = renderUI({
+        selectInput("comparator", "Compare with", snames, selected = comparator_selection)
+      })})
+
   }
 
   shinyApp(ui = ui, server = server)
