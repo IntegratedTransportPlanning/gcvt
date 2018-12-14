@@ -93,12 +93,13 @@ gcvt_side_panel = function(metadata, scenarios) {
   }
 
   submenu = function(switchname, name, ...) {
+    anchorname = paste("collapse-", switchname, sep="")
     list(
       div(class="panel-heading",
         materialSwitch(switchname, status="info", inline=T),
         h4(class="gcvt-toggle-label", name),
-        a(href="#collapse1", "[ + ]", 'data-toggle'="collapse")),
-      div(id="collapse1", class="panel-collapse collapse", panel_list(...)))
+        a(href=paste("#", anchorname, sep=""), "[ + ]", 'data-toggle'="collapse")),
+      div(id=anchorname, class="panel-collapse collapse", panel_list(...)))
   }
 
   palettes_avail = rownames(brewer.pal.info)
