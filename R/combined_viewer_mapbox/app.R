@@ -296,8 +296,8 @@ main = function(pack_dir) {
         return()
       }
 
-      base = current_scenario()
-      comparator = comparator_scenario()
+      base = current_scenario("links")
+      comparator = comparator_scenario("links")
 
       # Options
       # Combine defaults with metadata then inputs (if advanced toggle is on).
@@ -355,7 +355,7 @@ main = function(pack_dir) {
         }
       }
 
-      if (input$widthBy == continuous_variables[[1]]) {
+      if (input$widthBy == "") {
         widthBy = NULL
       } else {
         widthBy = input$widthBy
