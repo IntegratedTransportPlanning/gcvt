@@ -248,7 +248,12 @@ styleByData = function(map, data, group,
 # Apply different palettes above and below zero
 #
 # Use a colorBin with an odd number of bins. Round bins slightly for prettiness.
-comparisonPalette = function(values, negativeramp = "red", positiveramp = "green", neutral = "white", bins = 7) {
+comparisonPalette = function(values, negativeramp = "red", positiveramp = "green", neutral = "white", bins = 7, reverse = F) {
+  if (reverse) {
+    temp = negativeramp
+    negativeramp = positiveramp
+    positiveramp = temp
+  }
   # Do something different with factors and booleans.
   if (is.logical(values) || is.factor(values)) {
     return(colorFactor(topo.colors(2), values))

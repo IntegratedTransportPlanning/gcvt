@@ -125,11 +125,13 @@ gcvt_side_panel = function(metadata, scenarios) {
       panel_item(
         selectInput("od_variable", "OD skim variable", od_variables),
         checkboxInput("showCLines", "Show centroid lines?"),
-        ### TODO: Add toggle here, too
-        selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
-        checkboxInput("revZonePalette", "Reverse palette", value=F),
-        checkboxInput("zonePalQuantile", "Quantile palette", value=F),
-        htmlOutput("zoneHint", inline=T)
+        panel_item(checkboxInput("advancedZoneStyles", "Advanced styles")),
+        conditionalPanel(condition = "input.advancedZoneStyles == true",
+          panel_item(
+            selectInput("zonePalette", "Colour palette", palettes_avail, selected="RdYlBu"),
+            checkboxInput("revZonePalette", "Reverse palette", value=F),
+            checkboxInput("zonePalQuantile", "Quantile palette", value=F))),
+        panel_item(htmlOutput("zoneHint", inline=T))
         ))
   }
 
@@ -323,7 +325,7 @@ main = function(pack_dir) {
 
         if (options$good == "smaller") {
           palfunc = function(values) {
-            comparisonPalette(values, "green", "red")
+            comparisonPalette(values, reverse=T)
           }
         } else {
           palfunc = comparisonPalette
@@ -374,6 +376,30 @@ main = function(pack_dir) {
       variable = input$od_variable
       values = NULL
 
+      # Options
+      # Combine defaults with metadata then inputs (if advanced toggle is on).
+
+      colourBy_defaults = list(
+        good = "bigger",
+        # bins = "auto",
+        palette = "RdYlBu",
+        reverse_palette = F,
+        offset = T,
+        quantile = F)
+      # Get styling metadata from yaml
+      options = metadata$od_matrices$columns[[variable]]
+      options = compute_options(colourBy_defaults, options)
+      if (input$advancedZoneStyles) {
+        # Get styling options from inputs
+        options = compute_options(
+          options,
+          list(
+            palette = input$zonePalette,
+            reverse_palette = input$revZonePalette,
+            quantile = input$zonePalQuantile))
+            # widerDomain = widerDomain)
+      }
+
       if (!is.null(compareZones)) {
         baseVals = NULL
         compVals = NULL
@@ -401,7 +427,7 @@ main = function(pack_dir) {
         variable = paste("Scenario difference in ", variable)
 
         # Comparison palette is washed out by outliers :(
-        pal = comparisonPalette(values, "red", "green", "white", bins = 21)
+        pal = comparisonPalette(values, bins = 21, reverse = options$good == "smaller")
       } else {
         if (!length(selected)) {
           values = rowSums(base[[variable]])
@@ -424,9 +450,9 @@ main = function(pack_dir) {
         # }
 
         pal = autoPalette(values,
-          palette = input$zonePalette,
-          reverse = input$revZonePalette,
-          quantile = input$zonePalQuantile,
+          palette = options$palette,
+          reverse = options$reverse_palette,
+          quantile = options$quantile,
           widerDomain = widerDomain)
       }
 
