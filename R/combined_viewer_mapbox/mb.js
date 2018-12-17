@@ -83,7 +83,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
             10, weight
         ])
 
-    // Only show an offset if weight varies.
+    // Show a slight fixed offset if weight does not vary
     if (Array.isArray(weight)) {
         map.setPaintProperty(layer, 'line-offset',
             ['interpolate',
