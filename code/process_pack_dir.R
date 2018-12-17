@@ -93,7 +93,7 @@ process_links = function(geom, scenarios) {
   scenarios = lapply(scenarios, function(meta) meta[match(geom$ID_LINK, meta$Link_ID),])
 
   # Drop unused LType levels.
-  # scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
+  scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
 
   # Assert all scenarios contain the same links as `links` in the same order
   scenarios %>%
