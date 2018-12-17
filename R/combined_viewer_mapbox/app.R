@@ -77,7 +77,7 @@ gcvt_side_panel = function(metadata, scenarios) {
         ### TODO: Add a tooltip here explaining what is compared with what (green where comparator is better), hover gives (Main - Comparison)
         panel_item(
           materialSwitch("perScensRange", status="info", inline=T),
-          h5(class="gcvt-toggle-label", "Palette width switch"))
+          h5(class="gcvt-toggle-label", "Scale palette to this scenario only"))
         ))
   }
 
@@ -97,7 +97,6 @@ gcvt_side_panel = function(metadata, scenarios) {
     link_attr = scenarios %>% filter(type == "links") %>% .$dataDF
     xample_attr = link_attr[[1]]
 
-    ### TODO: Use aliases when present
     variables = colnames(xample_attr)
     display_names = left_join(tibble(name=variables), get_aliases(metadata$links$columns))$alias
     display_names = ifelse(is.na(display_names), variables, display_names)
@@ -168,6 +167,35 @@ main = function(pack_dir) {
   ui = gcvt_viewer_page(
     theme = shinytheme("darkly"),
     gcvt_side_panel(metadata, scenarios))
+
+  ### TODO: Clean this up.
+  all_link_scenarios = scenarios %>% filter(type=="links") %>% .$dataDF %>% bind_rows
+  continuous = sapply(all_link_scenarios, is.numeric)
+  link_ranges = all_link_scenarios[continuous] %>% sapply(range)
+
+  od_scenarios = scenarios %>% filter(type=="od_matrices") %>% (function(.) {setNames(.$dataDF, .$name)})
+  od_variables = names(od_scenarios[[1]])
+
+  mins_zones = list()
+  maxs_zones = list()
+
+  # Find the between-scenario variable ranges for zones
+  for (indicator in od_variables) {
+    mins_zones[[indicator]] = Inf
+    maxs_zones[[indicator]] = -Inf
+
+    for (scen in names(od_scenarios)) {
+      new_min = min(unlist(od_scenarios[[scen]][indicator]))
+      new_max = max(unlist(od_scenarios[[scen]][indicator]))
+
+      if (new_min < mins_zones[[indicator]]) {
+        mins_zones[indicator] = new_min
+      }
+      if (new_max > maxs_zones[[indicator]]) {
+        maxs_zones[indicator] = new_max
+      }
+    }
+  }
 
   server = function(input, output, session) {
     # Bad legend stuff
@@ -322,7 +350,6 @@ main = function(pack_dir) {
             palette = input$linkPalette,
             reverse_palette = input$revLinkPalette,
             quantile = input$linkPalQuantile))
-            # widerDomain = widerDomain)
       }
 
 
@@ -342,11 +369,10 @@ main = function(pack_dir) {
         meta = base
 
         widerDomain = NULL
-        # if ((!input$perScensRange) &&
-        #   (input$colourBy %in% continuous_variables)){
-        #   widerDomain = range(mins_links[[input$colourBy]], maxs_links[[input$colourBy]])
-        #   # print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
-        # }
+        if ((!input$perScensRange) &&
+          (input$colourBy %in% continuous_variables)){
+          widerDomain = link_ranges[,input$colourBy]
+        }
 
         # TODO Think there might be a better way to do the below, need to check with CC :)
         palfunc = function(data, palette) {
@@ -405,7 +431,6 @@ main = function(pack_dir) {
             palette = input$zonePalette,
             reverse_palette = input$revZonePalette,
             quantile = input$zonePalQuantile))
-            # widerDomain = widerDomain)
       }
 
       if (!is.null(compareZones)) {
@@ -452,10 +477,10 @@ main = function(pack_dir) {
         }
 
         widerDomain = NULL
-        # if (!input$perScensRange) {
-        #   widerDomain = range(mins_zones[[input$od_variable]], maxs_zones[[input$od_variable]])
-        #   print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
-        # }
+        if (!input$perScensRange) {
+          widerDomain = range(mins_zones[[input$od_variable]], maxs_zones[[input$od_variable]])
+          # print(paste("wider range from ", widerDomain[1], "to", widerDomain[2]))
+        }
 
         pal = autoPalette(values,
           palette = options$palette,
