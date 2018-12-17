@@ -99,6 +99,9 @@ gcvt_side_panel = function(metadata, scenarios) {
 
     ### TODO: Use aliases when present
     variables = colnames(xample_attr)
+    display_names = left_join(tibble(name=variables), get_aliases(metadata$links$columns))$alias
+    display_names = ifelse(is.na(display_names), variables, display_names)
+    variables = setNames(variables, display_names)
     continuous_variables <<- variables[sapply(xample_attr, is.numeric)]
     modes = levels(xample_attr$LType) # Fragile: not generic
 
@@ -120,6 +123,11 @@ gcvt_side_panel = function(metadata, scenarios) {
   od_matrices = function() {
     xample_matrices = scenarios %>% filter(type == "od_matrices") %>% .$dataDF %>% .[[1]]
     od_variables = names(xample_matrices)
+
+    display_names = left_join(tibble(name=od_variables), get_aliases(metadata$od_matrices$columns))$alias
+    display_names = ifelse(
+      is.na(display_names), od_variables, display_names)
+    od_variables = setNames(od_variables, display_names)
 
     submenu("showZones", "Matrix zones ",
       panel_item(
