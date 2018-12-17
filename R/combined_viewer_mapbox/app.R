@@ -148,7 +148,7 @@ gcvt_side_panel = function(metadata, scenarios) {
       div(class="panel-heading",
         a(href="#collapse-about", h4(metadata$name), 'data-toggle'="collapse")),
       div(id="collapse-about", class="panel-collapse collapse",
-        p(class="gcvt-panel-box", metadata$description),
+        p(class="gcvt-panel-box", HTML(metadata$description)),
         actionButton("dbg", "Debug now")))
   }
 
