@@ -6,7 +6,7 @@ library(sf)
 library(reshape2)
 
 BASE_DIR = "./"
-# Where to read and write everything. Eg: 
+# Where to read and write everything. Eg:
 # BASE_DIR = "/home/mark/gcvt-metadata/"
 source(paste(BASE_DIR, "R/metadata.R", sep = ""))
 
@@ -138,8 +138,6 @@ scenarios[scenarios$type=="links",]$dataDF = temp[[2]]
 rm(temp)
 
 scenarios[scenarios$type=="od_matrices",]$dataDF = lapply(scenarios[scenarios$type=="od_matrices",]$dataDF, process_od_matrix)
-
-meta = get_metadata(pack_dir)
 
 # Save the scenarios and geometry
 dir_create(path(pack_dir, "processed"))
