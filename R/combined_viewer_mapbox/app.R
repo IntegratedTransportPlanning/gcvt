@@ -255,6 +255,8 @@ main = function(pack_dir) {
 
     # Get scenario
     current_scenario = function(stype, sname = input$scenario) {
+      if (is.null(sname))
+        sname = "DoNothing"
       scenarios %>%
         filter(type == stype & name == sname & year == input$modelYear) %>%
         .$dataDF %>% .[[1]]
@@ -262,7 +264,9 @@ main = function(pack_dir) {
 
     # Get comparison scenario
     comparator_scenario = function(type) {
-      if ((input$comparator != input$scenario) && (input$comparator %in% scenarios$name)) {
+      if ((!is.null(input$comparator) && !is.null(input$scenario)) &&
+        (input$comparator != input$scenario) &&
+        (input$comparator %in% scenarios$name)) {
         current_scenario(type, input$comparator)
       } else {
         NULL
@@ -510,8 +514,6 @@ main = function(pack_dir) {
 
       updateZones()
       updateCentroidLines()})
-
-
 
     observeEvent(input$modelYear, {
 
