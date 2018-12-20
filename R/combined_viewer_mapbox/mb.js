@@ -143,7 +143,7 @@ export function setCentroidLines({ lines = [] }) {
 
     map.getSource('centroidlines').setData(turf.featureCollection(clines))
     map.setPaintProperty('centroidlines','line-width', ['get', 'weight'])
-    map.setPaintProperty('centroidlines','line-opacity', ['get', 'opacity'])
+    //map.setPaintProperty('centroidlines','line-opacity', ['get', 'opacity'])
     map.moveLayer('centroidlines')
 
     showLayer({layer: 'centroidlines'})

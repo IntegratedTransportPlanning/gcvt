@@ -8,7 +8,7 @@ import dummyline from './dummyline.geojson'
 
 import * as mb from './mb.js'
 
-const DEBUG_ON_A_TRAIN = true
+const DEBUG_ON_A_TRAIN = false
 const DEBUG = true
 
 export let map
@@ -166,7 +166,7 @@ export async function setupLines() {
             'line-join': 'round',
         },
         paint: {
-            'line-opacity': .8,
+            'line-opacity': 1,
             'line-color': 'black',
             'line-width': 1,
         },
