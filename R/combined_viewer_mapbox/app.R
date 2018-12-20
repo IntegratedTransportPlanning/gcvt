@@ -98,8 +98,10 @@ gcvt_side_panel = function(metadata, scenarios) {
     xample_attr = link_attr[[1]]
 
     variables = colnames(xample_attr)
+    variables = variables[variables != 'Link_ID']
     display_names = left_join(tibble(name=variables), get_aliases(metadata$links$columns))$alias
     display_names = ifelse(is.na(display_names), variables, display_names)
+
     variables = setNames(variables, display_names)
     continuous_variables <<- variables[sapply(xample_attr, is.numeric)]
     modes = levels(xample_attr$LType) # Fragile: not generic
