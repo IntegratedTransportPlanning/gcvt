@@ -373,6 +373,7 @@ main = function(pack_dir) {
         widerDomain = NULL
         if ((!input$perScensRange) &&
           (input$colourBy %in% continuous_variables)){
+          # TODO this relies on input$colourBy but can't tell whether it is translating back from display name properly
           widerDomain = link_ranges[,input$colourBy]
         }
 
@@ -396,6 +397,8 @@ main = function(pack_dir) {
       visible = base$LType %in% input$filterMode
 
       mb$setVisible('links', visible)
+
+      # TODO I don't understand how the below can work, since input$colourBy contains 'friendly' text. But it does work! Or does it? :) 
       mb$styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc)
       mb$showLayer('links')
     }
