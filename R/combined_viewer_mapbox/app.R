@@ -258,7 +258,7 @@ main = function(pack_dir) {
           if (is.null(weightCol)) {
             mb$setWeight(group, 3)
           } else {
-            label = paste(label, weightCol, ": ", weightValues, sep = "")
+            label = paste(label, weightCol, ": ", formatC(signif(weightValues,digits=3), digits=3,format="fg", flag="#"), sep = "")
             mb$setWeight(group, weightScale(weightValues, weightDomain))
           }
         }
@@ -436,6 +436,12 @@ main = function(pack_dir) {
             palette = input$zonePalette,
             reverse_palette = input$revZonePalette,
             quantile = input$zonePalQuantile))
+      }
+
+      if (length(selected)) {
+        # Force palette recalculation
+        # TODO will this work? -- no
+        # input$perScensRange = T
       }
 
       if (!is.null(compareZones)) {
