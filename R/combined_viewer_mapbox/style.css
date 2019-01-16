@@ -14,28 +14,18 @@
 }
 
 #wb {
-  position: absolute;
-  top: 15px;
-  left: 180px;
-  height: 90px;
-  border-radius: 5px;
+  height: 60px;
+  border-radius: 4px;
 }
 
 #kggtf {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  height: 90px;
-  border-radius: 5px;
+  height: 60px;
+  border-radius: 4px;
 }
 
 #itp {
-  position: absolute;
-  top: 15px;
-  left: 405px;
-  height: 90px;
-  border-radius: 5px;
-
+  height: 60px;
+  border-radius: 4px;
   background: white;
   padding: 5px
 }

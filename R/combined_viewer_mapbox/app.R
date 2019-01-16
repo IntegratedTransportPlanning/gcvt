@@ -39,9 +39,6 @@ gcvt_viewer_page = function(...) {
     tags$link(href='style.css', rel='stylesheet'),
     tags$div(id = 'map'),
     tags$script(src = 'app.js'),
-    img(id="kggtf", src='kggtf.jpg'),
-    img(id="wb", src='world-bank.jpg'),
-    img(id="itp", src='itp.png'),
     legends(),
     ...)
 }
@@ -153,12 +150,20 @@ gcvt_side_panel = function(metadata, scenarios) {
         actionButton("dbg", "Debug now")))
   }
 
+  icons = function() {
+      div(class="panel-heading",
+              a(img(id="kggtf", src='kggtf.jpg'), href="http://www.kgreengrowthpartnership.org/"),
+              a(img(id="wb", src='world-bank.jpg'), href="http://www.worldbank.org"),
+              a(img(id="itp", src='itp.png'), href="http://www.itpworld.net"))
+  }
+
   div(class="panel-group floater",
     div(class="panel panel-default",
       header(),
       scenario_selection(),
       links(),
-      od_matrices()
+      od_matrices(),
+      icons()
       ))
 }
 
