@@ -252,7 +252,7 @@ main = function(pack_dir) {
         label = ""
         if (!missing(colorCol)) {
           label = ""
-          if (colorCol %in% continuous_variables) {
+          if (is.numeric(colorValues[1])) {
             label = paste(label, colorCol, ": ", formatC(signif(colorValues,digits=3), digits=3,format="fg", flag="#"), " ", sep = "")
           } else {
             label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
@@ -429,7 +429,8 @@ main = function(pack_dir) {
         palette = "RdYlBu",
         reverse_palette = F,
         offset = T,
-        quantile = F)
+        quantile = F,
+        percentage = F)
       # Get styling metadata from yaml
       options = metadata$od_matrices$columns[[variable]]
       options = compute_options(colourBy_defaults, options)
@@ -443,27 +444,34 @@ main = function(pack_dir) {
             quantile = input$zonePalQuantile))
       }
 
-      if (length(selected)) {
-        # Force palette recalculation
-        # TODO will this work? -- no
-        # input$perScensRange = T
-      }
-
+      ## TODO fix too many nested ifs making this really messy
       if (!is.null(compareZones)) {
         baseVals = NULL
         compVals = NULL
         zoneHintMsg = ""
         if (!length(selected)) {
           # Nothing selected, show comparison of 'from' for zones
-          baseVals = rowSums(base[[variable]])
-          compVals = rowSums(compareZones[[variable]])
-          zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
+          if (options$percentage) {
+              baseVals = rowMeans(base[[variable]])
+              compVals = rowMeans(compareZones[[variable]])
+              zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
+          } else { 
+              baseVals = rowSums(base[[variable]])
+              compVals = rowSums(compareZones[[variable]])
+              zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
+          }
 
         } else if (length(selected) > 1) {
-          # Sum of rows if several zones selected
-          baseVals = colSums(base[[variable]][selected,])
-          compVals = colSums(compareZones[[variable]][selected,])
-          zoneHintMsg = "shaded by aggregated difference in 'to' statistics for the selected zones"
+          if (options$percentage) {
+              baseVals = colMeans(base[[variable]][selected,])
+              compVals = colMeans(compareZones[[variable]][selected,])
+              zoneHintMsg = "shaded by aggregated difference in 'to' statistics for the selected zones"
+          } else {
+              # Sum of rows if several zones selected
+              baseVals = colSums(base[[variable]][selected,])
+              compVals = colSums(compareZones[[variable]][selected,])
+              zoneHintMsg = "shaded by aggregated difference in 'to' statistics for the selected zones"
+          }
 
         } else {
           # Just one selected, show comparison of its 'to' data
@@ -479,14 +487,24 @@ main = function(pack_dir) {
         pal = comparisonPalette(values, bins = 21, reverse = options$good == "smaller")
       } else {
         if (!length(selected)) {
-          values = rowSums(base[[variable]])
-          zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
+          if (options$percentage) {
+            values = rowMeans(base[[variable]])
+            zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
+          } else { 
+            values = rowSums(base[[variable]])
+            zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
+          }
 
         } else if (length(selected) > 1) {
-          # Sum of rows if several zones selected
-          values = colSums(base[[variable]][selected,])
-          zoneHintMsg = "shaded by the aggregated 'to' statistic for the selected zones"
-
+          if (options$percentage) {
+            # Sum of rows if several zones selected
+            values = colMeans(base[[variable]][selected,])
+            zoneHintMsg = "shaded by the aggregated 'to' statistic for the selected zones"
+          } else {
+            # Sum of rows if several zones selected
+            values = colSums(base[[variable]][selected,])
+            zoneHintMsg = "shaded by the aggregated 'to' statistic for the selected zones"
+          }
         } else {
           values = base[[variable]][selected,]
           zoneHintMsg = "shaded by the 'to' statistic for the selected zone"
@@ -503,6 +521,10 @@ main = function(pack_dir) {
           reverse = options$reverse_palette,
           quantile = options$quantile,
           widerDomain = widerDomain)
+      }
+
+      if (options$percentage) {
+        values = values * 100
       }
 
       output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
