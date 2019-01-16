@@ -251,7 +251,12 @@ main = function(pack_dir) {
         ) {
         label = ""
         if (!missing(colorCol)) {
-          label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+          label = ""
+          if (colorCol %in% continuous_variables) {
+            label = paste(label, colorCol, ": ", formatC(signif(colorValues,digits=3), digits=3,format="fg", flag="#"), " ", sep = "")
+          } else {
+            label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+          }
           mb$setColor(group, pal(colorValues), selected)
         }
         if (!missing(weightCol)) {
@@ -581,6 +586,9 @@ main = function(pack_dir) {
           # Clear selection
           selected <<- NULL
       }
+
+      # Set the styling approach: per scenario or all-scenarios
+      updateCheckboxInput(session, "perScensRange", value=as.logical(length(selected)))
 
       updateZones()
       updateCentroidLines()})
