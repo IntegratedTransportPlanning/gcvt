@@ -309,11 +309,15 @@ main = function(pack_dir) {
 
     # Get scenario
     current_scenario = function(stype, sname = input$scenario) {
-      if (is.null(sname))
-        sname = "DoNothing"
-      scenarios %>%
-        filter(type == stype & name == sname & year == input$modelYear) %>%
-        .$dataDF %>% .[[1]]
+      selected = scenarios %>% filter(type == stype & name == sname & year == input$modelYear)
+
+      if (nrow(selected) == 0) {
+        # This scenario doesn't exist in our dataset
+        ## TODO update UI to reflect
+        selected = scenarios %>% filter(type == stype & name == "DoNothing" & year == input$modelYear)
+      }
+
+      selected %>% .$dataDF %>% .[[1]]
     }
 
     # Get comparison scenario
