@@ -3,3 +3,6 @@ www
 node_modules
 .cache
 server.sh
+prod.sh
+v8-compile-cache-0/
+

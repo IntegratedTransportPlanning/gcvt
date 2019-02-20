@@ -106,7 +106,7 @@ gcvt_side_panel = function(metadata, scenarios) {
     submenu("showLinks", "Network links ",
       panel_item(selectInput("colourBy", "Colour links by", variables, selected="LType")),
       panel_item(
-        selectInput("widthBy", "Set width by", c("Select variable"="", continuous_variables))),
+        materialSwitch("widthBy", "Scaled width", value=T, status="info", inline=T)),
       panel_item(
         selectInput("filterMode", "Show modes", modes, selected = modes, multiple = T)),
       panel_item(checkboxInput("advancedLinkStyles", "Advanced styles")),
@@ -402,10 +402,11 @@ main = function(pack_dir) {
         }
       }
 
-      if (input$widthBy == "") {
-        widthBy = NULL
+      if (input$widthBy &&
+        (input$colourBy %in% continuous_variables)) {
+        widthBy = input$colourBy
       } else {
-        widthBy = input$widthBy
+        widthBy = NULL
       }
 
       # Use base$LType for filtering, not the comparison
