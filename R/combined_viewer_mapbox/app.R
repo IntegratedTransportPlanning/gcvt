@@ -256,12 +256,14 @@ main = function(pack_dir) {
         units = " "
         ) {
         label = ""
+        unitsL = str_to_lower(units)
+
         if (!missing(colorCol)) {
           label = ""
           if (is.numeric(colorValues[1])) {
-            label = paste(label, colorCol, ": ", formatC(signif(colorValues,digits=3), digits=3,format="fg", flag="#"), " ", sep = "")
+            label = paste(label, colorCol, ": ", formatC(signif(colorValues,digits=3), digits=3,format="fg", flag="#")," ", unitsL, " ", sep = "")
           } else {
-            label = paste(label, colorCol, ": ", colorValues, " ", sep = "")
+            label = paste(label, colorCol, ": ", colorValues," ", unitsL, " ", sep = "")
           }
           mb$setColor(group, pal(colorValues), selected)
         }
@@ -269,7 +271,7 @@ main = function(pack_dir) {
           if (is.null(weightCol)) {
             mb$setWeight(group, 3)
           } else {
-            label = paste(label, weightCol, ": ", formatC(signif(weightValues,digits=3), digits=3,format="fg", flag="#"), sep = "")
+            label = paste(label, weightCol, ": ", formatC(signif(weightValues,digits=3), digits=3,format="fg", flag="#")," ", unitsL, " ", sep = "")
             mb$setWeight(group, weightScale(weightValues, weightDomain))
           }
         }
