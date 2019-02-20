@@ -252,7 +252,8 @@ main = function(pack_dir) {
         pal = palfunc(colorDomain),
         weightCol = NULL,
         weightValues = if (is.null(weightCol)) NULL else data[[weightCol]],
-        weightDomain = weightValues
+        weightDomain = weightValues,
+        units = " "
         ) {
         label = ""
         if (!missing(colorCol)) {
@@ -280,7 +281,8 @@ main = function(pack_dir) {
         legendData = addAutoLegend(pal,
           colorValues,
           group,
-          friendlyGroupName = str_to_title(group))
+          friendlyGroupName = str_to_title(group),
+          unitName = units)
 
 
         if (group == "links") {
@@ -350,7 +352,8 @@ main = function(pack_dir) {
         bins = "auto",
         palette = "YlOrRd",
         reverse_palette = F,
-        quantile = F)
+        quantile = F,
+        units = " ")
       # Get styling metadata from yaml
       options = metadata$links$columns[[input$colourBy]]
       options = compute_options(colourBy_defaults, options)
@@ -409,7 +412,7 @@ main = function(pack_dir) {
       mb$setVisible('links', visible)
 
       # TODO I don't understand how the below can work, since input$colourBy contains 'friendly' text. But it does work! Or does it? :) 
-      mb$styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc)
+      mb$styleByData(meta, 'links', colorCol = input$colourBy, weightCol = widthBy, palfunc = palfunc, units = options$units)
       mb$showLayer('links')
     }
 
@@ -435,7 +438,8 @@ main = function(pack_dir) {
         reverse_palette = F,
         offset = T,
         quantile = F,
-        percentage = F)
+        percentage = F,
+        units = " ")
       # Get styling metadata from yaml
       options = metadata$od_matrices$columns[[variable]]
       options = compute_options(colourBy_defaults, options)
@@ -534,7 +538,7 @@ main = function(pack_dir) {
 
       output$zoneHint <- renderText({ paste("Zones shown are ", zoneHintMsg) })
 
-      mb$styleByData(values, 'zones', pal = pal, colorValues = values, colorCol = input$od_variable)
+      mb$styleByData(values, 'zones', pal = pal, colorValues = values, colorCol = input$od_variable, units = options$units)
       mb$showLayer('zones')
     }
 

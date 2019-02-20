@@ -51,11 +51,11 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
   }
 }
 
-addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
+addAutoLegend = function(palette, values, group, friendlyGroupName = group, unitName = " ") {
   #
   # Construct an HTML table to use as legend
   #
-  thisLegend = list(h5(friendlyGroupName))
+  thisLegend = list(h5(friendlyGroupName),h6(unitName))
 
   if (attr(palette, 'colorType') == 'numeric') {
     min = palette(min(values))
@@ -93,7 +93,7 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
               fmtdMax)
     )
 
-    thisLegend[[2]] = tags$table(tableRows)
+    thisLegend[[3]] = tags$table(tableRows)
   }
   else {
     if (attr(palette, 'colorType') == 'factor') {
@@ -133,7 +133,7 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group) {
         tags$td(class="legend-item",
                 boundaries[[i]]))
     }
-    thisLegend[[2]] = tags$table(tableRows)
+    thisLegend[[3]] = tags$table(tableRows)
   }
 
   thisLegend
