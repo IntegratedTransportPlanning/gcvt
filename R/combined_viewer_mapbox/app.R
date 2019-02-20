@@ -271,7 +271,6 @@ main = function(pack_dir) {
           if (is.null(weightCol)) {
             mb$setWeight(group, 3)
           } else {
-            label = paste(label, weightCol, ": ", formatC(signif(weightValues,digits=3), digits=3,format="fg", flag="#")," ", unitsL, " ", sep = "")
             mb$setWeight(group, weightScale(weightValues, weightDomain))
           }
         }
