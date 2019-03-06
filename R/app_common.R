@@ -36,7 +36,7 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
         bins[1] = bins[1] - 1
       }
 
-      if (targetBins > 1) {
+      if (targetBins > 4) {
         colorBin(palette = palette, domain = cleaned, bins = bins, reverse = reverse)
       } else {
         # Produce something, even if it's not sensible, saves crashing
