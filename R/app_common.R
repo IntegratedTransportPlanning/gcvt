@@ -126,13 +126,13 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group, unit
     }
     na = attr(palette, 'colorArgs')$na
 
-    if(!is.null(na)) {
-      tableRows[[length(tableRows) + 1]] = tags$tr(
-        tags$td(class="legend-item",
-                div(class="legend-block", style=paste("background:",boundaryColours[[i]]))),
-        tags$td(class="legend-item",
-                boundaries[[i]]))
-    }
+#    if(!is.null(na)) {
+#      tableRows[[length(tableRows) + 1]] = tags$tr(
+#        tags$td(class="legend-item",
+#                div(class="legend-block", style=paste("background:",boundaryColours[[i]]))),
+#        tags$td(class="legend-item",
+#                boundaries[[i]]))
+#    }
     thisLegend[[3]] = tags$table(tableRows)
   }
 
