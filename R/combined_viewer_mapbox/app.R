@@ -269,7 +269,7 @@ main = function(pack_dir) {
         }
         if (!missing(weightCol)) {
           if (is.null(weightCol)) {
-            mb$setWeight(group, 3)
+            mb$setWeight(group, 5)
           } else {
             mb$setWeight(group, weightScale(weightValues, weightDomain))
           }
