@@ -104,9 +104,10 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group, unit
 
     if (attr(palette, 'colorType') == 'bin') {
       # Work out bin pos, plus whether NA is present
-      boundaries = attr(palette, 'colorArgs')$bins[-1]
+      boundaries = attr(palette, 'colorArgs')$bins
       if (length(boundaries) > 1) {
-        boundaryColours = sapply(boundaries - 1, palette)
+        ## WTF!! : sapply(boundaries - 1, ...
+        boundaryColours = sapply(boundaries, palette)
       } else {
         # Handle what to do if no difference
         boundaryColours = c("#ffffff")
@@ -126,13 +127,6 @@ addAutoLegend = function(palette, values, group, friendlyGroupName = group, unit
     }
     na = attr(palette, 'colorArgs')$na
 
-#    if(!is.null(na)) {
-#      tableRows[[length(tableRows) + 1]] = tags$tr(
-#        tags$td(class="legend-item",
-#                div(class="legend-block", style=paste("background:",boundaryColours[[i]]))),
-#        tags$td(class="legend-item",
-#                boundaries[[i]]))
-#    }
     thisLegend[[3]] = tags$table(tableRows)
   }
 
@@ -260,8 +254,32 @@ comparisonPalette = function(values, negativeramp = "red", positiveramp = "green
   }
 
   if (length(c(negativeramp)) != length(c(positiveramp)))
+    ## TODO don't understand this - isn't the value just a text description of a palette? 
     stop("negativeramp and positiveramp must have the same length or neutral won't be in the middle")
+  
+  # Get the probs and bins
+  # Limit bin count to 11 cos it was starting to look crowded
+  probs = seq(0,1,length.out = min(bins + 1,11))
+  bins = round(quantile(values, probs, na.rm=TRUE, names=FALSE),2)
+  
+  # Insert a 0 so we can sep green/red
+  bins = c(bins[bins < 0], 0, bins[bins > 0])
+  bins = unique(bins)
 
+  negBins = bins[bins <= 0]
+  posBins = bins[bins >= 0]
+
+  # Get the colours separately for above and below 0
+  negPal = colorRampPalette(c(negativeramp, neutral), interpolate="linear")
+  posPal = colorRampPalette(c(neutral, positiveramp), interpolate="linear")
+
+  negVals = negPal(length(negBins))
+  posVals = posPal(length(posBins))[2:length(posBins)]
+
+  colourRamp = c(negVals, posVals)
+  print (bins)
+  print (colourRamp)
+  
   if (all(values == 0)) {
     pal = function(v) {stopifnot(v==0); rep(neutral, length(v))}
     attr(pal, "colorArgs")$bins = c(0,0)
@@ -269,20 +287,17 @@ comparisonPalette = function(values, negativeramp = "red", positiveramp = "green
     pal
   } else {
     # colorBin palette centered on 0.
-    magnitude = max(abs(min(values)), max(values))
-    pal = colorBin(c(negativeramp, neutral, positiveramp), c(-magnitude, magnitude),
-                   bins = seq(from = -magnitude, to = magnitude, length.out = bins + 1) %>% signif(2))
-
-    # Trim the outer bins that won't get used (makes the legend look nicer)
-    bins = attr(pal, "colorArgs")$bins
-    while (min(values, 0) >= bins[[2]]) {
-      bins = bins[2:length(bins)]
-    }
-    while (max(values, 0) <= bins[[length(bins)-1]]) {
-      bins = bins[1:length(bins)-1]
-    }
-    attr(pal, "colorArgs")$bins = bins
-
+    if (length(bins) > 4) {
+        # Already constructed ramp and removed unneeded levels
+        pal = colorBin(colourRamp, 
+                            domain = c(min(values),max(values)),
+                            bins = bins)
+    } else { 
+        # Fail over to something ugly rather than crashing or providing something even worse
+        pal = colorNumeric(palette = c(negativeramp, neutral, positiveramp), 
+                            domain = c(min(values), max(values)), 
+                            reverse = reverse, na.color="#eeeeee")
+    } 
     pal
   }
 }
