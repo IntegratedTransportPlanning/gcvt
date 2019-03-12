@@ -49,12 +49,10 @@
   height:10px;
 }
 
-.mapboxgl-popup-content {
-  background-color: #333;
-}
+
 
 .gcvt-popup-tr:nth-child(even) {
-    background-color: #555;
+    background-color: #eee;
 }
 
 .gcvt-toggle-label {

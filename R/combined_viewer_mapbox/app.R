@@ -172,7 +172,7 @@ main = function(pack_dir) {
   scenarios = readRDS(path(pack_dir, "processed", "scenarios.Rds"))
 
   ui = gcvt_viewer_page(
-    theme = shinytheme("darkly"),
+    theme = shinytheme("spacelab"),
     gcvt_side_panel(metadata, scenarios))
 
   ### TODO: Clean this up.
