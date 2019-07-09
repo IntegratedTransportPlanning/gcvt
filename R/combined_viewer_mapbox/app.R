@@ -495,7 +495,7 @@ main = function(pack_dir) {
           zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
 
         }
-        values = baseVals - compVals
+        values = ifelse(compVals == 0, 0, (baseVals - compVals) / compVals)
         variable = paste("Scenario difference in ", variable)
 
         # Comparison palette is washed out by outliers :(
