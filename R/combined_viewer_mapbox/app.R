@@ -495,6 +495,7 @@ main = function(pack_dir) {
           zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
 
         }
+        # Ideally, we'd just have NA here. Somewhere further along can't yet deal with it.
         values = ifelse(compVals == 0, 0, (baseVals - compVals) / compVals)
         variable = paste("Scenario difference in ", variable)
 
