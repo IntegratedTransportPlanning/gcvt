@@ -46,15 +46,17 @@ gcvt_viewer_page = function(...) {
 continuous_variables = NULL
 
 
+panel_item = function(...) {
+    tags$li(class="list-group-item", ...)
+}
+
 # Sidebar header, scenario selection, links panel, zone panel
 #
 # This defines the ui element. It's broken down with one function per-section in an attempt to keep it understandable.
+
 gcvt_side_panel = function(metadata, scenarios) {
   panel_list = function(...) {
     tags$ul(class="list-group", ...)
-  }
-  panel_item = function(...) {
-    tags$li(class="list-group-item", ...)
   }
 
   scenario_selection = function() {
@@ -495,8 +497,15 @@ main = function(pack_dir) {
           zoneHintMsg = "shaded by difference in 'to' statistics for the selected zone"
 
         }
-        # Ideally, we'd just have NA here. Somewhere further along can't yet deal with it.
-        values = ifelse(compVals == 0, 0, (baseVals - compVals) / compVals)
+        values = if(input$compareRelative){
+            # Ideally, we'd just have NA here. Somewhere further along can't yet deal with it.
+            # The 100* here is making me twitch since it's formatting really, but we need it here(ish) for colour scaling
+            options$units = "%"
+            ifelse(compVals == 0, 0, 100*(baseVals - compVals) / compVals)
+        } else {
+            baseVals - compVals
+        }
+
         variable = paste("Scenario difference in ", variable)
 
         # Comparison palette is washed out by outliers :(
@@ -651,8 +660,13 @@ main = function(pack_dir) {
 
       snames = c("Select scenario"="", snames)
       comparator_selection = if (!is.null(input$comparator) && input$comparator %in% snames) input$comparator else ""
+
       output$comparatorScenarioSelector = renderUI({
-        selectInput("comparator", "Compare with", snames, selected = comparator_selection)})
+          panel_item(
+                    selectInput("comparator", "Compare with", snames, selected = comparator_selection),
+                    checkboxInput("compareRelative", "Calculate percentage changes", value = TRUE)
+          )
+      })
       })
 
   }
