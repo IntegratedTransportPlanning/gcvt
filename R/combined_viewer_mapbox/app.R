@@ -68,7 +68,7 @@ gcvt_side_panel = function(metadata, scenarios) {
           sliderInput("modelYear", "Model Year",
             2020,
             tail(years, 1),
-            value = 2020,
+            value = 2025,
             step = 5,          # Assumption
             sep = "")),
         panel_item(uiOutput("scenarioSelector")),
@@ -80,11 +80,11 @@ gcvt_side_panel = function(metadata, scenarios) {
         ))
   }
 
-  submenu = function(switchname, name, ...) {
+  submenu = function(switchname, name, ..., value=FALSE) {
     anchorname = paste("collapse-", switchname, sep="")
     list(
       div(class="panel-heading",
-        materialSwitch(switchname, status="info", inline=T),
+        materialSwitch(switchname, status="info", inline=T,value=value),
         h4(class="gcvt-toggle-label", name),
         a(href=paste("#", anchorname, sep=""), "[ + ]", 'data-toggle'="collapse")),
       div(id=anchorname, class="panel-collapse collapse", panel_list(...)))
@@ -106,7 +106,7 @@ gcvt_side_panel = function(metadata, scenarios) {
     modes = levels(xample_attr$LType) # Fragile: not generic
 
     submenu("showLinks", "Network links ",
-      panel_item(selectInput("colourBy", "Colour links by", variables, selected="LType")),
+      panel_item(selectInput("colourBy", "Colour links by", variables, selected="GHG_perKm")),
       panel_item(
         materialSwitch("widthBy", "Scaled width", value=T, status="info", inline=T)),
       panel_item(
@@ -131,7 +131,7 @@ gcvt_side_panel = function(metadata, scenarios) {
 
     submenu("showZones", "Matrix zones ",
       panel_item(
-        selectInput("od_variable", "OD skim variable", od_variables),
+        selectInput("od_variable", "OD skim variable", od_variables, selected="Total_GHG"),
         checkboxInput("showCLines", "Show centroid lines?"),
         panel_item(checkboxInput("advancedZoneStyles", "Advanced styles")),
         conditionalPanel(condition = "input.advancedZoneStyles == true",
@@ -140,7 +140,7 @@ gcvt_side_panel = function(metadata, scenarios) {
             checkboxInput("revZonePalette", "Reverse palette", value=F),
             checkboxInput("zonePalQuantile", "Quantile palette", value=F))),
         panel_item(htmlOutput("zoneHint", inline=T))
-        ))
+        ), value=FALSE) # Flip this to true once #70 is fixed
   }
 
   header = function() {
@@ -654,16 +654,21 @@ main = function(pack_dir) {
       }
 
       snames = snames_for_year(input$modelYear)
+
+      # Unclear what this was for
       scenario_selection = if (!is.null(input$scenario) && input$scenario %in% snames) input$scenario else "DoNothing"
+
       output$scenarioSelector = renderUI({
-        selectInput("scenario", "Scenario Package", snames, selected = scenario_selection)})
+        selectInput("scenario", "Scenario Package", snames, selected = "GreenMax")})
 
       snames = c("Select scenario"="", snames)
+
+      # Unclear what this was for
       comparator_selection = if (!is.null(input$comparator) && input$comparator %in% snames) input$comparator else ""
 
       output$comparatorScenarioSelector = renderUI({
           panel_item(
-                    selectInput("comparator", "Compare with", snames, selected = comparator_selection),
+                    selectInput("comparator", "Compare with", snames, selected = "DoNothing"),
                     checkboxInput("compareRelative", "Calculate percentage changes", value = TRUE)
           )
       })
