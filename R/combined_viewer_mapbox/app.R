@@ -378,7 +378,8 @@ main = function(pack_dir) {
       ## TODO: Use the bins option
 
       if (!is.null(comparator)) {
-        meta = metaDiff(base, comparator)
+        meta = metaDiff(base, comparator, relative=input$compareRelative)
+        if (input$compareRelative){options$units = "%"}
 
         if (options$good == "smaller") {
           palfunc = function(values) {
