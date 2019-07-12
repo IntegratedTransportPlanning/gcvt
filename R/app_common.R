@@ -8,9 +8,12 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
   # All of these colorXX ramps come from leaflet, but no reason not to use them for convenience
   if (is.factor(data)) {
     colorFactor(factorColors(length(levels(data))), data)
+    print("facs")
   } else if (is.logical(data)) {
+    print("logics")
     colorFactor(factorColors(2), data)
   } else if (quantile) {
+    print("quantile")
     # From  https://github.com/rstudio/leaflet/issues/94
     # works out a sensible number of bins based on data
 
@@ -40,14 +43,14 @@ autoPalette = function(data, palette = "YlOrRd", factorColors = topo.colors, rev
         colorBin(palette = palette, domain = cleaned, bins = bins, reverse = reverse)
       } else {
         # Produce something, even if it's not sensible, saves crashing
-        colorNumeric(palette = palette, domain = cleaned, reverse = reverse, na.color="#eeeeee")
+        colorNumericClamp(palette = palette, domain = cleaned, reverse = reverse, na.color="#eeeeee")
       }
 
     } else {
-      colorNumeric(palette = palette, domain = widerDomain, reverse = reverse)
+      colorNumericClamp(palette = palette, domain = quantile(widerDomain,c(0.05,0.95)), reverse = reverse)
     }
   } else {
-    colorNumeric(palette = palette, domain = widerDomain, reverse = reverse)
+    colorNumericClamp(palette = palette, domain = quantile(widerDomain,c(0.05,0.95)), reverse = reverse)
   }
 }
 
@@ -319,4 +322,39 @@ metaDiff = function(base, comparator, relative=FALSE) {
     }
   for (i in 1:length(base)) meta[[i]] = coldiff(base[[i]], comparator[[i]])
   meta
+}
+
+
+
+# Heavily inspired by https://github.com/rstudio/leaflet/blob/44df7d18a2618e0aeecb4145d765e597ec65878b/R/colors.R#L37
+colorNumericClamp = function(palette, domain, na.color = "#808080", alpha = FALSE, reverse = FALSE) {
+    rng <- NULL
+    if (length(domain) > 0) {
+        rng <- range(domain, na.rm = TRUE)
+        if (!all(is.finite(rng))) {
+            stop("Wasn't able to determine range of domain")
+        }
+    }
+
+    pf <- leaflet:::safePaletteFunc(palette, na.color, alpha)
+
+
+    leaflet:::withColorAttr("numeric", list(na.color = na.color), function(x) {
+      if (length(x) == 0 || all(is.na(x))) {
+          return(pf(x))
+      }
+
+      if (is.null(rng)) rng <- range(x, na.rm = TRUE)
+
+      rescaled <- scales::rescale(x, from = rng)
+
+      # Clamp values at the boundaries
+      # TODO: the legend still shows the max, need to make it use the same logic as this
+      rescaled = raster::clamp(rescaled,lower=0,upper=1)
+
+      if (reverse) {
+          rescaled <- 1 - rescaled
+      }
+      pf(rescaled)
+    })
 }

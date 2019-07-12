@@ -282,7 +282,7 @@ main = function(pack_dir) {
 
         # Build and draw the legend, but only for the layer we need
         legendData = addAutoLegend(pal,
-          colorValues,
+          signif(quantile(colorValues,c(0.05,0.95)),2), # Make consistent with colorNumericClamp - ideally this wouldn't be hard coded
           group,
           friendlyGroupName = str_to_title(group),
           unitName = units)
@@ -382,12 +382,24 @@ main = function(pack_dir) {
         meta = metaDiff(base, comparator, relative=input$compareRelative)
         if (input$compareRelative){options$units = "%"}
 
+        # OAB: I stripped out a bunch of stuff here to get my nice smooth ranges working
+        #       check for babies in wastewater etc
         if (options$good == "smaller") {
-          palfunc = function(values) {
-            comparisonPalette(values, reverse=T)
-          }
+            palfunc = function(data, palette) {
+              autoPalette(data,
+                palette = options$palette,
+                reverse = options$reverse_palette,
+                quantile = options$quantile,
+                )
+            }
         } else {
-          palfunc = comparisonPalette
+            palfunc = function(data, palette) {
+              autoPalette(data,
+                palette = options$palette,
+                reverse = options$reverse_palette,
+                quantile = options$quantile,
+                )
+            }
         }
       } else {
         meta = base
