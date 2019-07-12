@@ -471,7 +471,7 @@ main = function(pack_dir) {
               baseVals = rowMeans(base[[variable]])
               compVals = rowMeans(compareZones[[variable]])
               zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
-          } else { 
+          } else {
               baseVals = rowSums(base[[variable]])
               compVals = rowSums(compareZones[[variable]])
               zoneHintMsg = "coloured by difference in 'from' statistics between scenarios"
@@ -514,7 +514,7 @@ main = function(pack_dir) {
           if (options$percentage) {
             values = rowMeans(base[[variable]])
             zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
-          } else { 
+          } else {
             values = rowSums(base[[variable]])
             zoneHintMsg = "shaded by the 'from' statistics for all zones in the selected scenario"
           }
