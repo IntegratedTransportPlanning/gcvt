@@ -310,6 +310,7 @@ main = function(pack_dir) {
 
     # Get scenario
     current_scenario = function(stype, sname = input$scenario) {
+      if (is.null(sname)) sname = ""
       selected = scenarios %>% filter(type == stype & name == sname & year == input$modelYear)
 
       if (nrow(selected) == 0) {
