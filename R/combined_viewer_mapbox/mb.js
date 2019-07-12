@@ -131,12 +131,11 @@ export function setCentroidLines({ lines = [] }) {
         opacity: pair[4]
       }
 
-      let cline = turf.lineString([
-            oPt.geometry.coordinates,
-            dPt.geometry.coordinates
-          ],
-          props
-        )
+      let cline = turf.greatCircle(
+        oPt.geometry.coordinates,
+        dPt.geometry.coordinates,
+        {properties: props}
+      )
 
       clines.push(cline)
     })
