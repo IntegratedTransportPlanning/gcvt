@@ -96,8 +96,17 @@ src/
    - Restrict inputs to the referenced pack dir; outputs to referenced processed dir
    - Rename it to something like what it actually does
    - Split it up a bit better
+   - At the moment, the scenarios or links it generates are wrong somehow (probably the IDs don't match up or something), so fix that for sure.
 
 - Write script to generate tiles with tippecanoe/mb-util
+   - This depends on process_pack_dir producing links.geojson
 
 - Make apps sane
    - Restrict input to pack dir
+
+- Tidying up
+   - Remove the rest of the data and code that you think is probably irrelevant now.
+
+- Rewrite the backend in sanic + pandas or Julia + Genie + Query.jl or R + plumber
+
+- Rewrite the frontend in mithriljs
