@@ -22,7 +22,7 @@ library(shinythemes)
 library(leaflet)
 
 source("../metadata.R")
-source("../app_common.R")
+source("app_common.R")
 
 # Required boilerplate and sponsor icons
 gcvt_viewer_page = function(...) {
