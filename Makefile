@@ -1,5 +1,11 @@
-all: README.md
+.PHONY: front, back
 
-README.md: README.Rmd R/combined_viewer_mapbox/*.json R/combined_viewer_mapbox/*.js
+README.md: README.Rmd src/app/*.json src/app/*.js
 	R -e 'rmarkdown::render("README.Rmd")'
 	rm README.html
+
+front:
+	cd src/app/ && yarn build
+
+back:
+	R -e 'shiny::runApp("src/app", port=6619)'
