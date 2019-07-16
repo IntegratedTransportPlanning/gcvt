@@ -5,10 +5,10 @@ library(fs)
 library(sf)
 library(reshape2)
 
-BASE_DIR = "./"
+BASE_DIR = "../../"
 # Where to read and write everything. Eg:
 # BASE_DIR = "/home/mark/gcvt-metadata/"
-source(paste(BASE_DIR, "R/metadata.R", sep = ""))
+source(paste(BASE_DIR, "src/metadata.R", sep = ""))
 
 # Return DF(name, year, type, dataDF)
 read_scenarios = function(pack_dir) {
@@ -51,7 +51,9 @@ process_links = function(geom, scenarios) {
   geom = st_transform(geom, 4326)
 
   # Crop to study area
-  eapregion = st_union(read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")))
+  eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")) %>%
+    st_buffer(0) %>% # Buffer to get rid of some stupid artifact.
+    st_union()
   intersection = unlist(st_intersects(eapregion, geom))
   geom = geom[intersection,]
 
