@@ -47,9 +47,9 @@ shiny::runApp("R/combined_viewer_leaflet/")
 The mapbox app requires some additional setup:
 
 ```{sh}
-cd R/combined_viewer_mapbox
-npm install
-npm run build
+cd src/app
+yarn install
+yarn run build
 ```
 
 I run the app like so, you can run it from rstudio if you prefer:
