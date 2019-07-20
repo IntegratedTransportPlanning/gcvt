@@ -14,16 +14,15 @@ Description: This package provides data and functions for visualising
 License: MIT + file LICENCE
 Encoding: UTF-8
 LazyData: true
-Imports: eurostat,
-    shiny,
+Imports: shiny,
     shinythemes,
     shinyWidgets,
     RColorBrewer,
-    dplyr,
+    tidyverse,
     readr,
     reshape2,
-    sf
-Remotes:
-    cmcaine/leaflet
+    sf,
+    yaml,
+    leaflet
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.0.1

@@ -5,3 +5,5 @@
 *.zip
 SHAPE
 *.geojson
+packrat/lib*/
+packrat/src/
