@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs
 from html import unescape, escape
 from json import dumps
@@ -57,5 +57,5 @@ class OEmbedHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes(error,'utf-8'))
             self.send_response(501)
 
-server = HTTPServer(('0.0.0.0',PORT), OEmbedHandler)
+server = ThreadingHTTPServer(('0.0.0.0',PORT), OEmbedHandler)
 server.serve_forever()
