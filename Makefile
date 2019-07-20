@@ -10,6 +10,9 @@ pack:
 	./tiles.sh data/sensitive/GCVT_Scenario_Pack/processed/links.geojson
 	./tiles.sh data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson
 
+process_pack_dir:
+	Rscript src/data-preparation/process_pack_dir.R
+
 front:
 	cd src/app/ && yarn build
 

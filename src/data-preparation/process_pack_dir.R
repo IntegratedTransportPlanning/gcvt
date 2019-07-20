@@ -5,7 +5,7 @@ library(fs)
 library(sf)
 library(reshape2)
 
-BASE_DIR = "../../"
+BASE_DIR = "./"
 # Where to read and write everything. Eg:
 # BASE_DIR = "/home/mark/gcvt-metadata/"
 source(paste(BASE_DIR, "src/metadata.R", sep = ""))
@@ -105,13 +105,9 @@ process_links = function(geom, scenarios) {
     stopifnot()
 
   # The JSON is consumed by the client side app which doesn't need to know anything but the geometry and an id
-  # (which should just be contiguous ascending integers from 0), so strip all the other data.
-  just_geometry = st_geometry(geom)
-  names(just_geometry)<-0:(length(just_geometry)-1)
-
-  # You can also generate those ids by writing a sf data frame without names, reading it in, and then writing it again,
-  # which is how we used to do it (unintentionally). It's a bit weird that the read driver populates default names but
-  # the write driver does not. Thanks, GDAL.
+  just_geometry = tibble(id = 0:(nrow(geom)-1), geometry = st_geometry(geom))
+  # This tibble must be saved with write_sf(geom, path, fid_column_name = "id").
+  # There used to be more batshit ways of doing this.
 
   list(just_geometry, scenarios)
 }
@@ -139,9 +135,11 @@ geom = temp[[1]]
 scenarios[scenarios$type=="links",]$dataDF = temp[[2]]
 rm(temp)
 
-scenarios[scenarios$type=="od_matrices",]$dataDF = lapply(scenarios[scenarios$type=="od_matrices",]$dataDF, process_od_matrix)
+# Replace the DFs for matrix data with lists of matrices
+scenarios[scenarios$type=="od_matrices",]$dataDF =
+  lapply(scenarios[scenarios$type=="od_matrices",]$dataDF, process_od_matrix)
 
 # Save the scenarios and geometry
 dir_create(path(pack_dir, "processed"))
 saveRDS(scenarios, path(pack_dir, "processed", "scenarios.Rds"))
-write_sf(geom, path(pack_dir, "processed", "links.geojson"), delete_dsn = T)
+write_sf(geom, path(pack_dir, "processed", "links.geojson"), delete_dsn = T, fid_column_name = "id")
