@@ -143,3 +143,38 @@ scenarios[scenarios$type=="od_matrices",]$dataDF =
 dir_create(path(pack_dir, "processed"))
 saveRDS(scenarios, path(pack_dir, "processed", "scenarios.Rds"))
 write_sf(geom, path(pack_dir, "processed", "links.geojson"), delete_dsn = T, fid_column_name = "id")
+
+## Diff with the on disk data
+# current_scenarios = readRDS("data/sensitive/GCVT_Scenario_Pack/processed/scenarios.Rds")
+# current_geom = read_sf("data/sensitive/GCVT_Scenario_Pack/processed/links.geojson")
+#
+# # Turn them all into matrices then rbind the matrices together
+# mcg = do.call(rbind, sapply(current_geom$geometry, as.matrix))
+# mg = do.call(rbind, sapply(geom$geometry, as.matrix))
+#
+# # Diff them
+# differences = (mcg - mg) %>% as.vector
+# max(differences)
+# hist(log10(differences))
+#
+# # much slower than base-r hist for this. We are scaling y rather than x, but that's not it.
+# ggplot() + geom_histogram(aes(x=differences)) + scale_y_log10()
+#
+# # Compare scenarios
+#
+# scenarios[1,]$dataDF[[1]] %>% nrow
+# current_scenarios[1,]$dataDF[[1]] %>% nrow
+#
+# setdiff(
+# current_scenarios %>% pull(name) %>% unique,
+# scenarios %>% pull(name) %>% unique)
+#
+# # current_scenarios has an extra scenario "Base"
+#
+# just_links = filter(scenarios, type == "links")
+# just_links_cs = filter(current_scenarios, type == "links", name != "Base")
+#
+# # They're all the same
+# for (i in seq(1, nrow(just_links))) {
+#   cat(i, (just_links$dataDF[[i]] ==  just_links_cs$dataDF[[i]]) %>% all, "\n")
+# }
