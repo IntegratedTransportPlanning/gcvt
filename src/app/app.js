@@ -3,7 +3,7 @@ import * as immutable from 'immutable'
 import * as turf from '@turf/turf'
 
 import links from '../../data/sensitive/GCVT_Scenario_Pack/processed/links.geojson'
-import zones from '../../data/sensitive/processed/zones.geojson'
+import zones from '../../data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson'
 import dummyline from './dummyline.geojson'
 
 import * as mb from './mb.js'
