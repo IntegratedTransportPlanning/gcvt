@@ -9,13 +9,23 @@ https://oembed.com/ - looks quite simple. Particularly of interest is sect 4 - D
 
 ## Notes on oEmbed provider implementation
 
-Have written a small python web server to deal with requests. To deploy it, we should probably use Docker so we can have an if not all-in-one, we can have a most-stuff-in-one. It should be more tightly coupled to the vis tool than WordPress as I imagine WordPress will be replaced quicker than the vis tool.
-
 Might be worth making WSGI compliant http://wsgi.tutorial.codepoint.net/parsing-the-request-get which would let us use better webserver than `http.server` (e.g. gunicorn)
 
 [This](https://medium.com/@daniel.carlier/how-to-build-a-simple-flask-restful-api-with-docker-compose-2d849d738137) seems like it might be useful.
 
-Then we will need a router (probably just [Traefik](https://github.com/containous/traefik)) to direct stuff to the various servers.
+### Completed stuff
+
+Have written a small python web server to deal with requests. To deploy it, we should probably use Docker so we can have an if not all-in-one, we can have a most-stuff-in-one. It should be more tightly coupled to the vis tool than WordPress as I imagine WordPress will be replaced quicker than the vis tool.
+
+We will need a router (probably just [Traefik](https://github.com/containous/traefik)) to direct stuff to the various servers.
+
+# R stuff
+
+Should probably base on https://hub.docker.com/r/rocker/shiny-verse and follow https://ropenscilabs.github.io/r-docker-tutorial/05-dockerfiles.html
+
+# Development loop
+
+E.g. `ls **py | sudo entr -r docker-compose up --build` <- still quite slow but not unbearable
 
 # Deploying this
 
@@ -25,6 +35,5 @@ Then we will need a router (probably just [Traefik](https://github.com/containou
     #. `docker volume ls` will show you the ones you need
 #. Clone this repo
 #. Copy .env to new box securely
-#. Change URL in docker-compose
 #. `docker-compose up --build -d` on new box
 #. Change URL in wordpress via admin panel
