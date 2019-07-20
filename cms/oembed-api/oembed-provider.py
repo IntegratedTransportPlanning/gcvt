@@ -4,6 +4,7 @@ from urllib.parse import parse_qs
 from html import unescape, escape
 from json import dumps
 from fnmatch import fnmatch
+from re import sub
 
 # this obviously needs changing
 SCHEMA = "https://easyasgcvt123.com/map/*"
@@ -17,7 +18,7 @@ class OEmbedHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type','text/json')
             self.end_headers()
-            query = parse_qs(self.path[2:])
+            query = parse_qs(sub(r'^.*?\?','',self.path)) # non-greedy match - bin all up to and including first ?
             desired_format = query.get("format",["json"])[0]
             desired_width = int(query.get("maxwidth",["10000"])[0])
             desired_height = int(query.get("maxheight",["10000"])[0])
