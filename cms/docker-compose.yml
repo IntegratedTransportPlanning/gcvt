@@ -75,7 +75,7 @@ services:
     labels:
     - traefik.port=8080
     - "traefik.frontend.priority=1"
-    - "traefik.frontend.rule=Host:localhost;"
+    - "traefik.frontend.rule=HostRegexp:{catchall:.*}"
     - "traefik.backend=webserver"
     - "traefik.docker.network=traefik_proxy"
     networks:

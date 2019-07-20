@@ -4,10 +4,10 @@ from urllib.parse import parse_qs
 from html import unescape, escape
 from json import dumps
 from fnmatch import fnmatch
-from re import sub
+from re import sub, findall
 
 # this obviously needs changing
-SCHEMA = "https://easyasgcvt123.com/map/*"
+SCHEMA = "/map/*"
 PORT = 1337
 
 # Somewhat compliant with https://oembed.com/
@@ -18,12 +18,14 @@ class OEmbedHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type','text/json')
             self.end_headers()
+            hostname = findall(r'Host: (.*)\n',str(self.headers))[0]
+            url_pattern = "https://" + hostname + SCHEMA
             query = parse_qs(sub(r'^.*?\?','',self.path)) # non-greedy match - bin all up to and including first ?
             desired_format = query.get("format",["json"])[0]
             desired_width = int(query.get("maxwidth",["10000"])[0])
             desired_height = int(query.get("maxheight",["10000"])[0])
             desired_url = unescape(query['url'][0])
-            if not fnmatch(desired_url,SCHEMA): raise KeyError("URL requested " + desired_url + " did not match " + SCHEMA)
+            if not fnmatch(desired_url,url_pattern): raise KeyError("URL requested " + desired_url + " did not match " + url_pattern)
             our_width = 100
             our_height = 100
             if ((desired_width < our_width) or (desired_height < our_height)):
