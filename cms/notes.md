@@ -26,5 +26,5 @@ Then we will need a router (probably just [Traefik](https://github.com/containou
 #. Clone this repo
 #. Copy .env to new box securely
 #. Change URL in docker-compose
-#. `docker-compose up -d` on new box
+#. `docker-compose up --build -d` on new box
 #. Change URL in wordpress via admin panel

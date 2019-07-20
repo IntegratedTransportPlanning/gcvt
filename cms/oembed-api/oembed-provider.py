@@ -7,9 +7,10 @@ from fnmatch import fnmatch
 
 # this obviously needs changing
 SCHEMA = "https://easyasgcvt123.com/map/*"
+PORT = 1337
 
 # Somewhat compliant with https://oembed.com/
-# test with e.g. curl -X GET '127.0.0.1:8080/?url=https://easyasgcvt123.com/map/'
+# test with e.g. curl -X GET '127.0.0.1:1337/?url=https://easyasgcvt123.com/map/'
 class OEmbedHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
@@ -53,5 +54,5 @@ class OEmbedHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes(error,'utf-8'))
             self.send_response(501)
 
-server = HTTPServer(('127.0.0.1',8080), OEmbedHandler)
+server = HTTPServer(('0.0.0.0',PORT), OEmbedHandler)
 server.serve_forever()

@@ -1,7 +1,22 @@
 # adapted from https://www.digitalocean.com/community/tutorials/how-to-install-wordpress-with-docker-compose
-version: '3'
+version: '3.7'
 
 services:
+  traefik: # proxy
+    container_name: traefik
+    image: traefik:v1.7-alpine
+    command: --docker --docker.domain=traefik --docker.watch --web --loglevel=INFO
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.docker.network=traefik_proxy"
+      - traefik.port=8080
+    networks: 
+      - traefik_proxy
+
   db:
     image: mysql:8.0
     container_name: db
@@ -12,8 +27,8 @@ services:
     volumes: 
       - dbdata:/var/lib/mysql
     command: '--default-authentication-plugin=mysql_native_password'
-    networks:
-      - app-network
+    networks: 
+      - database
 
   wordpress:
     depends_on: 
@@ -30,7 +45,23 @@ services:
     volumes:
       - wordpress:/var/www/html
     networks:
-      - app-network
+      - database
+      - frontends
+
+  oembed:
+    container_name: oembed
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: oembed-api/Dockerfile
+    labels:
+      - "traefik.frontend.priority=3" # Need more priority than nginx
+      - "traefik.frontend.rule=PathPrefix: /services/oembed/;"
+      - "traefik.backend=oembed"
+      - "traefik.docker.network=traefik_proxy"
+      - traefik.port=1337
+    networks: 
+      - traefik_proxy
 
   webserver:
     depends_on:
@@ -38,30 +69,27 @@ services:
     image: nginx:1.17-alpine
     container_name: webserver
     restart: unless-stopped
-    ports:
-      - "80:80"
     volumes:
       - wordpress:/var/www/html
       - ./nginx-conf:/etc/nginx/conf.d
-      # - certbot-etc:/etc/letsencrypt
+    labels:
+    - traefik.port=8080
+    - "traefik.frontend.priority=1"
+    - "traefik.frontend.rule=Host:localhost;"
+    - "traefik.backend=webserver"
+    - "traefik.docker.network=traefik_proxy"
     networks:
-      - app-network
-
-  # certbot:
-  #   depends_on:
-  #     - webserver
-  #   image: certbot/certbot
-  #   container_name: certbot
-  #   volumes:
-  #     - certbot-etc:/etc/letsencrypt
-  #     - wordpress:/var/www/html
-  #   command: certonly --webroot --webroot-path=/var/www/html --email sammy@example.com --agree-tos --no-eff-email --staging -d example.com -d www.example.com
+      - traefik_proxy
+      - frontends
 
 volumes:
-  # certbot-etc:
   wordpress:
   dbdata:
 
 networks:
-  app-network:
-    driver: bridge  
+  traefik_proxy:
+    name: traefik_proxy
+  database:
+    name: database
+  frontends:
+    name: frontends
