@@ -123,7 +123,7 @@ process_od_matrix <- function(metamat) {
 
 ### EXECUTE ###
 
-pack_dir = paste(BASE_DIR, "data/sensitive/GCVT_Scenario_Pack/", sep="")
+pack_dir = str_c(BASE_DIR, "data/sensitive/GCVT_Scenario_Pack/")
 
 scenarios = read_scenarios(pack_dir)
 geom = read_sf(path(pack_dir, "geometry", "links.shp"))
@@ -143,6 +143,22 @@ scenarios[scenarios$type=="od_matrices",]$dataDF =
 dir_create(path(pack_dir, "processed"))
 saveRDS(scenarios, path(pack_dir, "processed", "scenarios.Rds"))
 write_sf(geom, path(pack_dir, "processed", "links.geojson"), delete_dsn = T, fid_column_name = "id")
+
+# RData.jl can read lists with nested tibbles and matrices, but not tibbles with nested tibbles and matrices.
+saveRDS(as.list(scenarios), path(pack_dir, "processed", "julia_compat_scenarios.Rds"))
+
+# Unnest the scenarios data so that it can be saved more sanely
+filter(scenarios, type == "links") %>%
+  select(-type) %>%
+  unnest(dataDF) %>%
+  saveRDS(path(pack_dir, "processed", "link_scenarios.Rds"))
+
+# Unnest matrices.
+filter(scenarios, type == "od_matrices") %>%
+  select(-type) %>%
+  rename(matrices = dataDF) %>%
+  as.list %>%
+  saveRDS(path(pack_dir, "processed", "od_matrices_scenarios.Rds"))
 
 ## Diff with the on disk data
 # current_scenarios = readRDS("data/sensitive/GCVT_Scenario_Pack/processed/scenarios.Rds")
