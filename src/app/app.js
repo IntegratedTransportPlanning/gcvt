@@ -2,7 +2,7 @@ import * as itertools from 'itertools'
 import * as immutable from 'immutable'
 import * as turf from '@turf/turf'
 
-import links from '../../data/sensitive/GCVT_Scenario_Pack/processed/links.geojson'
+// Still needed for centroids
 import zones from '../../data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson'
 import dummyline from './dummyline.geojson'
 
@@ -10,6 +10,7 @@ import * as mb from './mb.js'
 
 const DEBUG_ON_A_TRAIN = false
 const DEBUG = true
+const BASEURL = "https://gcvt.cmcaine.co.uk/"
 
 export let map
 export async function init() {
@@ -93,15 +94,17 @@ let centroidLayerReady = false
  * of the map or something.
  */
 export async function loadLinks() {
-    let json = await (await fetch(links)).json()
-    top.jlinks = json
     map.addLayer({
         id: 'links',
         type: 'line',
         source: {
-            type: 'geojson',
-            data: json,
+            type: 'vector',
+            tiles: [BASEURL + 'tiles/links/{z}/{x}/{y}.pbf',],
+            // If you don't have this, mapbox doesn't show tiles beyond the
+            // zoom level of the tiles, which is not what we want.
+            maxzoom: 6,
         },
+        "source-layer": "links",
         layout: {
             'line-cap': 'round',
             'line-join': 'round',
@@ -120,21 +123,30 @@ export async function loadLinks() {
 
 export async function loadZones() {
     // zones loading
-    let json = await (await fetch(zones)).json()
-    top.jzones = json
     map.addLayer({
         id: 'zones',
         type: 'fill',
         source: {
-            type: 'geojson',
-            data: json,
+            type: 'vector',
+            tiles: [BASEURL + 'tiles/zones/{z}/{x}/{y}.pbf',],
+            // url: 'http://127.0.0.1:6767/zones.json'
+            // If you don't have this, mapbox doesn't show tiles beyond the
+            // zoom level of the tiles, which is not what we want.
+            maxzoom: 6,
         },
+        "source-layer": "zones",
         paint: {
-            'fill-color': 'blue',
+            'fill-color': 'white',
             'fill-outline-color': '#aaa',
             'fill-opacity': 0.8,
         },
+        layout: {
+            visibility: 'none'
+        }
     })
+
+    let json = await (await fetch(zones)).json()
+    top.jzones = json
 
     top.centroids = []
     top.jzones.features.forEach(function (feat) {

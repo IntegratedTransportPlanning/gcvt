@@ -1,0 +1,10 @@
+localhost:2016/tiles/ {
+	root data/processed/GCVT_Scenario_Pack/geometry/tiles
+	browse
+}
+
+localhost:2016 {
+	proxy / localhost:6619 {
+		websocket
+	}
+}

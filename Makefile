@@ -17,4 +17,5 @@ front:
 	cd src/app/ && yarn build
 
 back:
+	./caddy&
 	R -e 'shiny::runApp("src/app", port=6619)'
