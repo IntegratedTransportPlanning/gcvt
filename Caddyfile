@@ -1,6 +1,15 @@
+# This doesn't always work right due to hostname or routing difficulties.
+# If you use a real host rather than localhost it is more likely to work correctly.
+# Will fix this ;)
+
 localhost:2016/tiles/ {
 	root data/processed/GCVT_Scenario_Pack/geometry/tiles
 	browse
+}
+
+localhost:2016/demo/ {
+	root demo/
+	markdown
 }
 
 localhost:2016 {
