@@ -8,15 +8,15 @@ const atId = data => ['at', ['id'], ["literal", data]]
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 export function hideLayer({ layer }) {
-    map.setLayoutProperty(layer, 'visibility', 'none')
+    window.map.setLayoutProperty(layer, 'visibility', 'none')
 
     if (layer === 'links') {
-      top.popup.remove()
+      window.popup.remove()
     }
 }
 
 export function showLayer({ layer }) {
-    map.setLayoutProperty(layer, 'visibility', 'visible')
+    window.map.setLayoutProperty(layer, 'visibility', 'visible')
 }
 
 /**
@@ -27,20 +27,20 @@ export function showLayer({ layer }) {
  * @param data array [id]: true|false
  */
 export function setVisible({ layer, data }) {
-    map.setPaintProperty(layer, 'line-opacity', atId(data.map(vis => vis ? 1 : 0)))
+    window.map.setPaintProperty(layer, 'line-opacity', atId(data.map(vis => vis ? 1 : 0)))
 }
 
 export function setColor({ layer, color, selected = [] }) {
     // Avoid attempting to set wrong property
-    if (map.getLayer(layer).type === 'line') {
+    if (window.map.getLayer(layer).type === 'line') {
       if (Array.isArray(color)) {
         color = atId(color)
       }
 
-      map.setPaintProperty(layer, 'line-color',
+      window.map.setPaintProperty(layer, 'line-color',
           ['to-color', color])
     }
-    if (map.getLayer(layer).type === 'fill') {
+    if (window.map.getLayer(layer).type === 'fill') {
       // TODO remove the id/fid distinction
 
       if (Array.isArray(color)) {
@@ -55,7 +55,7 @@ export function setColor({ layer, color, selected = [] }) {
         color = atFid(color)
       }
 
-      map.setPaintProperty(layer, 'fill-color',
+      window.map.setPaintProperty(layer, 'fill-color',
           ['to-color', color])
     }
 }
@@ -75,7 +75,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
         weight = atId(weight)
     }
 
-    map.setPaintProperty(layer, 'line-width',
+    window.map.setPaintProperty(layer, 'line-width',
         ['interpolate',
             ['linear'],
             ['zoom'],
@@ -85,7 +85,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
 
     // Show a slight fixed offset if weight does not vary
     if (Array.isArray(weight)) {
-        map.setPaintProperty(layer, 'line-offset',
+        window.map.setPaintProperty(layer, 'line-offset',
             ['interpolate',
                 ['linear'],
                 ['zoom'],
@@ -93,7 +93,7 @@ export function setWeight({ layer, weight, wFalloff = 4, oFalloff = 5 }) {
                 10, ['/', weight, 2]
             ])
     } else {
-        map.setPaintProperty('links','line-offset', ['interpolate',
+        window.map.setPaintProperty('links','line-offset', ['interpolate',
                 ['linear'],
                 ['zoom'],
                 4,0.5,
@@ -119,10 +119,10 @@ export function setCentroidLines({ lines = [] }) {
     // Shiny passes tuples of [o, d, value, weight, opacity] when the user requests them
     // Ultimately should have JS (rather than Shiny) calulating the latter stuff for display
     lines.forEach(function(pair) {
-      let oPt = top.centroids.find(pt => {
+      let oPt = window.centroids.find(pt => {
         return pt.properties.fid === pair[0]
       })
-      let dPt = top.centroids.find(pt => {
+      let dPt = window.centroids.find(pt => {
         return pt.properties.fid === pair[1]
       })
 
@@ -140,10 +140,10 @@ export function setCentroidLines({ lines = [] }) {
       clines.push(cline)
     })
 
-    map.getSource('centroidlines').setData(turf.featureCollection(clines))
-    map.setPaintProperty('centroidlines','line-width', ['get', 'weight'])
-    //map.setPaintProperty('centroidlines','line-opacity', ['get', 'opacity'])
-    map.moveLayer('centroidlines')
+    window.map.getSource('centroidlines').setData(turf.featureCollection(clines))
+    window.map.setPaintProperty('centroidlines','line-width', ['get', 'weight'])
+    //window.map.setPaintProperty('centroidlines','line-opacity', ['get', 'opacity'])
+    window.map.moveLayer('centroidlines')
 
     showLayer({layer: 'centroidlines'})
   } else {
@@ -155,25 +155,25 @@ export function setCentroidLines({ lines = [] }) {
  * Show a popup
  */
 export function setPopup ({text, lng, lat}) {
-  top.popup = new mapboxgl.Popup()
+  window.popup = new mapboxgl.Popup()
     .setLngLat({lng: lng, lat: lat})
     .setHTML(text)
     .addTo(map)
 }
 
 export function setHover({coordinates, layer, feature}) {
-  if (top.hover !== undefined) {
+  if (window.hover !== undefined) {
     // Need to remove explicitly, not just overwrite
-    top.hover.remove()
+    window.hover.remove()
   }
 
-  top.hover = new mapboxgl.Popup({
+  window.hover = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false
   })
 
-  top.hover.setLngLat(coordinates)
-    .setHTML(top.hints[layer][feature])
+  window.hover.setLngLat(coordinates)
+    .setHTML(window.hints[layer][feature])
     .addTo(map)
 }
 
@@ -181,6 +181,6 @@ export function setHover({coordinates, layer, feature}) {
  * Prepare data for hover, save generating a Shiny request on each mouseover
  */
 export function setHoverData({layer, hints}) {
-  top.hints = top.hints || {}
-  top.hints[layer] = hints
+  window.hints = window.hints || {}
+  window.hints[layer] = hints
 }

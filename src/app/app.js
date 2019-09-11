@@ -32,7 +32,7 @@ export async function init() {
     }
 
     // debug
-    top.map = map
+    window.map = map
     map.on('load', loadLinks)
     map.on('load', loadZones)
     map.on('load', setupLines)
@@ -66,7 +66,7 @@ export async function init() {
     })
 
     map.on('mouseleave', 'zones', function (event) {
-      top.hover.remove()
+      window.hover.remove()
     })
 
     map.on('mousemove', 'links', function (event) {
@@ -76,7 +76,7 @@ export async function init() {
     })
 
     map.on('mouseleave', 'links', function (event) {
-      top.hover.remove()
+      window.hover.remove()
     })
 
 }
@@ -146,11 +146,11 @@ export async function loadZones() {
     })
 
     let json = await (await fetch(zones)).json()
-    top.jzones = json
+    window.jzones = json
 
-    top.centroids = []
-    top.jzones.features.forEach(function (feat) {
-      top.centroids.push(turf.centroid(feat, feat.properties))
+    window.centroids = []
+    window.jzones.features.forEach(function (feat) {
+      window.centroids.push(turf.centroid(feat, feat.properties))
     })
 
     zoneLayerReady = true
@@ -165,7 +165,7 @@ export async function setupLines() {
   // Seems messy, but works for now
   let tmpJson = await (await fetch(dummyline)).json()
 
-  top.jclines = tmpJson
+  window.jclines = tmpJson
   map.addLayer({
     id: 'centroidlines',
         type: 'line',
@@ -202,7 +202,7 @@ Object.keys(mb).forEach(name =>
     Shiny.addCustomMessageHandler(name, msg => {
         if (DEBUG) {
             console.log(name, msg)
-            top.lastmsg = msg
+            window.lastmsg = msg
         }
         if (linkLayerReady && zoneLayerReady) {
             mb[name](msg)
