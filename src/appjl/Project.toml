@@ -1,6 +1,6 @@
 name = "GCVT"
 uuid = "f51cf3e6-c332-11e9-093f-fbccf24b4e7a"
-authors = ["Colin Caine <cmcain@gmail.com>"]
+authors = ["Colin Caine <cmcaine@gmail.com>"]
 version = "0.1.0"
 
 [deps]
