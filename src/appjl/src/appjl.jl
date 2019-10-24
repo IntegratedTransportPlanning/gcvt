@@ -19,7 +19,7 @@ end
 
 ### APP ###
 
-include("src/scenarios.jl")
+include("$(@__DIR__)/scenarios.jl")
 links, mats = load_scenarios(packdir)
 
 # This is unused so far.

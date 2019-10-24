@@ -5,7 +5,7 @@ using DataFrames: DataFrame
 using Query: @filter
 using Suppressor: @suppress
 
-packdir = "../../data/sensitive/GCVT_Scenario_Pack/"
+packdir = "$(@__DIR__)/../data/"
 
 # This way doesn't emit warnings, but requires some change to output format.
 #= linkscens = load(File(format"RDataSingle", joinpath(packdir, "processed", "link_scenarios.Rds"))) =#
