@@ -22,20 +22,17 @@ end
 include("$(@__DIR__)/scenarios.jl")
 links, mats = load_scenarios(packdir)
 
-# This is unused so far.
 metadata = YAML.load_file(joinpath(packdir, "meta.yaml"))
 
 # Get list of scenarios (scenario name, id, years active)
-# TODO: This does not use the metadata and so doesn't give name.
-list_scenarios() = keys(links)
+list_scenarios() = metadata["scenarios"]
 
 # Get list of variable names and ids
-# TODO: This does not use the metadata
 function list_variables(domain)
     if domain == "links"
-        String.(names(first(values(links))))
+        metadata["links"]["columns"]
     elseif domain == "od_matrices"
-        keys(first(values(mats)))
+        metadata["od_matrices"]["columns"]
     else
         throw(DomainError(domain, "is invalid"))
     end
