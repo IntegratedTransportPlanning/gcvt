@@ -12,4 +12,4 @@ WORKDIR julia-gcvt
 # Cache packages so subsequent runs are fairly speedy
 RUN julia setup.jl
 
-CMD julia run.jl
+CMD julia --project src/appjl.jl
