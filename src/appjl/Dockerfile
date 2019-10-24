@@ -2,10 +2,11 @@ FROM julia:1.1
 ADD . /julia-gcvt/
 
 # Install toolchain needed for many Julia packages
-RUN set -eux; \
-        apt-get update; \
-        apt-get install -y --no-install-recommends build-essential; \
-        rm -rf /var/lib/apt/lists/*
+# Uncomment this if we later use a package that needs it
+# RUN set -eux; \
+#         apt-get update; \
+#         apt-get install -y --no-install-recommends build-essential; \
+#         rm -rf /var/lib/apt/lists/*
 
 WORKDIR julia-gcvt
 
