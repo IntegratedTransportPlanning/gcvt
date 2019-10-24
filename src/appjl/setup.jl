@@ -1,4 +1,4 @@
 #!/bin/env julia
 using Pkg
-Pkg.activate(".")
+Pkg.activate(@__DIR__)
 Pkg.instantiate()
