@@ -73,6 +73,6 @@ route("/data/:domain/:scenario/:year/:variable") do
     end
 end
 
-Genie.AppServer.startup(async = false)
+Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)
 
 end

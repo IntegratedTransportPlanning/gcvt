@@ -12,4 +12,10 @@ WORKDIR julia-gcvt
 # Cache packages so subsequent runs are fairly speedy
 RUN julia setup.jl
 
+ARG GENIE_PORT=8000
+
+ENV GENIE_PORT=$GENIE_PORT
+
+EXPOSE $GENIE_PORT
+
 CMD julia --project src/appjl.jl
