@@ -79,6 +79,7 @@ end
 
 
 route("/map/") do
+    # cf. src/app/app.js
     html("""
         <head>
         <meta charset='utf-8' />
@@ -98,9 +99,9 @@ route("/map/") do
         mapboxgl.accessToken = '$MAPBOX_TOKEN';
         var map = new mapboxgl.Map({
         container: 'map', // container id
-        style: 'mapbox://styles/mapbox/streets-v11', // stylesheet location
-        center: [-74.50, 40], // starting position [lng, lat]
-        zoom: 9 // starting zoom
+        style: 'mapbox://styles/mapbox/light-v10', // stylesheet location
+        center: [32, 48], // starting position [lng, lat]
+        zoom: 4 // starting zoom
         });
         </script>
          
