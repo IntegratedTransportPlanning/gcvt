@@ -79,11 +79,14 @@ end
 
 
 route("/map/") do
-    # cf. src/app/app.js
+    # todo 
+    # - set up babel so we can use modern JS and still work in old browsers
+    # - port src/app/app.js functionality across
+    # - move this to a separate file
     html("""
         <head>
         <meta charset='utf-8' />
-        <title>Display a map</title>
+        <title>Greener Connectivity Visualisation Tool</title>
         <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
         <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.js'></script>
         <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.css' rel='stylesheet' />
