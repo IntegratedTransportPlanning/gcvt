@@ -95,6 +95,7 @@ route("/map") do
         <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
+        .gcvt-ctrl { background-color: white; margin: 1rem; padding: 1rem; border-radius: 0.5rem; }
         </style>
         </head>
         <body>
@@ -138,7 +139,18 @@ route("/map") do
                     this._map = map;
                     this._container = document.createElement('div');
                     this._container.className = 'mapboxgl-ctrl';
-                    this._container.textContent = 'Hello, world';
+                    this._container.innerHTML = `
+                        <div class="gcvt-ctrl">
+                        <h1> What do you want? </h1>
+                        <select id="scenario_picker" onchange="gcvt_form_handler(this)">
+                            // Might be easier to generate this in JS
+                            // the "when do you want your proposal done by"
+                            // part needs to ask server what years are possible
+                            // so should probably just generate whole thing in JS
+                            $(["<option value='$k'>$(get(v,"name",k))</option>" for (k, v) in metadata["scenarios"]] |> join)
+                        </select>
+                        </div>
+                    `;
                     return this._container;
                 }
 
@@ -146,6 +158,11 @@ route("/map") do
                     this._container.parentNode.removeChild(this._container);
                     this._map = undefined;
                 }
+            }
+
+            function gcvt_form_handler(element){
+                console.log(element.selectedOptions[0].value);
+                qsUpdate(new Map([["scen",element.selectedOptions[0].value]]));
             }
             map.addControl(new HelloWorldControl());
             map.on("moveend",moveUpdate);
