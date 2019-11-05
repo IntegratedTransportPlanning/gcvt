@@ -23,6 +23,7 @@ end
 ### APP ###
 
 # Mapbox token (set in ENV eventually)
+# contains: const MAPBOX_TOKEN = "..."
 include("$(@__DIR__)/../.secrets.jl")
 
 include("$(@__DIR__)/scenarios.jl")
@@ -78,7 +79,8 @@ route("/data/:domain/:scenario/:year/:variable") do
 end
 
 
-route("/map/") do
+route("/map") do
+    # usage: /map?lat=100&lng=12 etc.
     # todo 
     # - set up babel so we can use modern JS and still work in old browsers
     # - port src/app/app.js functionality across
@@ -99,13 +101,38 @@ route("/map/") do
          
         <div id='map'></div>
         <script>
-        mapboxgl.accessToken = '$MAPBOX_TOKEN';
-        var map = new mapboxgl.Map({
-        container: 'map', // container id
-        style: 'mapbox://styles/mapbox/light-v10', // stylesheet location
-        center: [32, 48], // starting position [lng, lat]
-        zoom: 4 // starting zoom
-        });
+            var queryString = new URLSearchParams(window.location.search);
+            var lng = queryString.get("lng") || 32;
+            var lat = queryString.get("lat") || 48;
+            var zoom = queryString.get("z") || 4;
+            mapboxgl.accessToken = '$MAPBOX_TOKEN';
+            var map = new mapboxgl.Map({
+                container: 'map', // container id
+                style: 'mapbox://styles/mapbox/light-v10', // stylesheet location
+                center: [lng, lat],
+                zoom: zoom,
+            });
+            function moveUpdate(){
+                var cent = map.getCenter();
+                lnglat = new Map([
+                    // Prettier URL at expense of accuracy
+                    ["lng",cent.lng.toPrecision(5)],
+                    ["lat",cent.lat.toPrecision(5)],
+                ]);
+                qsUpdate(lnglat);
+            };
+            function zoomUpdate(){
+                qsUpdate(new Map([["z",map.getZoom().toPrecision(3)]]));
+            };
+            function qsUpdate(newkeys){
+                var qs = new URLSearchParams(window.location.search);
+                for (let e of newkeys.entries()) {
+                    qs.set(e[0],e[1]);
+                };
+                history.pushState({},"","map?" + qs.toString());
+            };
+            map.on("moveend",moveUpdate);
+            map.on("zoomend",zoomUpdate);
         </script>
          
         </body>
