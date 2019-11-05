@@ -131,6 +131,23 @@ route("/map") do
                 };
                 history.pushState({},"","map?" + qs.toString());
             };
+
+            // Mapbox IControl - buttons etc will go here
+            class HelloWorldControl {
+                onAdd(map) {
+                    this._map = map;
+                    this._container = document.createElement('div');
+                    this._container.className = 'mapboxgl-ctrl';
+                    this._container.textContent = 'Hello, world';
+                    return this._container;
+                }
+
+                onRemove() {
+                    this._container.parentNode.removeChild(this._container);
+                    this._map = undefined;
+                }
+            }
+            map.addControl(new HelloWorldControl());
             map.on("moveend",moveUpdate);
             map.on("zoomend",zoomUpdate);
              
