@@ -165,6 +165,14 @@ route("/map") do
                 qsUpdate(new Map([["scen",element.selectedOptions[0].value]]));
             }
             map.addControl(new HelloWorldControl());
+            
+            // Set current setting from URL
+            var scen_opts = document.getElementById("scenario_picker");
+            var scenario = queryString.get("scen") || "Fleet";
+
+            // NB: this doesn't seem to trigger the onchange handler
+            scen_opts.selectedIndex = Array.from(scen_opts.options).findIndex(o => o.value==scenario);
+
             map.on("moveend",moveUpdate);
             map.on("zoomend",zoomUpdate);
              
