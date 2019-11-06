@@ -11,6 +11,12 @@ localhost:2016/map/ {
 	root src/appts/www/
 }
 
+localhost:2016/api/ {
+	proxy / localhost:8000 {
+		websocket
+	}
+}
+
 localhost:2016 {
 	redir /map/
 }
