@@ -3,17 +3,16 @@
 # Will fix this ;)
 
 localhost:2016/tiles/ {
-	root data/processed/GCVT_Scenario_Pack/geometry/tiles
+	root src/appjl/data/processed/tiles/
 	browse
 }
 
-localhost:2016/demo/ {
-	root demo/
-	markdown
+localhost:2016/map/ {
+	proxy / localhost:1234 {
+		websocket
+	}
 }
 
 localhost:2016 {
-	proxy / localhost:6619 {
-		websocket
-	}
+	redir /map/
 }

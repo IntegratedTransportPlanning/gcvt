@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "parcel build js/index.js --out-dir www --no-minify",
-    "watch": "parcel watch js/index.js --out-dir www",
+    "build": "parcel build js/index.js --out-dir www --no-minify --public-url /map/",
+    "watch": "parcel watch js/index.js --out-dir www --public-url /map/",
     "run": "yarn run build; parcel www/index.html > /dev/null | yarn run watch"
   },
   "browserslist": [

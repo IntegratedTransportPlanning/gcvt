@@ -14,6 +14,56 @@ const map = new mapboxgl.Map({
     center: [lng, lat],
     zoom: zoom,
 })
+
+const BASEURL = 'http://localhost:2016/'
+
+function loadLayers() {
+    map.addLayer({
+        id: 'zones',
+        type: 'fill',
+        source: {
+            type: 'vector',
+            tiles: [BASEURL + 'tiles/zones/{z}/{x}/{y}.pbf',],
+            // url: 'http://127.0.0.1:6767/zones.json'
+            // If you don't have this, mapbox doesn't show tiles beyond the
+            // zoom level of the tiles, which is not what we want.
+            maxzoom: 6,
+        },
+        "source-layer": "zones",
+        paint: {
+            'fill-color': 'grey',
+            'fill-outline-color': '#aaa',
+            'fill-opacity': 0.5,
+        },
+        layout: {
+            visibility: 'visible'
+        }
+    })
+    map.addLayer({
+        id: 'links',
+        type: 'line',
+        source: {
+            type: 'vector',
+            tiles: [BASEURL + 'tiles/links/{z}/{x}/{y}.pbf',],
+            // If you don't have this, mapbox doesn't show tiles beyond the
+            // zoom level of the tiles, which is not what we want.
+            maxzoom: 6,
+        },
+        "source-layer": "links",
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+            visibility: 'visible',
+        },
+        paint: {
+            'line-opacity': .8,
+            'line-color': 'blue',
+        },
+    })
+}
+
+map.on('load', loadLayers)
+
 function moveUpdate(){
     const cent = map.getCenter()
     const lnglat = new Map([
@@ -31,7 +81,7 @@ function qsUpdate(newkeys){
     for (let e of newkeys.entries()) {
         qs.set(e[0],e[1])
     }
-    history.pushState({},"","map?" + qs.toString())
+    history.pushState({},"", "?" + qs.toString())
 }
 
 // Mapbox IControl - buttons etc will go here
