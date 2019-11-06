@@ -15,6 +15,8 @@ const map = new mapboxgl.Map({
     zoom: zoom,
 })
 
+window.map = map
+
 const BASEURL = 'http://localhost:2016/'
 
 function loadLayers() {
@@ -133,3 +135,23 @@ map.dragRotate.disable()
  
 // disable map rotation using touch rotation gesture
 map.touchZoomRotate.disableRotation()
+
+// Styling demo
+
+// look at src/app/mb.js for more examples
+
+// At the moment, `map` is coming from the window, but these functions should
+// really take it as a parameter.
+const atId = data => ['at', ['id'], ["literal", data]]
+const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
+
+function setOpacity() {
+    const num_zones = 282
+    const opacities = []
+    for (let i=0; i < num_zones; i++)
+        opacities.push(Math.random())
+
+    map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
+}
+
+window.setOpacity = setOpacity
