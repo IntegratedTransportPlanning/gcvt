@@ -8,9 +8,7 @@ localhost:2016/tiles/ {
 }
 
 localhost:2016/map/ {
-	proxy / localhost:1234 {
-		websocket
-	}
+	root src/appts/www/
 }
 
 localhost:2016 {
