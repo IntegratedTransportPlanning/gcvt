@@ -8,12 +8,12 @@ using Suppressor: @suppress
 packdir = "$(@__DIR__)/../data/"
 
 # This way doesn't emit warnings, but requires some change to output format.
-#= linkscens = load(File(format"RDataSingle", joinpath(packdir, "link_scenarios.Rds"))) =#
-#= odscens = load(File(format"RDataSingle", joinpath(packdir, "od_matrices_scenarios.Rds"))) =#
+#= linkscens = load(File(format"RDataSingle", joinpath(packdir, "processed", "link_scenarios.Rds"))) =#
+#= odscens = load(File(format"RDataSingle", joinpath(packdir, "processed", "od_matrices_scenarios.Rds"))) =#
 
 function load_scenarios(packdir=packdir)
     # This way emits warnings, but works fine.
-    scenarios = @suppress load(File(format"RDataSingle", joinpath(packdir, "julia_compat_scenarios.Rds")));
+    scenarios = @suppress load(File(format"RDataSingle", joinpath(packdir, "processed", "julia_compat_scenarios.Rds")));
 
     df = DataFrame(values(scenarios), [:scenario, :year, :type, :data]);
     df.year = parse.(Int, df.year)

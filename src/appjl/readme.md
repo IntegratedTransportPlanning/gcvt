@@ -1,4 +1,4 @@
-Copy data from `gcvt/data/[...]/processed/*.{Rds,yaml}` to `./data/`
+Copy data: `cp -r path/to/sensitive/<pack name>/ ./data`
 
 Play interactively with `julia -L setup.jl` to add packages etc. Put application in `appjl.jl`. Start with `julia --project src/appjl.jl`. NB: if running from a directory above this one, you'll need to specify the project directory (this one) explicitly.
 
