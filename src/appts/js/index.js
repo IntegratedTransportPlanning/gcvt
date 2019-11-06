@@ -1,5 +1,5 @@
 import mapboxgl from 'mapbox-gl'
-import d3 from 'd3-scale-chromatic'
+import * as d3 from 'd3'
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiYm92aW5lM2RvbSIsImEiOiJjazJrcjkwdHIxd2tkM2JwNTJnZzQxYjFjIn0.P0rLbO5oj5d3AwpuVqjBSw'
 
@@ -154,4 +154,20 @@ function setOpacity() {
     map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
 }
 
+function setColours() {
+    const num_zones = 282
+    const opacities = []
+    for (let i=0; i < num_zones; i++)
+        opacities.push(d3.scaleSequential(d3.interpolateRdYlGn)(Math.random()))
+
+    // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
+    window.map.setPaintProperty('zones', 'fill-color',
+        ['to-color', atFid(opacities)])
+}
+
 window.setOpacity = setOpacity
+window.setColours = setColours
+window.d3 = d3
+
+// get data from Julia:
+// fetch("../api/variables/links").then(x=>x.json().then(console.log)
