@@ -1,0 +1,18 @@
+{
+  "name": "gcvt",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "parcel build js/index.js --out-dir www --no-minify",
+    "watch": "parcel watch js/index.js --out-dir www",
+    "run": "yarn run build; parcel www/index.html > /dev/null | yarn run watch"
+  },
+  "browserslist": [
+    "Firefox >= 60"
+  ],
+  "dependencies": {
+    "mapbox-gl": "^1.5.0",
+    "parcel": "^1.12.4",
+    "typescript": "^3.7.2"
+  }
+}

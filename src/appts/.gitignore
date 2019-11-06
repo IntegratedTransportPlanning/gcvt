@@ -1,0 +1,6 @@
+.env
+node_modules/
+.cache/
+dist/
+www/*.js
+www/*.map
