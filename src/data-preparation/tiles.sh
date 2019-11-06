@@ -20,9 +20,9 @@ mktiledir() {
     local outdir="$2"
     local base="$(basename -s .mbtiles "$mbtiles")"
 
-    mkdir -p "$outdir/tiles"
-    rm -rf "$outdir/tiles/$base"
-    mb-util --image_format=pbf "$mbtiles" "$outdir/tiles/$base"
+    mkdir -p "$outdir"
+    rm -rf "$outdir/$base"
+    mb-util --image_format=pbf "$mbtiles" "$outdir/$base"
 }
 
 # Links need to be clipped and stuff, which is done by process_pack_dir at the mo.
@@ -46,7 +46,7 @@ mktiledir() {
 geometry=$1
 outdir=$2
 
-base="${geometry%%.*}"
+base="$(basename -s .geojson "$geometry")"
 
 geom_extension=${geometry#*.}
 
