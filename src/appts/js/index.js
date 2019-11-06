@@ -1,6 +1,8 @@
 import mapboxgl from 'mapbox-gl'
 import d3 from 'd3-scale-chromatic'
-mapboxgl.accessToken = process.env.MAPBOX_TOKEN
+
+mapboxgl.accessToken = 'pk.eyJ1IjoiYm92aW5lM2RvbSIsImEiOiJjazJrcjkwdHIxd2tkM2JwNTJnZzQxYjFjIn0.P0rLbO5oj5d3AwpuVqjBSw'
+
 let queryString = new URLSearchParams(window.location.search)
 let lng = queryString.get("lng") || 32
 let lat = queryString.get("lat") || 48
