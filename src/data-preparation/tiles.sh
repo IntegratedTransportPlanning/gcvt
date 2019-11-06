@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USAGE="Usage: $0 /path/to/foo.geojson"
+USAGE="Usage: $0 /path/to/foo.geojson /path/to/outputdirectory"
 
 # TODO: Do this from Julia or R (probably R) maybe and with `redo`
 
@@ -44,9 +44,8 @@ mktiledir() {
 [[ $# -lt 1 ]] && (echo "$USAGE"; exit 1)
 
 geometry=$1
-packname=${2-"GCVT_Scenario_Pack"}
+outdir=$2
 
-outdir="data/processed/$packname/geometry"
 base="${geometry%%.*}"
 
 geom_extension=${geometry#*.}
