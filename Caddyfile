@@ -18,5 +18,6 @@ localhost:2016/api/ {
 }
 
 localhost:2016 {
-	redir /map/
+	# Temporarily redirect root to /map
+	redir / /map/ 307
 }
