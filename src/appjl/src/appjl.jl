@@ -30,9 +30,23 @@ end
 
 include("$(@__DIR__)/scenarios.jl")
 
+# This should probably be reloaded periodically so server doesn't need to be restarted?
 links, mats = load_scenarios(packdir)
 
+# This should probably be reloaded periodically so server doesn't need to be restarted?
 metadata = YAML.load_file(joinpath(packdir, "meta.yaml"))
+
+const DEFAULT_META = Dict(
+    "good" => "smaller",
+)
+
+for (k,v) in metadata["links"]["columns"]
+    metadata["links"]["columns"][k] = merge(DEFAULT_META,v)
+end
+
+for (k,v) in metadata["od_matrices"]["columns"]
+    metadata["od_matrices"]["columns"][k] = merge(DEFAULT_META,v)
+end
 
 # Get list of scenarios (scenario name, id, years active)
 list_scenarios() = metadata["scenarios"]
@@ -52,23 +66,32 @@ function mat_data(scenario, year, variable)
     mats[(scenario, year)][variable]
 end
 
-function link_data(scenario, year, variable::String)
+function link_data(scenario, year, variable)
     links[(scenario, year)][Symbol(variable)]
 end
 
 # Get colour to draw each shape for (scenario, year, variable, comparison scenario, comparison year) -> (colours)
-function mat_colour(scenario, year, variable, comparison_scenario, comparison_year,percent=true)
+mat_comp(args...; kwargs...) = comp(mat_data, args...; kwargs...)
+link_comp(args...; kwargs...) = comp(link_data, args...; kwargs...)
+function comp(data, scenario, year, variable, comparison_scenario, comparison_year;percent=true)
     # TODO: palettes, normalisation, etc.
 
     # dims = 2 sums rows; dims = 1 sums cols
-    #sum((mat_data(scenario, year, variable) ./ mat_data(comparison_scenario, comparison_year, variable) .|> x -> isnan(x) ? 0 : x), dims = 2)
-    percent && return sum(mat_data(scenario, year, variable), dims = 2) ./ sum(mat_data(comparison_scenario, comparison_year, variable), dims = 2)
-    return sum(mat_data(scenario, year, variable) .- mat_data(comparison_scenario, comparison_year, variable), dims = 2)
+    # Returns Array{Float,2} but we want Array{Float,1} so we flatten it
+    percent && return sum(data(scenario, year, variable), dims = 2) ./ sum(data(comparison_scenario, comparison_year, variable), dims = 2) |> Iterators.flatten |> collect
+    return sum(data(scenario, year, variable) .- data(comparison_scenario, comparison_year, variable), dims = 2) |> Iterators.flatten |> collect
 end
 
-function var_stats(variable,quantiles=[0,1])
+function var_stats(domain,variable,quantiles=[0,1])
     # dims = 2 sums rows; dims = 1 sums cols
-    vcat([get(v,variable,[]) for (k,v) in tmp.mats]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
+    vars = []
+    if domain == "od_matrices"
+        vars = [get(v,variable,[]) for (k,v) in mats]
+    elseif domain == "links"
+        vars = [get(v,Symbol(variable),[]) for (k,v) in links]
+    end
+    # Sample arrays because it's slow
+    vcat([rand(vars[a].-vars[b],100) for (a,b) in Iterators.product(1:length(mats),1:length(mats))]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
 end
 
 route("/scenarios") do
@@ -79,20 +102,39 @@ route("/variables/:domain") do
     list_variables(@params(:domain)) |> json
 end
 
-# Ideally this would accept an array
-route("/stats/:domain/:variable/:q1/:q2") do
-    if @params(:domain) == "od_matrices"
-        var_stats(@params(:variable),parse.(Float64,[@params(:q1),@params(:q2)])) |> json
+route("/stats") do
+    d = merge(merge(DEFAULTS, Dict(
+        :quantiles => "0.0001,0.9999"  # These default percentiles seem v. generous
+                                # but we look at all possible differences
+                                # so overwhelming majority of differences are
+                                # tiny. Seems to work OK in practice.
+    )), Genie.Requests.getpayload())
+    quantiles = parse.(Float64,split(d[:quantiles],","))
+    if d[:domain] in ["od_matrices", "links"]
+        var_stats(d[:domain],d[:variable],quantiles) |> json
     else
         throw(DomainError(:domain))
     end
 end
 
-route("/data/:domain/:scenario/:year/:variable") do
-    if @params(:domain) == "od_matrices"
-        mat_colour(@params(:scenario), parse(Int, @params(:year)), @params(:variable), "DoNothing", 2025) |> json
+const DEFAULTS = Dict(
+    :domain => "od_matrices",
+    :scenario => "GreenMax",
+    :year => "2030",
+    :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
+    :compareyear => "2020",
+    :variable => "Total_GHG",
+    :percent => "true",
+)
+
+route("/data") do
+    d = merge(DEFAULTS, Genie.Requests.getpayload())
+    if d[:domain] == "od_matrices"
+        mat_comp(d[:scenario], parse(Int, d[:year]), d[:variable], d[:comparewith], parse(Int,d[:compareyear]), percent=(d[:percent]=="true")) |> json
+    elseif d[:domain] == "links"
+        link_comp(d[:scenario], parse(Int, d[:year]), d[:variable], d[:comparewith], parse(Int,d[:compareyear]), percent=(d[:percent]=="true")) |> json
     else
-        throw(DomainError(:domain))
+        throw(DomainError(d[:domain]))
     end
 end
 

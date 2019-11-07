@@ -150,7 +150,7 @@ function setOpacity() {
     for (let i=0; i < num_zones; i++)
         opacities.push(Math.random())
 
-    map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
+    map.setPaintProperty('links', 'fill-opacity', atFid(opacities))
 }
 
 function setColours(nums) {
@@ -171,12 +171,23 @@ function setColours(nums) {
         ['to-color', atFid(colours)])
 }
 
+function setLinkColours(nums) {
+    const colours = []
+    for (let n of nums){
+        colours.push(d3.scaleSequential(d3.interpolateRdYlGn)(n))
+    }
+
+    // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
+    map.setPaintProperty('links', 'line-color',
+        ['to-color', atId(colours)])
+}
+
 
 // get data from Julia:
-const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())[0]
+const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())
 
 // Some of this should probably go in d3.scale...().domain([])
-function normalise(v,bounds,boundtype="midpoint",good="negative") {
+function normalise(v,bounds,boundtype="midpoint",good="smaller") {
     if (bounds && boundtype == "midpoint") {
         const tbounds = [...bounds]
         bounds[0] = tbounds[0] - tbounds[1]
@@ -184,17 +195,54 @@ function normalise(v,bounds,boundtype="midpoint",good="negative") {
     } 
     let min = bounds ? bounds[0] : Math.min(...v)
     let max = bounds ? bounds[1] : Math.max(...v)
-    if (good == "negative"){
+    if (good == "smaller"){
         const t = min
         min = max
         max = t
     }
+    console.log(min,max) // Will eventually need to use this to update legend
     return v.map(x => {
         let e = x - min
         e = e/(max - min)
         return e
     })
 }
+
+// Percentage difference example
+// setTimeout(_ => getData("data?domain=od_matrices&year=2030&variable=Total_GHG&scenario=GreenMax").then(x => setColours(normalise(x,[1,0.5],"midpoint","smaller"))),2000)
+async function getMeta(){
+    let links = await getData("variables/links")
+    let od_matrices = await getData("variables/od_matrices")
+    return {links,od_matrices}
+}
+
+// Absolute difference example // abs for links not implemented yet
+async function variableTest(variable="Total_GHG",domain="od_matrices"){
+    // Clamp at 99.99% and 0.01% quantiles
+    let bounds = await getData("stats?domain=" + domain + "&variable=" + variable + "&quantiles=0.0001,0.9999")
+    // For abs diffs, we want 0 to always be the midpoint.
+    const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+    bounds = [-maxb,maxb]
+    colourWithMeta(domain,variable,bounds,"absolute")
+}
+
+async function colourWithMeta(domain,variable,bounds,abs){
+    const data = await getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=GreenMax&percent=false")
+    const meta = await getMeta()
+    const dir = meta[domain][variable]["good"]
+    if (domain == "od_matrices"){
+        setColours(normalise(data,bounds,abs,dir))
+    } else {
+        setLinkColours(normalise(data,bounds,abs,dir))
+    }
+}
+setTimeout(variableTest,2000)
+
+// Link examples
+setTimeout(_ => getData("data?domain=links&year=2030&variable=VCR&scenario=GreenMax").then(x => setLinkColours(normalise(x,[1,0.5],"midpoint","smaller"))),2000)
+
+
+// TODO: display colourbar: mapping from original value to colour
 
 const DEBUG = true
 if (DEBUG) {
@@ -203,10 +251,7 @@ if (DEBUG) {
     window.map = map
     window.setOpacity = setOpacity
     window.setColours = setColours
+    window.setLinkColours = setLinkColours
     window.d3 = d3
+    window.variableTest = variableTest
 }
-
-// Example colourscheme
-setTimeout(_ => getData("data/od_matrices/GreenMax/2030/Total_GHG").then(x => setColours(normalise(x,[1,0.5],"midpoint","negative"))),1000)
-
-// TODO: display colourbar: mapping from original value to colour
