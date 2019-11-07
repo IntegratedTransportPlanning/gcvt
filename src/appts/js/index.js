@@ -5,7 +5,7 @@ import merge from "mergerino";
 import mapboxgl from 'mapbox-gl';
 import * as d3 from 'd3';
 
-import * as m from 'mithril'
+import {m, render} from 'mithril'
 
 
 // UTILITY FUNCS
@@ -23,6 +23,12 @@ const initial = (() => {
         lng: f("lng") || 33,
         lat: f("lat") || 48,
         zoom: f("zoom") || 4,
+        meta: {
+            links: {},
+            od_matrices: {},
+        },
+        activeVariable: undefined,
+        activeMatrixVariable: undefined,
     }
 })()
 
@@ -42,7 +48,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
     // disable map rotation using touch rotation gesture
     map.touchZoomRotate.disableRotation()
 
-    const BASEURL = 'http://localhost:2016/'
+    const BASEURL = 'http://78.47.122.188:2016/'
 
     function loadLayers() {
         map.addLayer({
@@ -120,6 +126,12 @@ const app = {
             changePosition: (lng, lat, zoom) => {
                 update({lng, lat, zoom})
             },
+            updateScenarios: x => {
+               update(x)
+            },
+            setActiveScenario: v => {
+                update({activeVariable: v})
+            }
         }
     },
 
@@ -150,6 +162,14 @@ const app = {
             if (propertiesDiffer(['lng', 'lat', 'zoom'], state, mapPos)) {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
+
+            if (propertiesDiffer(['activeVariable'], state, previousState)) {
+                // variableTest(state.activeVariable, "links")
+                linkColourTest(state.activeVariable)
+            }
+            if (propertiesDiffer(['activeMatrixVariable'], state, previousState)) {
+                variableTest(state.activeMatrixVariable, "od_matrices")
+            }
         },
     ],
 };
@@ -178,7 +198,28 @@ states.map(state => console.log('state', state))
 
 // Side menu
 
+const menumount = document.createElement('div')
+document.body.appendChild(menumount)
 
+const menuView = state => {
+    const variables = state.meta.links
+    render(menumount,
+        m('div', {class: 'mapboxgl-ctrl'},
+            m('div', {class: 'gcvt-ctrl', },
+                m('h1', "Links: Select variable"),
+                m('select', {onchange: e => actions.setActiveScenario(e.target.value)}, 
+                    Object.entries(variables).map(([k, v]) => m('option', {value: k}, v.name || k))
+                ), // TODO: options for scenarios, etc.
+                m('h1', "Zones: Select variable"),
+                m('select', {onchange: e => update({activeMatrixVariable: e.target.value})}, 
+                    Object.entries(state.meta.od_matrices).map(([k, v]) => m('option', {value: k}, v.name || k))
+                ), // TODO: options for scenarios, etc.
+            )
+        )
+    )
+}
+
+states.map(menuView)
 
 // STYLING
 
@@ -258,8 +299,11 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
 async function getMeta(){
     let links = await getData("variables/links")
     let od_matrices = await getData("variables/od_matrices")
+    actions.updateScenarios({meta: {links, od_matrices}})
+    actions.setActiveScenario(Object.keys(links)[0])
     return {links,od_matrices}
 }
+getMeta()
 
 // Absolute difference example // abs for links not implemented yet
 async function variableTest(variable="Total_GHG",domain="od_matrices"){
@@ -285,7 +329,12 @@ async function colourWithMeta(domain,variable,bounds,abs){
 setTimeout(variableTest,2000)
 
 // Link examples
-setTimeout(_ => getData("data?domain=links&year=2030&variable=VCR&scenario=GreenMax").then(x => setLinkColours(normalise(x,[1,0.5],"midpoint","smaller"))),2000)
+function linkColourTest(variable) {
+    getData(`data?domain=links&year=2030&variable=${variable}&scenario=GreenMax`)
+        .then(x => setLinkColours(normalise(x,[1,0.5],"midpoint","smaller")))
+}
+
+setTimeout(linkColourTest ,2000)
 
 // const DEBUG = true
 // if (DEBUG)
@@ -299,7 +348,6 @@ setTimeout(_ => getData("data?domain=links&year=2030&variable=VCR&scenario=Green
 
         variableTest,
         getMeta,
+        getData,
         colourWithMeta,
-
-
     })
