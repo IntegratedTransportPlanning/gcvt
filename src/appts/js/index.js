@@ -15,7 +15,6 @@ const map = new mapboxgl.Map({
     zoom: zoom,
 })
 
-window.map = map
 
 const BASEURL = 'http://localhost:2016/'
 
@@ -154,20 +153,60 @@ function setOpacity() {
     map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
 }
 
-function setColours() {
+function setColours(nums) {
     const num_zones = 282
-    const opacities = []
-    for (let i=0; i < num_zones; i++)
-        opacities.push(d3.scaleSequential(d3.interpolateRdYlGn)(Math.random()))
+    if (nums === undefined) {
+        nums = []
+        for (let i=0; i < num_zones; i++){
+            nums.push(Math.random())
+        }
+    }
+    const colours = []
+    for (let i=0; i < num_zones; i++){
+        colours.push(d3.scaleSequential(d3.interpolateRdYlGn)(nums[i]))
+    }
 
     // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
-    window.map.setPaintProperty('zones', 'fill-color',
-        ['to-color', atFid(opacities)])
+    map.setPaintProperty('zones', 'fill-color',
+        ['to-color', atFid(colours)])
 }
 
-window.setOpacity = setOpacity
-window.setColours = setColours
-window.d3 = d3
 
 // get data from Julia:
-// fetch("../api/variables/links").then(x=>x.json().then(console.log)
+const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())[0]
+
+// Some of this should probably go in d3.scale...().domain([])
+function normalise(v,bounds,boundtype="midpoint",good="negative") {
+    if (bounds && boundtype == "midpoint") {
+        const tbounds = [...bounds]
+        bounds[0] = tbounds[0] - tbounds[1]
+        bounds[1] = tbounds[0] + tbounds[1]
+    } 
+    let min = bounds ? bounds[0] : Math.min(...v)
+    let max = bounds ? bounds[1] : Math.max(...v)
+    if (good == "negative"){
+        const t = min
+        min = max
+        max = t
+    }
+    return v.map(x => {
+        let e = x - min
+        e = e/(max - min)
+        return e
+    })
+}
+
+const DEBUG = true
+if (DEBUG) {
+    window.getData = getData
+    window.normalise = normalise
+    window.map = map
+    window.setOpacity = setOpacity
+    window.setColours = setColours
+    window.d3 = d3
+}
+
+// Example colourscheme
+setTimeout(_ => getData("data/od_matrices/GreenMax/2030/Total_GHG").then(x => setColours(normalise(x,[1,0.5],"midpoint","negative"))),1000)
+
+// TODO: display colourbar: mapping from original value to colour
