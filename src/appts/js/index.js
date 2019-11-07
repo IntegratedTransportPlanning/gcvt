@@ -17,7 +17,7 @@ const propertiesDiffer = (props, a, b) =>
 // INITIAL STATE
 
 const initial = (() => {
-    const queryString = new URLSearchParams(window.location.search)
+    const queryString = new URLSearchParams(window.location.hash.replace("#",""))
     const f = key => parseFloat(queryString.get(key))
     return {
         lng: f("lng") || 33,
@@ -27,10 +27,12 @@ const initial = (() => {
             links: {},
             od_matrices: {},
         },
-        activeVariable: undefined,
-        activeMatrixVariable: undefined,
+        linkVar: queryString.get("linkVar"),
+        matVar: queryString.get("matVar"),
     }
 })()
+
+console.log(initial)
 
 const mapboxInit = ({lng, lat, zoom}) => {
     mapboxgl.accessToken = 'pk.eyJ1IjoiYm92aW5lM2RvbSIsImEiOiJjazJrcjkwdHIxd2tkM2JwNTJnZzQxYjFjIn0.P0rLbO5oj5d3AwpuVqjBSw'
@@ -130,7 +132,7 @@ const app = {
                update(x)
             },
             setActiveScenario: v => {
-                update({activeVariable: v})
+                update({linkVar: v})
             }
         }
     },
@@ -139,18 +141,30 @@ const app = {
         ({ state, previousState, patch }) => {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
-            const included_in_query = [ "lng", "lat", "zoom" ]
+            const nums_in_query = [ "lng", "lat", "zoom" ]
+            const strings_in_query = [ "linkVar", "matVar" ]
             let updateRequired = false
-            for (let key of included_in_query) {
+            const queryItems = []
+            for (let key of nums_in_query) {
                 if (state[key].toPrecision(5) !== previousState[key].toPrecision(5)) {
                     updateRequired = true
                     break
                 }
             }
 
+            if (!updateRequired) {
+                for (let key of strings_in_query) {
+                    if (state[key] !== previousState[key]) {
+                        updateRequired = true
+                        break
+                    }
+                }
+            }
+
             if (updateRequired) {
-                const queryString = included_in_query.map(key => `${key}=${state[key].toPrecision(5)}`).join('&')
-                history.pushState({},"", "?" + queryString)
+                queryItems.push(...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`))
+                queryItems.push(...strings_in_query.map(key => `${key}=${state[key]}`))
+                history.replaceState({},"", "#" + queryItems.join("&"))
             }
         },
 
@@ -163,12 +177,13 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
-            if (propertiesDiffer(['activeVariable'], state, previousState)) {
-                // variableTest(state.activeVariable, "links")
-                linkColourTest(state.activeVariable)
+            if (propertiesDiffer(['linkVar'], state, previousState)) {
+                // variableTest(state.linkVar, "links")
+                linkColourTest(state.linkVar)
             }
-            if (propertiesDiffer(['activeMatrixVariable'], state, previousState)) {
-                variableTest(state.activeMatrixVariable, "od_matrices")
+
+            if (propertiesDiffer(['matVar'], state, previousState)) {
+                variableTest(state.matVar, "od_matrices")
             }
         },
     ],
@@ -207,12 +222,13 @@ const menuView = state => {
         m('div', {class: 'mapboxgl-ctrl'},
             m('div', {class: 'gcvt-ctrl', },
                 m('label', {for: 'link_variable'}, "Links: Select variable"),
+                // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
                 m('select', {name: 'link_variable', onchange: e => actions.setActiveScenario(e.target.value)},
                     Object.entries(variables).map(([k, v]) => m('option', {value: k}, v.name || k))
                 ),
                 m('br'), // TODO: use a proper theme for this
                 m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
-                m('select', {name: 'matrix_variable', onchange: e => update({activeMatrixVariable: e.target.value})},
+                m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                     Object.entries(state.meta.od_matrices).map(([k, v]) => m('option', {value: k}, v.name || k))
                 ),
             )
@@ -327,15 +343,11 @@ async function colourWithMeta(domain,variable,bounds,abs){
     }
 }
 
-setTimeout(variableTest,2000)
-
 // Link examples
 function linkColourTest(variable) {
     getData(`data?domain=links&year=2030&variable=${variable}&scenario=GreenMax`)
         .then(x => setLinkColours(normalise(x,[1,0.5],"midpoint","smaller")))
 }
-
-setTimeout(linkColourTest ,2000)
 
 // const DEBUG = true
 // if (DEBUG)
