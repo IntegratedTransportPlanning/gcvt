@@ -206,14 +206,15 @@ const menuView = state => {
     render(menumount,
         m('div', {class: 'mapboxgl-ctrl'},
             m('div', {class: 'gcvt-ctrl', },
-                m('h1', "Links: Select variable"),
-                m('select', {onchange: e => actions.setActiveScenario(e.target.value)}, 
+                m('label', {for: 'link_variable'}, "Links: Select variable"),
+                m('select', {name: 'link_variable', onchange: e => actions.setActiveScenario(e.target.value)},
                     Object.entries(variables).map(([k, v]) => m('option', {value: k}, v.name || k))
-                ), // TODO: options for scenarios, etc.
-                m('h1', "Zones: Select variable"),
-                m('select', {onchange: e => update({activeMatrixVariable: e.target.value})}, 
+                ),
+                m('br'), // TODO: use a proper theme for this
+                m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
+                m('select', {name: 'matrix_variable', onchange: e => update({activeMatrixVariable: e.target.value})},
                     Object.entries(state.meta.od_matrices).map(([k, v]) => m('option', {value: k}, v.name || k))
-                ), // TODO: options for scenarios, etc.
+                ),
             )
         )
     )
