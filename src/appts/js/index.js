@@ -48,7 +48,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
     // disable map rotation using touch rotation gesture
     map.touchZoomRotate.disableRotation()
 
-    const BASEURL = 'http://78.47.122.188:2016/'
+    const BASEURL = document.location.origin
 
     function loadLayers() {
         map.addLayer({
@@ -56,7 +56,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'fill',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + 'tiles/zones/{z}/{x}/{y}.pbf',],
+                tiles: [BASEURL + '/tiles/zones/{z}/{x}/{y}.pbf',],
                 // url: 'http://127.0.0.1:6767/zones.json'
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
@@ -77,7 +77,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'line',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + 'tiles/links/{z}/{x}/{y}.pbf',],
+                tiles: [BASEURL + '/tiles/links/{z}/{x}/{y}.pbf',],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
