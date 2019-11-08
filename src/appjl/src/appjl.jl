@@ -48,6 +48,10 @@ for (k,v) in metadata["od_matrices"]["columns"]
     metadata["od_matrices"]["columns"][k] = merge(DEFAULT_META,v)
 end
 
+for (k,v) in metadata["scenarios"]
+    metadata["scenarios"][k]["name"] = get(metadata["scenarios"][k],"name",k)
+end
+
 # Get list of scenarios (scenario name, id, years active)
 list_scenarios() = metadata["scenarios"]
 
