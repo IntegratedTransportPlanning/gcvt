@@ -35,7 +35,7 @@ const initial = (() => {
         matVar: queryString.get("matVar") || "Pax",
         lBounds: [0,1],
         mBounds: [0,1],
-        percent: true,
+        percent: queryString.get("linkVar") || true,
         scenario: queryString.get("scenario") || "GreenMax",
         scenarioYear: queryString.get("scenarioYear") || "2025",
     }
