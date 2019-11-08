@@ -31,8 +31,8 @@ const initial = (() => {
             od_matrices: {},
             scenarios: {},
         },
-        linkVar: queryString.get("linkVar"),
-        matVar: queryString.get("matVar"),
+        linkVar: queryString.get("linkVar") || "VCR",
+        matVar: queryString.get("matVar") || "Pax",
         scenario: queryString.get("scenario") || "GreenMax",
         scenarioYear: queryString.get("scenarioYear") || "2020",
     }
@@ -145,6 +145,8 @@ const app = {
                 const links = await getData("variables/links")
                 const od_matrices = await getData("variables/od_matrices")
                 const scenarios = await getData("scenarios")
+
+                // TODO: read default from yaml properties
                 update({
                     meta: {links, od_matrices, scenarios},
                     linkVar: old => old === null ? Object.keys(links)[0] : old,
@@ -238,8 +240,10 @@ states.map(state => console.log('state', state))
 const menumount = document.createElement('div')
 document.body.appendChild(menumount)
 
-function meta2options(metadata){
-    return Object.entries(metadata).filter(([k,v]) => v["use"] !== false).map(([k, v]) => m('option', {value: k}, v.name || k))
+function meta2options(metadata, selected) {
+    return Object.entries(metadata)
+        .filter(([k, v]) => v["use"] !== false)
+        .map(([k, v]) => m('option', {value: k, selected: selected === k}, v.name || k))
 }
 
 const menuView = state => {
@@ -249,17 +253,17 @@ const menuView = state => {
                 m('label', {for: 'scenario'}, "Scenario"),
                 // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
                 m('select', {name: 'scenario', onchange: e => update({scenario: e.target.value})},
-                    meta2options(state.meta.scenarios)
+                    meta2options(state.meta.scenarios, state.scenario)
                 ),
                 // This slider currently resets its position back to the beginning on release
                 m('input', {type:"range", min:"2020", max:"2030",value:"2020", step:"5", onchange: e => update({scenarioYear: e.target.value})}),
                 m('label', {for: 'link_variable'}, "Links: Select variable"),
                 m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
-                    meta2options(state.meta.links)
+                    meta2options(state.meta.links, state.linkVar)
                 ),
                 m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                 m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
-                    meta2options(state.meta.od_matrices)
+                    meta2options(state.meta.od_matrices, state.matVar)
                 ),
             )
         )
