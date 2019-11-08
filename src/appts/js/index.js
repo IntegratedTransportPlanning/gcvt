@@ -136,8 +136,12 @@ const app = {
             changePosition: (lng, lat, zoom) => {
                 update({lng, lat, zoom})
             },
-            updateScenarios: x => {
-               update(x)
+            updateScenario: (scenario, scenarioYear, meta) => {
+                const years = meta.scenarios[scenario]["at"] || ["2030"]
+                if (!years.includes(scenarioYear)){
+                    scenarioYear = years[0]
+                }
+                update({scenario, scenarioYear})
             },
             setActiveScenario: v => {
                 update({linkVar: v})
@@ -206,17 +210,17 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
-            if (state.scenario && propertiesDiffer(['scenario','percent'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent)
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent)
+            if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear)
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear)
             }
 
-            if (state.linkVar && propertiesDiffer(['linkVar', 'percent'], state, previousState)) {
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent)
+            if (state.linkVar && propertiesDiffer(['linkVar'], state, previousState)) {
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear)
             }
 
-            if (state.matVar && propertiesDiffer(['matVar', 'percent'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent)
+            if (state.matVar && propertiesDiffer(['matVar'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear)
             }
         },
     ],
@@ -261,11 +265,11 @@ const menuView = state => {
             m('div', {class: 'gcvt-ctrl', },
                 m('label', {for: 'scenario'}, "Scenario"),
                 // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
-                m('select', {name: 'scenario', onchange: e => update({scenario: e.target.value})},
+                m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
                     meta2options(state.meta.scenarios, state.scenario)
                 ),
                 // This slider currently resets its position back to the beginning on release
-                m('input', {type:"range", min:"2020", max:"2030",value:state.scenarioYear, step:"5", onchange: e => update({scenarioYear: e.target.value})}),
+                m('input', {type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
                 m('label', {for: 'link_variable'}, "Links: Select variable"),
                 m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
                     meta2options(state.meta.links, state.linkVar)
@@ -278,6 +282,13 @@ const menuView = state => {
             )
         )
     )
+}
+
+function getScenMinMaxStep(scenario){
+    const min = scenario ? Math.min(...scenario.at) : 2020
+    const max = scenario ? Math.max(...scenario.at) : 2030
+    const step = scenario ? (max - min) / (scenario.at.length - 1) : 5
+    return {min, max, step}
 }
 
 states.map(menuView)
@@ -351,19 +362,19 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
     })
 }
 
-async function colourMap(meta, domain, variable, scenario, percent) {
+async function colourMap(meta, domain, variable, scenario, percent, year) {
     let bounds, abs, data
 
     if (percent) {
-        data = await getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario)
+        data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
         bounds = [1, 0.5]
         abs = 'midpoint'
     } else {
-        const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.001,0.999]
+        const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
         ;[bounds, data] = await Promise.all([
             // Clamp at 99.99% and 0.01% quantiles
             getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
-            getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
+            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
         ])
         // For abs diffs, we want 0 to always be the midpoint.
         const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
