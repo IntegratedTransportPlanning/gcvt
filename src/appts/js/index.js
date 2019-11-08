@@ -37,7 +37,7 @@ const initial = (() => {
         mBounds: [0,1],
         percent: true,
         scenario: queryString.get("scenario") || "GreenMax",
-        scenarioYear: queryString.get("scenarioYear") || "2020",
+        scenarioYear: queryString.get("scenarioYear") || "2025",
     }
 })()
 
@@ -104,12 +104,13 @@ const mapboxInit = ({lng, lat, zoom}) => {
         })
         actions.getMeta().then(async () => {
             const state = states()
-            await Promise.all([
+            Promise.all([
                 colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear),
                 colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear),
-            ])
-            map.setLayoutProperty('links', 'visibility', 'visible')
-            map.setLayoutProperty('zones', 'visibility', 'visible')
+            ]).finally(() => {
+                map.setLayoutProperty('links', 'visibility', 'visible')
+                map.setLayoutProperty('zones', 'visibility', 'visible')
+            })
         })
     }
 
