@@ -8,6 +8,9 @@ using Genie.Router: route, @params
 # Generates HTML responses
 using Genie.Renderer: html
 
+using Memoize: @memoize
+using ProgressMeter: @showprogress
+
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
@@ -86,7 +89,8 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     return sum(data(scenario, year, variable) .- data(comparison_scenario, comparison_year, variable), dims = 2) |> Iterators.flatten |> collect
 end
 
-function var_stats(domain,variable,quantiles=[0,1])
+@memoize function var_stats(domain,variable,quantiles=(0,1))
+    println("running")
     # dims = 2 sums rows; dims = 1 sums cols
     vars = []
     if domain == "od_matrices"
@@ -95,7 +99,19 @@ function var_stats(domain,variable,quantiles=[0,1])
         vars = [get(v,Symbol(variable),[]) for (k,v) in links]
     end
     # Sample arrays because it's slow
-    vcat([rand(vars[a].-vars[b],1000) for (a,b) in Iterators.product(1:length(mats),1:length(mats))]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
+    vcat([rand(vars[a].-vars[b],10000) for (a,b) in Iterators.product(1:length(mats),1:length(mats))]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
+end
+
+println("Warming up the cache: links")
+@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
+    # get these quantiles from colourMap in index.js
+    var_stats("links",variable,(0.1,0.9))
+end
+
+println("Warming up the cache: matrices")
+@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
+    # get these quantiles from colourMap in index.js
+    var_stats("od_matrices",variable,(0.0001,0.9999))
 end
 
 route("/scenarios") do
@@ -115,7 +131,7 @@ route("/stats") do
     )), Genie.Requests.getpayload())
     quantiles = parse.(Float64,split(d[:quantiles],","))
     if d[:domain] in ["od_matrices", "links"]
-        var_stats(d[:domain],d[:variable],quantiles) |> json
+        var_stats(d[:domain],d[:variable],Tuple(quantiles)) |> json
     else
         throw(DomainError(:domain))
     end
