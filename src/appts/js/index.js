@@ -33,12 +33,13 @@ const initial = (() => {
         },
         linkVar: queryString.get("linkVar") || "VCR",
         matVar: queryString.get("matVar") || "Pax",
+        lBounds: [0,1],
+        mBounds: [0,1],
+        percent: true,
         scenario: queryString.get("scenario") || "GreenMax",
         scenarioYear: queryString.get("scenarioYear") || "2020",
     }
 })()
-
-console.log(initial)
 
 const mapboxInit = ({lng, lat, zoom}) => {
     mapboxgl.accessToken = 'pk.eyJ1IjoiYm92aW5lM2RvbSIsImEiOiJjazJrcjkwdHIxd2tkM2JwNTJnZzQxYjFjIn0.P0rLbO5oj5d3AwpuVqjBSw'
@@ -154,6 +155,14 @@ const app = {
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                 })
             },
+            updateLegend: (bounds, type) => {
+                if (type == "link") {
+                    update({lBounds: bounds})
+                }
+                else if (type == "matrix") {
+                    update({mBounds: bounds})
+                }
+            },
         }
     },
 
@@ -162,7 +171,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
-            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear" ]
+            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent"]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -197,17 +206,17 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
-            if (state.scenario && propertiesDiffer(['scenario'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, false)
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, true)
+            if (state.scenario && propertiesDiffer(['scenario','percent'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent)
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent)
             }
 
-            if (state.linkVar && propertiesDiffer(['linkVar'], state, previousState)) {
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, true)
+            if (state.linkVar && propertiesDiffer(['linkVar', 'percent'], state, previousState)) {
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent)
             }
 
-            if (state.matVar && propertiesDiffer(['matVar'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, false)
+            if (state.matVar && propertiesDiffer(['matVar', 'percent'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent)
             }
         },
     ],
@@ -256,11 +265,12 @@ const menuView = state => {
                     meta2options(state.meta.scenarios, state.scenario)
                 ),
                 // This slider currently resets its position back to the beginning on release
-                m('input', {type:"range", min:"2020", max:"2030",value:"2020", step:"5", onchange: e => update({scenarioYear: e.target.value})}),
+                m('input', {type:"range", min:"2020", max:"2030",value:state.scenarioYear, step:"5", onchange: e => update({scenarioYear: e.target.value})}),
                 m('label', {for: 'link_variable'}, "Links: Select variable"),
                 m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
                     meta2options(state.meta.links, state.linkVar)
                 ),
+                m('input', {type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
                 m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                 m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                     meta2options(state.meta.od_matrices, state.matVar)
@@ -334,7 +344,6 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
         min = max
         max = t
     }
-    console.log(min,max) // Will eventually need to use this to update legend
     return v.map(x => {
         let e = x - min
         e = e/(max - min)
@@ -350,9 +359,10 @@ async function colourMap(meta, domain, variable, scenario, percent) {
         bounds = [1, 0.5]
         abs = 'midpoint'
     } else {
-        [bounds, data] = await Promise.all([
+        const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.001,0.999]
+        ;[bounds, data] = await Promise.all([
             // Clamp at 99.99% and 0.01% quantiles
-            getData("stats?domain=" + domain + "&variable=" + variable + "&quantiles=0.0001,0.9999"),
+            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
             getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
         ])
         // For abs diffs, we want 0 to always be the midpoint.
@@ -364,8 +374,10 @@ async function colourMap(meta, domain, variable, scenario, percent) {
     const dir = meta[domain][variable]["good"]
 
     if (domain == "od_matrices"){
+        actions.updateLegend(bounds,"matrix")
         setColours(normalise(data, bounds, abs, dir))
     } else {
+        actions.updateLegend(bounds,"link")
         setLinkColours(normalise(data, bounds, abs, dir))
     }
 }
