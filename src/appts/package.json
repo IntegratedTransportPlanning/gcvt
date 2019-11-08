@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "parcel build js/index.js --out-dir www --no-minify --public-url /map/",
+    "build": "parcel build js/index.js --out-dir www --public-url /map/",
     "watch": "parcel watch js/index.js --out-dir www --public-url /map/"
   },
   "browserslist": [
