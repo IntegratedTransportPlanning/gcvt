@@ -30,7 +30,8 @@ const initial = (() => {
         },
         linkVar: queryString.get("linkVar"),
         matVar: queryString.get("matVar"),
-        scenario: queryString.get("scenario"),
+        scenario: queryString.get("scenario") || "GreenMax",
+        scenarioYear: queryString.get("scenarioYear") || "2020",
     }
 })()
 
@@ -143,8 +144,8 @@ const app = {
         ({ state, previousState, patch }) => {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
-            const nums_in_query = [ "lng", "lat", "zoom" ]
-            const strings_in_query = [ "linkVar", "matVar", "scenario" ]
+            const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
+            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear" ]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -233,19 +234,16 @@ const menuView = state => {
             m('div', {class: 'gcvt-ctrl', },
                 m('label', {for: 'scenario'}, "Scenario"),
                 // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
-                m('br'), // TODO: use a proper theme for this
                 m('select', {name: 'scenario', onchange: e => update({scenario: e.target.value})},
                     meta2options(state.meta.scenarios)
                 ),
-                m('br'), 
+                // This slider currently resets its position back to the beginning on release
+                m('input', {type:"range", min:"2020", max:"2030",value:"2020", step:"5", onchange: e => update({scenarioYear: e.target.value})}),
                 m('label', {for: 'link_variable'}, "Links: Select variable"),
-                m('br'),
                 m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
                     meta2options(state.meta.links)
                 ),
-                m('br'), 
                 m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
-                m('br'),
                 m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                     meta2options(state.meta.od_matrices)
                 ),
