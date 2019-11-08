@@ -269,16 +269,20 @@ const menuView = state => {
                     meta2options(state.meta.scenarios, state.scenario)
                 ),
                 // This slider currently resets its position back to the beginning on release
-                m('input', {type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
+                m('label', {for: 'year'}, 'Scenario year'),
+                m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
                 m('label', {for: 'link_variable'}, "Links: Select variable"),
                 m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
                     meta2options(state.meta.links, state.linkVar)
                 ),
-                m('input', {type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
+                m('p', 'Bounds: ' + JSON.stringify(state.lBounds)),
+                m('label', {for: 'percent'}, 'Percentage difference'),
+                m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
                 m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                 m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                     meta2options(state.meta.od_matrices, state.matVar)
                 ),
+                m('p', 'Bounds: ' + JSON.stringify(state.mBounds)),
             )
         )
     )
