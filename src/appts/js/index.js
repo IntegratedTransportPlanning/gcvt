@@ -78,7 +78,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'fill-opacity': 0.5,
             },
             layout: {
-                visibility: 'visible'
+                visibility: 'none'
             }
         })
         map.addLayer({
@@ -95,14 +95,22 @@ const mapboxInit = ({lng, lat, zoom}) => {
             layout: {
                 'line-cap': 'round',
                 'line-join': 'round',
-                visibility: 'visible',
+                visibility: 'none',
             },
             paint: {
                 'line-opacity': .8,
                 'line-color': 'blue',
             },
         })
-        actions.getMeta()
+        actions.getMeta().then(async () => {
+            const state = states()
+            await Promise.all([
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear),
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear),
+            ])
+            map.setLayoutProperty('links', 'visibility', 'visible')
+            map.setLayoutProperty('zones', 'visibility', 'visible')
+        })
     }
 
     map.on('load', loadLayers)
