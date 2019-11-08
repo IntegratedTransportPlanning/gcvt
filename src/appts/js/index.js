@@ -13,6 +13,9 @@ import {m, render} from 'mithril'
 const propertiesDiffer = (props, a, b) =>
     props.filter(key => a[key] !== b[key]).length !== 0
 
+// get data from Julia:
+const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())
+
 
 // INITIAL STATE
 
@@ -98,6 +101,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-color': 'blue',
             },
         })
+        actions.getMeta()
     }
 
     map.on('load', loadLayers)
@@ -136,7 +140,18 @@ const app = {
             },
             setActiveScenario: v => {
                 update({linkVar: v})
-            }
+            },
+            getMeta: async () => {
+                const links = await getData("variables/links")
+                const od_matrices = await getData("variables/od_matrices")
+                const scenarios = await getData("scenarios")
+                update({
+                    meta: {links, od_matrices, scenarios},
+                    linkVar: old => old === null ? Object.keys(links)[0] : old,
+                    matVar: old => old === null ? Object.keys(od_matrices)[0] : old,
+                    scenario: old => old === null ? Object.keys(scenarios)[0] : old,
+                })
+            },
         }
     },
 
@@ -180,18 +195,17 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
-            if (propertiesDiffer(['scenario'], state, previousState)) {
-                linkColourTest(state.linkVar, state.scenario)
-                variableTest(state.matVar, "od_matrices", state.scenario)
+            if (state.scenario && propertiesDiffer(['scenario'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, false)
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, true)
             }
 
-            if (propertiesDiffer(['linkVar'], state, previousState)) {
-                // variableTest(state.linkVar, "links")
-                linkColourTest(state.linkVar, state.scenario)
+            if (state.linkVar && propertiesDiffer(['linkVar'], state, previousState)) {
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, true)
             }
 
-            if (propertiesDiffer(['matVar'], state, previousState)) {
-                variableTest(state.matVar, "od_matrices", state.scenario)
+            if (state.matVar && propertiesDiffer(['matVar'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, false)
             }
         },
     ],
@@ -302,9 +316,6 @@ function setLinkColours(nums) {
 }
 
 
-// get data from Julia:
-const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())
-
 // Some of this should probably go in d3.scale...().domain([])
 function normalise(v,bounds,boundtype="midpoint",good="smaller") {
     if (bounds && boundtype == "midpoint") {
@@ -326,48 +337,36 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
         return e
     })
 }
+async function colourMap(meta, domain, variable, scenario, percent) {
+    let bounds, abs, data
 
-// Percentage difference example
-// setTimeout(_ => getData("data?domain=od_matrices&year=2030&variable=Total_GHG&scenario=GreenMax").then(x => setColours(normalise(x,[1,0.5],"midpoint","smaller"))),2000)
-async function getMeta(){
-    const links = await getData("variables/links")
-    const od_matrices = await getData("variables/od_matrices")
-    const scenarios = await getData("scenarios")
-    actions.updateScenarios({meta: {links, od_matrices, scenarios}})
-    actions.setActiveScenario(Object.keys(links)[0])
-    return {scenarios,links,od_matrices}
-}
-getMeta()
-
-// Absolute difference example
-async function variableTest(variable="Total_GHG",domain="od_matrices", scenario="GreenMax"){
-    // Clamp at 99.99% and 0.01% quantiles
-    let bounds = await getData("stats?domain=" + domain + "&variable=" + variable + "&quantiles=0.0001,0.9999")
-    // For abs diffs, we want 0 to always be the midpoint.
-    const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
-    bounds = [-maxb,maxb]
-    colourWithMeta(domain,variable,bounds,"absolute",scenario)
-}
-
-async function colourWithMeta(domain,variable,bounds,abs,scenario="GreenMax"){
-    const data = await getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario + "&percent=false")
-    const meta = await getMeta()
-    const dir = meta[domain][variable]["good"]
-    if (domain == "od_matrices"){
-        setColours(normalise(data,bounds,abs,dir))
+    if (percent) {
+        data = await getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario)
+        bounds = [1, 0.5]
+        abs = 'midpoint'
     } else {
-        setLinkColours(normalise(data,bounds,abs,dir))
+        [bounds, data] = await Promise.all([
+            // Clamp at 99.99% and 0.01% quantiles
+            getData("stats?domain=" + domain + "&variable=" + variable + "&quantiles=0.0001,0.9999"),
+            getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
+        ])
+        // For abs diffs, we want 0 to always be the midpoint.
+        const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+        bounds = [-maxb,maxb]
+        abs = 'absolute'
+    }
+
+    const dir = meta[domain][variable]["good"]
+
+    if (domain == "od_matrices"){
+        setColours(normalise(data, bounds, abs, dir))
+    } else {
+        setLinkColours(normalise(data, bounds, abs, dir))
     }
 }
 
-// Link examples
-function linkColourTest(variable, scenario="GreenMax") {
-    getData(`data?domain=links&year=2030&variable=${variable}&scenario=${scenario}`)
-        .then(x => setLinkColours(normalise(x,[1,0.5],"midpoint","smaller")))
-}
-
-// const DEBUG = true
-// if (DEBUG)
+const DEBUG = true
+if (DEBUG)
     Object.assign(window, {
         map,
         update,
@@ -376,8 +375,6 @@ function linkColourTest(variable, scenario="GreenMax") {
         app,
         m,
 
-        variableTest,
-        getMeta,
+        colourMap,
         getData,
-        colourWithMeta,
     })
