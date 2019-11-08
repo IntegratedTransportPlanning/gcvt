@@ -95,7 +95,7 @@ function var_stats(domain,variable,quantiles=[0,1])
         vars = [get(v,Symbol(variable),[]) for (k,v) in links]
     end
     # Sample arrays because it's slow
-    vcat([rand(vars[a].-vars[b],100) for (a,b) in Iterators.product(1:length(mats),1:length(mats))]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
+    vcat([rand(vars[a].-vars[b],1000) for (a,b) in Iterators.product(1:length(mats),1:length(mats))]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
 end
 
 route("/scenarios") do
