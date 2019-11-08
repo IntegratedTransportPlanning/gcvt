@@ -26,9 +26,11 @@ const initial = (() => {
         meta: {
             links: {},
             od_matrices: {},
+            scenarios: {},
         },
         linkVar: queryString.get("linkVar"),
         matVar: queryString.get("matVar"),
+        scenario: queryString.get("scenario"),
     }
 })()
 
@@ -142,7 +144,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [ "lng", "lat", "zoom" ]
-            const strings_in_query = [ "linkVar", "matVar" ]
+            const strings_in_query = [ "linkVar", "matVar", "scenario" ]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -177,13 +179,18 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
+            if (propertiesDiffer(['scenario'], state, previousState)) {
+                linkColourTest(state.linkVar, state.scenario)
+                variableTest(state.matVar, "od_matrices", state.scenario)
+            }
+
             if (propertiesDiffer(['linkVar'], state, previousState)) {
                 // variableTest(state.linkVar, "links")
-                linkColourTest(state.linkVar)
+                linkColourTest(state.linkVar, state.scenario)
             }
 
             if (propertiesDiffer(['matVar'], state, previousState)) {
-                variableTest(state.matVar, "od_matrices")
+                variableTest(state.matVar, "od_matrices", state.scenario)
             }
         },
     ],
@@ -216,20 +223,31 @@ states.map(state => console.log('state', state))
 const menumount = document.createElement('div')
 document.body.appendChild(menumount)
 
+function meta2options(metadata){
+    return Object.entries(metadata).filter(([k,v]) => v["use"] !== false).map(([k, v]) => m('option', {value: k}, v.name || k))
+}
+
 const menuView = state => {
-    const variables = state.meta.links
     render(menumount,
         m('div', {class: 'mapboxgl-ctrl'},
             m('div', {class: 'gcvt-ctrl', },
-                m('label', {for: 'link_variable'}, "Links: Select variable"),
+                m('label', {for: 'scenario'}, "Scenario"),
                 // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
-                m('select', {name: 'link_variable', onchange: e => actions.setActiveScenario(e.target.value)},
-                    Object.entries(variables).map(([k, v]) => m('option', {value: k}, v.name || k))
-                ),
                 m('br'), // TODO: use a proper theme for this
+                m('select', {name: 'scenario', onchange: e => update({scenario: e.target.value})},
+                    meta2options(state.meta.scenarios)
+                ),
+                m('br'), 
+                m('label', {for: 'link_variable'}, "Links: Select variable"),
+                m('br'),
+                m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
+                    meta2options(state.meta.links)
+                ),
+                m('br'), 
                 m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
+                m('br'),
                 m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
-                    Object.entries(state.meta.od_matrices).map(([k, v]) => m('option', {value: k}, v.name || k))
+                    meta2options(state.meta.od_matrices)
                 ),
             )
         )
@@ -314,26 +332,27 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
 // Percentage difference example
 // setTimeout(_ => getData("data?domain=od_matrices&year=2030&variable=Total_GHG&scenario=GreenMax").then(x => setColours(normalise(x,[1,0.5],"midpoint","smaller"))),2000)
 async function getMeta(){
-    let links = await getData("variables/links")
-    let od_matrices = await getData("variables/od_matrices")
-    actions.updateScenarios({meta: {links, od_matrices}})
+    const links = await getData("variables/links")
+    const od_matrices = await getData("variables/od_matrices")
+    const scenarios = await getData("scenarios")
+    actions.updateScenarios({meta: {links, od_matrices, scenarios}})
     actions.setActiveScenario(Object.keys(links)[0])
-    return {links,od_matrices}
+    return {scenarios,links,od_matrices}
 }
 getMeta()
 
-// Absolute difference example // abs for links not implemented yet
-async function variableTest(variable="Total_GHG",domain="od_matrices"){
+// Absolute difference example
+async function variableTest(variable="Total_GHG",domain="od_matrices", scenario="GreenMax"){
     // Clamp at 99.99% and 0.01% quantiles
     let bounds = await getData("stats?domain=" + domain + "&variable=" + variable + "&quantiles=0.0001,0.9999")
     // For abs diffs, we want 0 to always be the midpoint.
     const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
     bounds = [-maxb,maxb]
-    colourWithMeta(domain,variable,bounds,"absolute")
+    colourWithMeta(domain,variable,bounds,"absolute",scenario)
 }
 
-async function colourWithMeta(domain,variable,bounds,abs){
-    const data = await getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=GreenMax&percent=false")
+async function colourWithMeta(domain,variable,bounds,abs,scenario="GreenMax"){
+    const data = await getData("data?domain=" + domain + "&year=2030&variable=" + variable + "&scenario=" + scenario + "&percent=false")
     const meta = await getMeta()
     const dir = meta[domain][variable]["good"]
     if (domain == "od_matrices"){
@@ -344,8 +363,8 @@ async function colourWithMeta(domain,variable,bounds,abs){
 }
 
 // Link examples
-function linkColourTest(variable) {
-    getData(`data?domain=links&year=2030&variable=${variable}&scenario=GreenMax`)
+function linkColourTest(variable, scenario="GreenMax") {
+    getData(`data?domain=links&year=2030&variable=${variable}&scenario=${scenario}`)
         .then(x => setLinkColours(normalise(x,[1,0.5],"midpoint","smaller")))
 }
 
