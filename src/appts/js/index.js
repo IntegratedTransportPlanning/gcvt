@@ -337,6 +337,7 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
         return e
     })
 }
+
 async function colourMap(meta, domain, variable, scenario, percent) {
     let bounds, abs, data
 
