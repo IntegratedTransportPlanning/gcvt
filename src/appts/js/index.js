@@ -393,6 +393,17 @@ async function colourMap(meta, domain, variable, scenario, percent, year) {
     }
 }
 
+async function getDataFromId(id,domain="links"){
+    const state = states()
+    const variable = domain == "links" ? state.linkVar : state.matVar
+    console.log("state is ", state)
+    const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
+    const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
+    return {absVal: absData[id], percVal: percData[id]}
+}
+
+window.getDataFromId = getDataFromId
+
 const DEBUG = true
 if (DEBUG)
     Object.assign(window, {
