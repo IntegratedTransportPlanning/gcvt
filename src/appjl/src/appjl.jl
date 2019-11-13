@@ -4,6 +4,7 @@ module tmp
 
 import Genie
 using Genie.Router: route, @params
+using Genie.Requests: getpayload
 
 # Generates HTML responses
 using Genie.Renderer: html
@@ -128,7 +129,7 @@ route("/stats") do
                                 # but we look at all possible differences
                                 # so overwhelming majority of differences are
                                 # tiny. Seems to work OK in practice.
-    )), Genie.Requests.getpayload())
+    )), getpayload())
     quantiles = parse.(Float64,split(d[:quantiles],","))
     if d[:domain] in ["od_matrices", "links"]
         var_stats(d[:domain],d[:variable],Tuple(quantiles)) |> json
@@ -148,7 +149,7 @@ const DEFAULTS = Dict(
 )
 
 route("/data") do
-    d = merge(DEFAULTS, Genie.Requests.getpayload())
+    d = merge(DEFAULTS, getpayload())
     if d[:domain] == "od_matrices"
         mat_comp(d[:scenario], parse(Int, d[:year]), d[:variable], d[:comparewith], parse(Int,d[:compareyear]), percent=(d[:percent]=="true")) |> json
     elseif d[:domain] == "links"
@@ -156,6 +157,29 @@ route("/data") do
     else
         throw(DomainError(d[:domain]))
     end
+end
+
+route("/oembed") do
+    defaults = Dict(
+        :maxwidth => 100,
+        :maxheight => 100,
+        :format => "json"
+       )
+    params = merge(defaults, getpayload())
+    @assert haskey(params, :url)
+
+    json(Dict(
+        :type => "rich",
+        :version => 1.0,
+        # TODO: manipulate the src line to add parameters if required.
+        # HTTP.URI has some code for this.
+        # TODO: sanitise arguments?
+        # Should check that domain and port are right
+        # Shouldn't allow insertion of arbitrary HTTP
+        :html => "<iframe src=$(HTTP.unescapeuri(params[:url])) width=$(params[:maxwidth]) height=$(params[:maxheight])></iframe>",
+        :width => params[:maxwidth],
+        :height => params[:maxheight],
+       ))
 end
 
 Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)
