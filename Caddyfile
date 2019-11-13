@@ -2,22 +2,22 @@
 # If you use a real host rather than localhost it is more likely to work correctly.
 # Will fix this ;)
 
-localhost:2016/tiles/ {
+:2016/tiles/ {
 	root src/appjl/data/processed/tiles/
 	browse
 }
 
-localhost:2016/map/ {
+:2016/map/ {
 	root src/appts/www/
 }
 
-localhost:2016/api/ {
+:2016/api/ {
 	proxy / localhost:8000 {
 		websocket
 	}
 }
 
-localhost:2016 {
+:2016 {
 	# Temporarily redirect root to /map
 	redir / /map/ 307
 }
