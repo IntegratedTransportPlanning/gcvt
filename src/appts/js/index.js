@@ -4,8 +4,11 @@ import merge from "mergerino";
 
 import mapboxgl from 'mapbox-gl';
 import * as d3 from 'd3';
+import {legend} from "./d3-color-legend"
 
 import {m, render} from 'mithril'
+
+import * as UI from 'construct-ui'
 
 
 // UTILITY FUNCS
@@ -32,12 +35,20 @@ const initial = (() => {
             scenarios: {},
         },
         linkVar: queryString.get("linkVar") || "VCR",
+        linkVals: [],
         matVar: queryString.get("matVar") || "Pax",
+        matVals: [],
         lBounds: [0,1],
         mBounds: [0,1],
-        percent: queryString.get("linkVar") || true,
+        percent: queryString.get("percent") || true,
         scenario: queryString.get("scenario") || "GreenMax",
         scenarioYear: queryString.get("scenarioYear") || "2025",
+        mapReady: false,
+        mapUI: {
+            // The locations to hover-over.
+            popup: null,
+            hover: null,
+        }
     }
 })()
 
@@ -103,6 +114,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
         })
         actions.getMeta().then(async () => {
+            update({mapReady: true})
             const state = states()
             Promise.all([
                 colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear),
@@ -180,6 +192,9 @@ const app = {
     },
 
     services: [
+        // TODO: Validation service so users can't provide invalid vars?
+        // We do use user input to index into objects, but not in a dangerous way.
+
         ({ state, previousState, patch }) => {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
@@ -214,6 +229,8 @@ const app = {
             // Mapbox updater
             // Update Mapbox's state if it differs from state.
 
+            if (!state.mapReady) return
+
             const mapPos = Object.assign(map.getCenter(), { zoom: map.getZoom() })
             if (propertiesDiffer(['lng', 'lat', 'zoom'], state, mapPos)) {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
@@ -225,14 +242,28 @@ const app = {
             }
 
             if (state.linkVar && propertiesDiffer(['linkVar'], state, previousState)) {
+                map.setLayoutProperty('links', 'visibility', 'visible')
                 colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear)
             }
 
+            if (!state.linkVar) {
+                map.setLayoutProperty('links', 'visibility', 'none')
+            }
+
             if (state.matVar && propertiesDiffer(['matVar'], state, previousState)) {
+                map.setLayoutProperty('zones', 'visibility', 'visible')
                 colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear)
+            }
+
+            if (!state.matVar) {
+                map.setLayoutProperty('zones', 'visibility', 'none')
+            }
+
+            if (propertiesDiffer(['mapUI'], state, previousState)) {
             }
         },
     ],
+
 };
 
 const { update, states, actions } =
@@ -254,13 +285,30 @@ states.map(state => console.log('state', state))
 
     map.on("moveend", positionUpdate)
     map.on("zoomend", positionUpdate)
+
+    map.on('click', 'zones', async event => {
+        console.log(event)
+        update({
+            mapUI: {
+                popup: oldpopup => {
+                    if (oldpopup) {
+                        oldpopup.remove()
+                    }
+                    return new mapboxgl.Popup()
+                        .setLngLat(event.lngLat)
+                        .setHTML(event.features[0].properties.fid - 1)
+                        .addTo(map)
+                }
+            }
+        })
+    })
 }
 
 
 // Side menu
 
-const menumount = document.createElement('div')
-document.body.appendChild(menumount)
+const mountpoint = document.createElement('div')
+document.body.appendChild(mountpoint)
 
 function meta2options(metadata, selected) {
     return Object.entries(metadata)
@@ -268,32 +316,82 @@ function meta2options(metadata, selected) {
         .map(([k, v]) => m('option', {value: k, selected: selected === k}, v.name || k))
 }
 
+const Legend = () => {
+    let legendelem
+    const drawLegend = vnode => {
+        let bounds = vnode.attrs.bounds
+        let unit
+        if (vnode.attrs.percent) {
+            bounds = bounds.map(x => x * 100)
+            unit = '%'
+        } else {
+            unit = vnode.attrs.unit
+        }
+        legendelem && legendelem.remove()
+        legendelem = legend({
+            color: d3.scaleSequential(bounds, d3.interpolateRdYlGn),
+            title: vnode.attrs.title + ` (${unit})`,
+        })
+        vnode.dom.appendChild(legendelem)
+    }
+    return {
+        view: vnode => {
+            return m('div')
+        },
+        oncreate: drawLegend,
+        onupdate: drawLegend,
+    }
+}
+
+
 const menuView = state => {
-    render(menumount,
-        m('div', {class: 'mapboxgl-ctrl'},
-            m('div', {class: 'gcvt-ctrl', },
-                m('label', {for: 'scenario'}, "Scenario"),
-                // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
-                m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
-                    meta2options(state.meta.scenarios, state.scenario)
-                ),
-                // This slider currently resets its position back to the beginning on release
-                m('label', {for: 'year'}, 'Scenario year'),
-                m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
-                m('label', {for: 'link_variable'}, "Links: Select variable"),
-                m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
-                    meta2options(state.meta.links, state.linkVar)
-                ),
-                m('p', 'Bounds: ' + JSON.stringify(state.lBounds)),
-                m('label', {for: 'percent'}, 'Percentage difference'),
-                m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
-                m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
-                m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
-                    meta2options(state.meta.od_matrices, state.matVar)
-                ),
-                m('p', 'Bounds: ' + JSON.stringify(state.mBounds)),
+    // let popup = state.mapUI.popup
+    render(mountpoint,
+        // Position relative and full height are required for positioning elements at the bottom
+        // translate(0,0) is required to put it in front of mapbox.
+        m('div', {style: 'pointer-events: none; height: 100vh; position: relative; transform: translate(0,0)'}, [
+            // popup &&
+            //         m(UI.Popover, {
+            //             content: m('', popup.feature),
+            //             trigger: m('div', {style: `position: absolute; left: ${popup.x}px; top: ${popup.y}px`}),
+            //             isOpen: true,
+            //         }),
+            m('div', {style: 'position: absolute; bottom: 0'},
+                m(UI.Card, {style: 'margin: 5px', fluid: true},
+                    [
+                        m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.percent}),
+                        m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.percent}),
+                    ]
+                )),
+            m('div', {class: 'mapboxgl-ctrl'},
+                m('div', {class: 'gcvt-ctrl', },
+                    m('label', {for: 'scenario'}, "Scenario"),
+                    // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
+                    m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
+                        meta2options(state.meta.scenarios, state.scenario)
+                    ),
+                    state.meta.scenarios && [
+                        // This slider currently resets its position back to the beginning on release
+                        m('label', {for: 'year'}, 'Scenario year'),
+                        m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
+                    ],
+                    m('label', {for: 'link_variable'}, "Links: Select variable"),
+                    m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
+                        m('option', {value: '', selected: state.linkVar === null}, '--Select one--'),
+                        meta2options(state.meta.links, state.linkVar)
+                    ),
+                    state.linkVar && m('p', 'Bounds: ' + JSON.stringify(state.lBounds)),
+                    m('label', {for: 'percent'}, 'Percentage difference'),
+                    m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
+                    m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
+                    m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
+                        m('option', {value: '', selected: state.linkVar === null}, '--Select one--'),
+                        meta2options(state.meta.od_matrices, state.matVar)
+                    ),
+                    state.matVar && m('p', 'Bounds: ' + JSON.stringify(state.mBounds)),
+                )
             )
-        )
+        ])
     )
 }
 
@@ -375,6 +473,31 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
     })
 }
 
+async function getVals(meta, domain, variable, scenario, percent, year) {
+    let bounds, boundtype, data
+
+    if (percent) {
+        data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
+        bounds = [1, 0.5]
+        boundtype = 'midpoint'
+    } else {
+        const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
+        ;[bounds, data] = await Promise.all([
+            // Clamp at 99.99% and 0.01% quantiles
+            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
+            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
+        ])
+        // For abs diffs, we want 0 to always be the midpoint.
+        const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+        bounds = [-maxb,maxb]
+        boundtype = 'absolute'
+    }
+
+    const dir = meta[domain][variable]["good"]
+
+    return {bounds, boundtype, data}
+}
+
 async function colourMap(meta, domain, variable, scenario, percent, year) {
     let bounds, abs, data
 
@@ -426,7 +549,11 @@ if (DEBUG)
         states,
         app,
         m,
+        d3,
+        legend,
 
         colourMap,
         getData,
+
+        mapboxgl,
     })
