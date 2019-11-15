@@ -5,6 +5,8 @@ using DataFrames: DataFrame
 using Query: @filter
 using Suppressor: @suppress
 
+import YAML
+
 packdir = "$(@__DIR__)/../data/"
 
 # This way doesn't emit warnings, but requires some change to output format.
@@ -28,7 +30,42 @@ function load_scenarios(packdir=packdir)
         DataFrame |>
         (df -> Dict((name, year) => data for (name, year, _, data) in zip(eachcol(df)...)))
 
-    return links, mats
+    metadata = get_metadata(links, packdir)
+
+    return links, mats, metadata
+end
+
+function get_metadata(links, packdir)
+    # This should probably be reloaded periodically so server doesn't need to be restarted?
+    metadata = YAML.load_file(joinpath(packdir, "meta.yaml"))
+
+    default_meta = Dict(
+        "good" => "smaller",
+    )
+
+    for (k,v) in metadata["links"]["columns"]
+        metadata["links"]["columns"][k] = merge(default_meta, v)
+    end
+
+    for (k,v) in metadata["od_matrices"]["columns"]
+        metadata["od_matrices"]["columns"][k] = merge(default_meta, v)
+    end
+
+    for (k,v) in metadata["scenarios"]
+        metadata["scenarios"][k]["name"] = get(metadata["scenarios"][k],"name",k)
+    end
+
+    # Add the years back in
+    d = Dict(links |> keys .|> x -> (x[1], Int[]))
+    for (k, v) in links |> keys
+        push!(d[k], v)
+    end
+
+    for (k, v) in d
+        metadata["scenarios"][k]["at"] = v
+    end
+
+    return metadata
 end
 
 #=

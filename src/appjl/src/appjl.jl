@@ -17,8 +17,6 @@ using ProgressMeter: @showprogress
 json(data; status::Int = 200) =
     Genie.Renderer.json(data; status = status, headers = Dict("Access-Control-Allow-Origin" => "*"))
 
-import YAML
-
 using Statistics
 
 Genie.config.session_auto_start = false
@@ -35,26 +33,7 @@ end
 include("$(@__DIR__)/scenarios.jl")
 
 # This should probably be reloaded periodically so server doesn't need to be restarted?
-links, mats = load_scenarios(packdir)
-
-# This should probably be reloaded periodically so server doesn't need to be restarted?
-metadata = YAML.load_file(joinpath(packdir, "meta.yaml"))
-
-const DEFAULT_META = Dict(
-    "good" => "smaller",
-)
-
-for (k,v) in metadata["links"]["columns"]
-    metadata["links"]["columns"][k] = merge(DEFAULT_META,v)
-end
-
-for (k,v) in metadata["od_matrices"]["columns"]
-    metadata["od_matrices"]["columns"][k] = merge(DEFAULT_META,v)
-end
-
-for (k,v) in metadata["scenarios"]
-    metadata["scenarios"][k]["name"] = get(metadata["scenarios"][k],"name",k)
-end
+links, mats, metadata = load_scenarios(packdir)
 
 # Get list of scenarios (scenario name, id, years active)
 list_scenarios() = metadata["scenarios"]
@@ -138,18 +117,17 @@ route("/stats") do
     end
 end
 
-const DEFAULTS = Dict(
-    :domain => "od_matrices",
-    :scenario => "GreenMax",
-    :year => "2030",
-    :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
-    :compareyear => "2020",
-    :variable => "Total_GHG",
-    :percent => "true",
-)
-
 route("/data") do
-    d = merge(DEFAULTS, getpayload())
+    defaults = Dict(
+        :domain => "od_matrices",
+        :scenario => "GreenMax",
+        :year => "2030",
+        :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
+        :compareyear => "2020",
+        :variable => "Total_GHG",
+        :percent => "true",
+    )
+    d = merge(defaults, getpayload())
     if d[:domain] == "od_matrices"
         mat_comp(d[:scenario], parse(Int, d[:year]), d[:variable], d[:comparewith], parse(Int,d[:compareyear]), percent=(d[:percent]=="true")) |> json
     elseif d[:domain] == "links"
@@ -158,6 +136,15 @@ route("/data") do
         throw(DomainError(d[:domain]))
     end
 end
+
+# Want to provide:
+# Zone name
+# Absolute change
+# Relative change
+#= route("/data/popup/:zone") do =#
+#=     d = getpayload() =#
+#=     json(d[:zone]) =#
+#= end =#
 
 route("/oembed") do
     defaults = Dict(
