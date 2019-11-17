@@ -21,6 +21,3 @@ front:
 back:
 	./caddy&
 	R -e 'shiny::runApp("src/app", port=6619)'
-
-getcaddy:
-	curl 'https://caddyserver.com/download/linux/amd64?plugins=http.cors,http.expires&license=personal&telemetry=off'|tar -xz caddy
