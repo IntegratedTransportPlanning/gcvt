@@ -41,6 +41,7 @@ const initial = (() => {
         lBounds: [0,1],
         mBounds: [0,1],
         percent: queryString.get("percent") || true,
+        compare: queryString.get("compare") || true,
         scenario: queryString.get("scenario") || "GreenMax",
         scenarioYear: queryString.get("scenarioYear") || "2025",
         mapReady: false,
@@ -117,8 +118,8 @@ const mapboxInit = ({lng, lat, zoom}) => {
             update({mapReady: true})
             const state = states()
             Promise.all([
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear),
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear),
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare),
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare),
             ]).finally(() => {
                 map.setLayoutProperty('links', 'visibility', 'visible')
                 map.setLayoutProperty('zones', 'visibility', 'visible')
@@ -199,7 +200,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
-            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent"]
+            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare"]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -236,14 +237,14 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
-            if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear)
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear)
+            if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare)
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare)
             }
 
             if (state.linkVar && propertiesDiffer(['linkVar'], state, previousState)) {
                 map.setLayoutProperty('links', 'visibility', 'visible')
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear)
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare)
             }
 
             if (!state.linkVar) {
@@ -252,7 +253,7 @@ const app = {
 
             if (state.matVar && propertiesDiffer(['matVar'], state, previousState)) {
                 map.setLayoutProperty('zones', 'visibility', 'visible')
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear)
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare)
             }
 
             if (!state.matVar) {
@@ -374,6 +375,10 @@ const menuView = state => {
                         m('label', {for: 'year'}, 'Scenario year'),
                         m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
                     ],
+                    // Percent requires compare, disabling compare should untick and hide percent
+                    m('label', {for: 'compare'}, 'Compare with base scenario'),
+                    m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked})}),
+                    m('br'),
                     m('label', {for: 'link_variable'}, "Links: Select variable"),
                     m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
                         m('option', {value: '', selected: state.linkVar === null}, '--Select one--'),
@@ -497,8 +502,12 @@ async function getVals(meta, domain, variable, scenario, percent, year) {
     return {bounds, boundtype, data}
 }
 
-async function colourMap(meta, domain, variable, scenario, percent, year) {
+// Would be better to swap these args out for an object so we can name them
+async function colourMap(meta, domain, variable, scenario, percent, year, compare) {
     let bounds, abs, data
+
+    // comparison hard coded for now
+    let compareWith = compare ? "DoNothing" : "none"
 
     if (percent) {
         data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
@@ -506,14 +515,22 @@ async function colourMap(meta, domain, variable, scenario, percent, year) {
         abs = 'midpoint'
     } else {
         const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
+
+        // Quantiles should be overridden by metadata (ditto for colourscheme)
         ;[bounds, data] = await Promise.all([
             // Clamp at 99.99% and 0.01% quantiles
-            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
-            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
+            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith),
+            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith),
         ])
-        // For abs diffs, we want 0 to always be the midpoint.
-        const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
-        bounds = [-maxb,maxb]
+        if (compareWith != "none") {
+            // For abs diffs, we want 0 to always be the midpoint.
+            const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+            bounds = [-maxb,maxb]
+        } else {
+            if (meta[domain][variable]["good"] == "smaller") {
+                bounds = [bounds[1], bounds[0]]
+            }
+        }
         abs = 'absolute'
     }
 
