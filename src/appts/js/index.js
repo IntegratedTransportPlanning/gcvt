@@ -376,9 +376,9 @@ const menuView = state => {
                         m('label', {for: 'year'}, 'Scenario year'),
                         m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
                     ],
-                    // Percent requires compare, disabling compare should untick and hide percent
+                    // Percent requires compare, so disabling compare unticks percent (and vice versa)
                     m('label', {for: 'compare'}, 'Compare with base scenario'),
-                    m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked})}),
+                    m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked, percent: !(e.target.checked) ? false : state.percent})}),
                     m('br'),
                     m('label', {for: 'link_variable'}, "Links: Select variable"),
                     m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
@@ -387,7 +387,7 @@ const menuView = state => {
                     ),
                     state.linkVar && m('p', 'Bounds: ' + JSON.stringify(state.lBounds.map(x=>x.toPrecision(2)))),
                     m('label', {for: 'percent'}, 'Percentage difference'),
-                    m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
+                    m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
                     m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                     m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                         m('option', {value: '', selected: state.linkVar === null}, 'None'),
