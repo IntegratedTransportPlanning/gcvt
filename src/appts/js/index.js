@@ -327,6 +327,7 @@ const Legend = () => {
             unit = '%'
         } else {
             unit = vnode.attrs.unit
+            if (unit === undefined) unit = "Arbitrary units"
         }
         legendelem && legendelem.remove()
         legendelem = legend({
