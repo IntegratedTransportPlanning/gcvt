@@ -382,7 +382,7 @@ const menuView = state => {
                     m('br'),
                     m('label', {for: 'link_variable'}, "Links: Select variable"),
                     m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
-                        m('option', {value: '', selected: state.linkVar === null}, '--Select one--'),
+                        m('option', {value: '', selected: state.linkVar === null}, 'None'),
                         meta2options(state.meta.links, state.linkVar)
                     ),
                     state.linkVar && m('p', 'Bounds: ' + JSON.stringify(state.lBounds.map(x=>x.toPrecision(2)))),
@@ -390,7 +390,7 @@ const menuView = state => {
                     m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
                     m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                     m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
-                        m('option', {value: '', selected: state.linkVar === null}, '--Select one--'),
+                        m('option', {value: '', selected: state.linkVar === null}, 'None'),
                         meta2options(state.meta.od_matrices, state.matVar)
                     ),
                     state.matVar && m('p', 'Bounds: ' + JSON.stringify(state.mBounds.map(x=>x.toPrecision(2)))),
