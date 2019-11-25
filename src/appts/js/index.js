@@ -19,6 +19,12 @@ const propertiesDiffer = (props, a, b) =>
 // get data from Julia:
 const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())
 
+// d3 really doesn't offer a sane way to pick these.
+// Supported list: https://github.com/d3/d3-scale-chromatic/blob/master/src/index.js
+const divergingPalette = _ => d3.interpolateRdYlGn
+const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateViridis
+const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
+
 
 // INITIAL STATE
 const DEFAULTS = {
@@ -209,6 +215,32 @@ const app = {
                     update({mBounds: bounds})
                 }
             },
+
+            getVals: async (meta, domain, variable, scenario, percent, year) => {
+                // TODO: Record palette information somewhere?
+                // TODO: Record normalised data if we need it (might not)
+                let bounds, data
+
+                if (percent) {
+                    data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
+                    bounds = [0.5, 1.5]
+                } else {
+                    const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
+                    ;[bounds, data] = await Promise.all([
+                        // Clamp at 99.99% and 0.01% quantiles
+                        getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
+                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
+                    ])
+                    // For abs diffs, we want 0 to always be the midpoint.
+                    const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+                    bounds = [-maxb,maxb]
+                }
+
+                const dir = meta[domain][variable]["good"]
+                const palette = meta[domain][variable]["palette"] || "RdYlGn"
+
+                update({[domain]: {bounds, data, dir, palette}})
+            }
         }
     },
 
@@ -507,31 +539,6 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
         e = e/(max - min)
         return e
     })
-}
-
-async function getVals(meta, domain, variable, scenario, percent, year) {
-    let bounds, boundtype, data
-
-    if (percent) {
-        data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
-        bounds = [1, 0.5]
-        boundtype = 'midpoint'
-    } else {
-        const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
-        ;[bounds, data] = await Promise.all([
-            // Clamp at 99.99% and 0.01% quantiles
-            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
-            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
-        ])
-        // For abs diffs, we want 0 to always be the midpoint.
-        const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
-        bounds = [-maxb,maxb]
-        boundtype = 'absolute'
-    }
-
-    const dir = meta[domain][variable]["good"]
-
-    return {bounds, boundtype, data}
 }
 
 // Would be better to swap these args out for an object so we can name them
