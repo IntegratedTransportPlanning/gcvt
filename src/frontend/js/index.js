@@ -46,6 +46,7 @@ const DEFAULTS = {
     compare: true,
     scenario: "GreenMax",
     scenarioYear: "2025",
+    showctrl: true,
     mapReady: false,
     mapUI: {
         // The locations to hover-over.
@@ -66,7 +67,7 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare"]) {
+    for (let k of ["percent","compare","showctrl"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
         }
@@ -252,7 +253,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
-            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare"]
+            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl"]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -430,33 +431,36 @@ const menuView = state => {
                 )),
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
-                    m('label', {for: 'scenario'}, "Scenario"),
-                    // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
-                    m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
-                        meta2options(state.meta.scenarios, state.scenario)
-                    ),
-                    state.meta.scenarios && [
-                        m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
-                        state.meta.scenarios[state.scenario] && (state.meta.scenarios[state.scenario].at.length > 1) && m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
+                    m('label', {for: 'showctrls'}, 'Show controls: '),
+                    m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
+                    state.showctrl && [m('br'), m('label', {for: 'scenario'}, "Scenario"),
+                        // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
+                        m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
+                            meta2options(state.meta.scenarios, state.scenario)
+                        ),
+                        state.meta.scenarios && [
+                            m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
+                            state.meta.scenarios[state.scenario] && (state.meta.scenarios[state.scenario].at.length > 1) && m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
+                        ],
+                        // Percent requires compare, so disabling compare unticks percent (and vice versa)
+                        m('label', {for: 'compare'}, 'Compare with base scenario'),
+                        m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked, percent: !(e.target.checked) ? false : state.percent})}),
+                        m('br'),
+                        m('label', {for: 'link_variable'}, "Links: Select variable"),
+                        m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
+                            m('option', {value: '', selected: state.linkVar === null}, 'None'),
+                            meta2options(state.meta.links, state.linkVar)
+                        ),
+                        m('label', {for: 'percent'}, 'Percentage difference'),
+                        m('br'),
+                        m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
+                        m('br'),
+                        m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
+                        m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
+                            m('option', {value: '', selected: state.linkVar === null}, 'None'),
+                            meta2options(state.meta.od_matrices, state.matVar)
+                        ),
                     ],
-                    // Percent requires compare, so disabling compare unticks percent (and vice versa)
-                    m('label', {for: 'compare'}, 'Compare with base scenario'),
-                    m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked, percent: !(e.target.checked) ? false : state.percent})}),
-                    m('br'),
-                    m('label', {for: 'link_variable'}, "Links: Select variable"),
-                    m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
-                        m('option', {value: '', selected: state.linkVar === null}, 'None'),
-                        meta2options(state.meta.links, state.linkVar)
-                    ),
-                    m('label', {for: 'percent'}, 'Percentage difference'),
-                    m('br'),
-                    m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
-                    m('br'),
-                    m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
-                    m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
-                        m('option', {value: '', selected: state.linkVar === null}, 'None'),
-                        meta2options(state.meta.od_matrices, state.matVar)
-                    ),
                 )
             )
         ])
