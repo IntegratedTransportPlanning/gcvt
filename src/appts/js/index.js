@@ -305,7 +305,7 @@ states.map(state => console.log('state', state))
     map.on("moveend", positionUpdate)
     map.on("zoomend", positionUpdate)
 
-    map.on('click', 'zones', async event => {
+    map.on('click', 'zones', async event => ((event, state) => {
         console.log(event)
         update({
             mapUI: {
@@ -315,14 +315,18 @@ states.map(state => console.log('state', state))
                     }
                     return new mapboxgl.Popup()
                         .setLngLat(event.lngLat)
-                        .setHTML(event.features[0].properties.fid - 1)
+                        .setHTML(numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.percent) + (state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.percent))
                         .addTo(map)
                 }
             }
         })
-    })
+    })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
 }
 
+function numberToHuman(number,percent=false){
+    number = percent ? number * 100 : number
+    return parseFloat(number.toPrecision(3)).toLocaleString()
+}
 
 // Side menu
 
@@ -339,14 +343,10 @@ const Legend = () => {
     let legendelem
     const drawLegend = vnode => {
         let bounds = vnode.attrs.bounds
-        let unit
         if (vnode.attrs.percent) {
             bounds = bounds.map(x => x * 100)
-            unit = '%'
-        } else {
-            unit = vnode.attrs.unit
-            if (unit === undefined) unit = "Arbitrary units"
-        }
+        } 
+        const unit = vnode.attrs.unit
         legendelem && legendelem.remove()
         legendelem = legend({
             color: d3.scaleSequential(bounds, d3.interpolateRdYlGn),
@@ -363,7 +363,8 @@ const Legend = () => {
     }
 }
 
-function getUnit(meta, domain, variable){
+function getUnit(meta, domain, variable, percent=false){
+    if (percent) return "%"
     try {
         if (domain == "od_matrices") {
             return meta.od_matrices[variable].unit
@@ -371,7 +372,7 @@ function getUnit(meta, domain, variable){
             return meta.links[variable].unit
         }
     } catch (e){
-        return undefined
+        return "Arbitrary units"
     }
 }
 
@@ -391,8 +392,8 @@ const menuView = state => {
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.percent, unit: getUnit(state.meta,"links",state.linkVar) }),
-                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar)}),
+                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.percent) }),
+                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.percent)}),
                     ]
                 )),
             m('div', {class: 'mapboxgl-ctrl'},
@@ -574,6 +575,13 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
     } else {
         actions.updateLegend(bounds,"link")
         setLinkColours(normalise(data, bounds, abs, dir))
+    }
+
+    // TODO: make functional (i.e. colourMap should accept data as an argument)
+    if (domain == "od_matrices") {
+        update({matVals: data})
+    } else {
+        update({linkVals: data})
     }
 }
 
