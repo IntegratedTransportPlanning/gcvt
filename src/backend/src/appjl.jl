@@ -12,6 +12,8 @@ using Genie.Renderer: html
 using Memoize: @memoize
 using ProgressMeter: @showprogress
 
+import HTTP
+
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
