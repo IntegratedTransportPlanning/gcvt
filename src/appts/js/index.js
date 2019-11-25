@@ -363,6 +363,18 @@ const Legend = () => {
     }
 }
 
+function getUnit(meta, domain, variable){
+    try {
+        if (domain == "od_matrices") {
+            return meta.od_matrices[variable].unit
+        } else {
+            return meta.links[variable].unit
+        }
+    } catch (e){
+        return undefined
+    }
+}
+
 
 const menuView = state => {
     // let popup = state.mapUI.popup
@@ -379,8 +391,8 @@ const menuView = state => {
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.percent}),
-                        m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.percent}),
+                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.percent, unit: getUnit(state.meta,"links",state.linkVar) }),
+                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar)}),
                     ]
                 )),
             m('div', {class: 'mapboxgl-ctrl'},
