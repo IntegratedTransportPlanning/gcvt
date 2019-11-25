@@ -404,8 +404,8 @@ const menuView = state => {
                         meta2options(state.meta.scenarios, state.scenario)
                     ),
                     state.meta.scenarios && [
-                        m('label', {for: 'year'}, 'Scenario year'),
-                        m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
+                        m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
+                        state.meta.scenarios[state.scenario] && (state.meta.scenarios[state.scenario].at.length > 1) && m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
                     ],
                     // Percent requires compare, so disabling compare unticks percent (and vice versa)
                     m('label', {for: 'compare'}, 'Compare with base scenario'),
@@ -416,15 +416,15 @@ const menuView = state => {
                         m('option', {value: '', selected: state.linkVar === null}, 'None'),
                         meta2options(state.meta.links, state.linkVar)
                     ),
-                    state.linkVar && m('p', 'Bounds: ' + JSON.stringify(state.lBounds.map(x=>x.toPrecision(2)))),
                     m('label', {for: 'percent'}, 'Percentage difference'),
+                    m('br'),
                     m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
+                    m('br'),
                     m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                     m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                         m('option', {value: '', selected: state.linkVar === null}, 'None'),
                         meta2options(state.meta.od_matrices, state.matVar)
                     ),
-                    state.matVar && m('p', 'Bounds: ' + JSON.stringify(state.mBounds.map(x=>x.toPrecision(2)))),
                 )
             )
         ])
