@@ -34,6 +34,7 @@ E.g. `ls **py | sudo entr -r docker-compose up --build` <- still quite slow but 
     #. See https://github.com/loomchild/volume-backup#user-content-copy-volume-between-hosts esp
     #. `docker volume ls` will show you the ones you need
 #. Clone this repo
+#. Change URL in WordPress before moving deployment - otherwise it's a pain e.g. https://codeblog.dotsandbrackets.com/migrate-wordpress-docker/#crayon-5ddc34561323d649039809
 #. Copy .env and backend/data to new box securely
 #. `docker-compose up --build -d` on new box
 #. Change URL in wordpress via admin panel
