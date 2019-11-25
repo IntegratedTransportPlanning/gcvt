@@ -21,36 +21,52 @@ const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json(
 
 
 // INITIAL STATE
+const DEFAULTS = {
+    lng: 33,
+    lat: 48,
+    zoom: 4,
+    meta: {
+        links: {},
+        od_matrices: {},
+        scenarios: {},
+    },
+    linkVar: "VCR",
+    linkVals: [],
+    matVar: "Pax",
+    matVals: [],
+    lBounds: [0,1],
+    mBounds: [0,1],
+    percent: true,
+    compare: true,
+    scenario: "GreenMax",
+    scenarioYear: "2025",
+    mapReady: false,
+    mapUI: {
+        // The locations to hover-over.
+        popup: null,
+        hover: null,
+    }
+}
+
+function stateFromAnchor(hash) {
+    const queryString = new URLSearchParams(hash.replace("#",""))
+    const qsObj = Object.fromEntries(queryString)
+
+    // Floats in the query string
+    for (let k of ["lat","lng","zoom"]) {
+        qsObj[k] = parseFloat(qsObj[k])
+    }
+
+    // Bools in the query string
+    for (let k of ["percent","compare"]) {
+        qsObj[k] = qsObj[k] == "true"
+    }
+    return qsObj
+}
 
 const initial = (() => {
-    const queryString = new URLSearchParams(window.location.hash.replace("#",""))
-    const f = key => parseFloat(queryString.get(key))
-    return {
-        lng: f("lng") || 33,
-        lat: f("lat") || 48,
-        zoom: f("zoom") || 4,
-        meta: {
-            links: {},
-            od_matrices: {},
-            scenarios: {},
-        },
-        linkVar: queryString.get("linkVar") || "VCR",
-        linkVals: [],
-        matVar: queryString.get("matVar") || "Pax",
-        matVals: [],
-        lBounds: [0,1],
-        mBounds: [0,1],
-        percent: queryString.get("percent") || true,
-        compare: queryString.get("compare") || true,
-        scenario: queryString.get("scenario") || "GreenMax",
-        scenarioYear: queryString.get("scenarioYear") || "2025",
-        mapReady: false,
-        mapUI: {
-            // The locations to hover-over.
-            popup: null,
-            hover: null,
-        }
-    }
+    const qsObj = stateFromAnchor(window.location.hash)
+    return merge(DEFAULTS,qsObj)
 })()
 
 const mapboxInit = ({lng, lat, zoom}) => {
@@ -555,7 +571,6 @@ async function getDataFromId(id,domain="links"){
     return {absVal: absData[id], percVal: percData[id]}
 }
 
-window.getDataFromId = getDataFromId
 
 const DEBUG = true
 if (DEBUG)
@@ -573,4 +588,9 @@ if (DEBUG)
         getData,
 
         mapboxgl,
+
+        getDataFromId,
+
+        stateFromAnchor,
+        merge,
     })
