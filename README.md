@@ -1,6 +1,6 @@
 # Greener Connectivity Visualisation Tool
 
-🚧 👷Work in progress 👷 🚧
+🚧 👷 Work in progress 👷 🚧
 
 The goal of the GCVT is to visualise and compare transport model outputs under different scenarios.
 
