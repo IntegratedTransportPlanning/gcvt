@@ -3,12 +3,12 @@
 # Will fix this ;)
 
 :2016/tiles/ {
-	root src/appjl/data/processed/tiles/
+	root src/backend/data/processed/tiles/
 	browse
 }
 
 :2016/map/ {
-	root src/appts/www/
+	root src/frontend/www/
 }
 
 :2016/api/ {

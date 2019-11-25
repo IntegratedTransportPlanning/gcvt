@@ -6,17 +6,17 @@ tiles:
 	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles
 
 setup:
-	cd src/appjl && julia --project=. -e "import Pkg; Pkg.instantiate()"
-	cd src/appts && yarn
+	cd src/backend && julia --project=. -e "import Pkg; Pkg.instantiate()"
+	cd src/frontend && yarn
 
 http:
 	caddy
 
 back:
-	cd src/appjl && julia --project=. src/appjl.jl
+	cd src/backend && julia --project=. src/backend.jl
 
 front:
-	cd src/appts && yarn run watch
+	cd src/frontend && yarn run watch
 
 
 ## Sort of deprecated ##

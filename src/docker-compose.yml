@@ -47,18 +47,18 @@ services:
       - database
       - frontends
 
-  oembed:
-    container_name: oembed
+  julia:
+    container_name: julia
     restart: unless-stopped
     build:
-      context: .
-      dockerfile: oembed-api/Dockerfile
+      context: backend/
+      dockerfile: backend/Dockerfile
     labels:
       - "traefik.frontend.priority=3" # Need more priority than nginx
-      - "traefik.frontend.rule=PathPrefix: /services/oembed/;"
+      - "traefik.frontend.rule=PathPrefix: /api/;"
       - "traefik.backend=oembed"
       - "traefik.docker.network=traefik_proxy"
-      - traefik.port=1337
+      - traefik.port=8000
     networks: 
       - traefik_proxy
 

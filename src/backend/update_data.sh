@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Docker won't let this be a symlink
+cp -r ../../data/sensitive/GCVT_Scenario_Pack data

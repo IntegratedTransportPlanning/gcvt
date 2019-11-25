@@ -1,8 +1,8 @@
 # Greener Connectivity Visualisation Tool
 
-Work in progress (imagine a web1.0 yellow roadwork sign here).
+🚧 👷Work in progress 👷 🚧
 
-The goal of the gcvt is to visualise and compare transport model outputs under different scenarios.
+The goal of the GCVT is to visualise and compare transport model outputs under different scenarios.
 
 
 ## Installation
@@ -21,7 +21,7 @@ To install material other than R:
 # install Julia and JS dependencies
 make setup
 
-# move your scenario pack data to src/appjl/data
+# move your scenario pack data to src/backend/data
 
 # make tiles if you haven't yet done so
 # tippecanoe and mbutil are what I use and a convenience script is provided in
