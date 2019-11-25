@@ -135,14 +135,14 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
         })
         actions.getMeta().then(async () => {
-            update({mapReady: true})
             const state = states()
             Promise.all([
                 colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare),
                 colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare),
             ]).finally(() => {
-                map.setLayoutProperty('links', 'visibility', 'visible')
-                map.setLayoutProperty('zones', 'visibility', 'visible')
+                state.linkVar && map.setLayoutProperty('links', 'visibility', 'visible')
+                state.matVar && map.setLayoutProperty('zones', 'visibility', 'visible')
+                update({mapReady: true})
             })
         })
     }
@@ -262,18 +262,16 @@ const app = {
                 colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare)
             }
 
-            if (state.linkVar && propertiesDiffer(['linkVar'], state, previousState)) {
-                map.setLayoutProperty('links', 'visibility', 'visible')
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare)
+            if (propertiesDiffer(['linkVar'], state, previousState)) {
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare).then(map.setLayoutProperty('links', 'visibility', 'visible'))
             }
 
             if (!state.linkVar) {
                 map.setLayoutProperty('links', 'visibility', 'none')
             }
 
-            if (state.matVar && propertiesDiffer(['matVar'], state, previousState)) {
-                map.setLayoutProperty('zones', 'visibility', 'visible')
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare)
+            if (propertiesDiffer(['matVar'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
             }
 
             if (!state.matVar) {
@@ -525,6 +523,7 @@ async function getVals(meta, domain, variable, scenario, percent, year) {
 
 // Would be better to swap these args out for an object so we can name them
 async function colourMap(meta, domain, variable, scenario, percent, year, compare) {
+    if (!variable) return
     let bounds, abs, data
 
     // comparison hard coded for now
