@@ -54,8 +54,8 @@ const DEFAULTS = {
     }
 }
 
-function stateFromAnchor(hash) {
-    const queryString = new URLSearchParams(hash.replace("#",""))
+function stateFromSearch(search) {
+    const queryString = new URLSearchParams(search)
     const qsObj = Object.fromEntries(queryString)
 
     // Floats in the query string
@@ -75,7 +75,7 @@ function stateFromAnchor(hash) {
 }
 
 const initial = (() => {
-    const qsObj = stateFromAnchor(window.location.hash)
+    const qsObj = stateFromSearch(window.location.search)
     return merge(DEFAULTS,qsObj)
 })()
 
@@ -274,7 +274,7 @@ const app = {
             if (updateRequired) {
                 queryItems.push(...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`))
                 queryItems.push(...strings_in_query.map(key => `${key}=${state[key]}`))
-                history.replaceState({},"", "#" + queryItems.join("&"))
+                history.replaceState({},"", "?" + queryItems.join("&"))
             }
         },
 
@@ -621,6 +621,6 @@ if (DEBUG)
 
         getDataFromId,
 
-        stateFromAnchor,
+        stateFromSearch,
         merge,
     })
