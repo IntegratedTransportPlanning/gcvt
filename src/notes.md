@@ -34,6 +34,6 @@ E.g. `ls **py | sudo entr -r docker-compose up --build` <- still quite slow but 
     #. See https://github.com/loomchild/volume-backup#user-content-copy-volume-between-hosts esp
     #. `docker volume ls` will show you the ones you need
 #. Clone this repo
-#. Copy .env to new box securely
+#. Copy .env and backend/data to new box securely
 #. `docker-compose up --build -d` on new box
 #. Change URL in wordpress via admin panel
