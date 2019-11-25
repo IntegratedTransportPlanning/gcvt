@@ -62,6 +62,15 @@ services:
     networks: 
       - traefik_proxy
 
+  frontend_builder:
+    container_name: frontend_builder
+    build:
+      context: frontend/
+    command: "true" # Don't run at runtime
+    restart: on-failure
+    volumes:
+      - frontend:/frontend-app/www
+
   webserver:
     depends_on:
       - wordpress
@@ -70,7 +79,7 @@ services:
     restart: unless-stopped
     volumes:
       - wordpress:/var/www/html
-      - ./frontend/www:/var/www/html/map # todo: build this in build step
+      - frontend:/var/www/html/map
       - ./backend/data/processed/tiles:/var/www/html/tiles
       - ./nginx-conf:/etc/nginx/conf.d
     labels:
@@ -85,6 +94,7 @@ services:
 
 volumes:
   wordpress:
+  frontend:
   dbdata:
 
 networks:
