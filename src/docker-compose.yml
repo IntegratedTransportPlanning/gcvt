@@ -52,10 +52,10 @@ services:
     restart: unless-stopped
     build:
       context: backend/
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     labels:
       - "traefik.frontend.priority=3" # Need more priority than nginx
-      - "traefik.frontend.rule=PathPrefix: /api/;"
+      - "traefik.frontend.rule=PathPrefixStrip: /api/;"
       - "traefik.backend=oembed"
       - "traefik.docker.network=traefik_proxy"
       - traefik.port=8000
@@ -70,6 +70,8 @@ services:
     restart: unless-stopped
     volumes:
       - wordpress:/var/www/html
+      - ./frontend/www:/var/www/html/map # todo: build this in build step
+      - ./backend/data/processed/tiles:/var/www/html/tiles
       - ./nginx-conf:/etc/nginx/conf.d
     labels:
     - traefik.port=8080
