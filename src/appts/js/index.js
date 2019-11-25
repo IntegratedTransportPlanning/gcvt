@@ -54,12 +54,16 @@ function stateFromAnchor(hash) {
 
     // Floats in the query string
     for (let k of ["lat","lng","zoom"]) {
-        qsObj[k] = parseFloat(qsObj[k])
+        if (qsObj.hasOwnProperty(k)) {
+            qsObj[k] = parseFloat(qsObj[k])
+        }
     }
 
     // Bools in the query string
     for (let k of ["percent","compare"]) {
-        qsObj[k] = qsObj[k] == "true"
+        if (qsObj.hasOwnProperty(k)) {
+            qsObj[k] = qsObj[k] == "true"
+        }
     }
     return qsObj
 }
