@@ -36,16 +36,18 @@ const DEFAULTS = {
         od_matrices: {},
         scenarios: {},
     },
-    linkVar: "VCR",
+    linkVar: "GHG_perKm",
     linkVals: [],
-    matVar: "Pax",
+    matVar: "Total_GHG",
     matVals: [],
     lBounds: [0,1],
     mBounds: [0,1],
     percent: true,
     compare: true,
     scenario: "GreenMax",
+    compareWith: "DoNothing",
     scenarioYear: "2025",
+    compareYear: "auto",
     showctrl: true,
     mapReady: false,
     mapUI: {
@@ -144,8 +146,8 @@ const mapboxInit = ({lng, lat, zoom}) => {
         actions.getMeta().then(async () => {
             const state = states()
             Promise.all([
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare),
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare),
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear),
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear),
             ]).finally(() => {
                 state.linkVar && map.setLayoutProperty('links', 'visibility', 'visible')
                 state.matVar && map.setLayoutProperty('zones', 'visibility', 'visible')
@@ -191,6 +193,13 @@ const app = {
                     scenarioYear = years[0]
                 }
                 update({scenario, scenarioYear})
+            },
+            updateBaseScenario: (scenario, scenarioYear, meta) => {
+                const years = meta.scenarios[scenario]["at"] || ["2030"]
+                if (!years.includes(scenarioYear)){
+                    scenarioYear = years[0]
+                }
+                update({compareWith: scenario, compareYear: scenarioYear})
             },
             setActiveScenario: v => {
                 update({linkVar: v})
@@ -253,7 +262,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
-            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl"]
+            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl","compareWith","compareYear"]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -290,13 +299,13 @@ const app = {
                 map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
             }
 
-            if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare)
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare)
+            if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare', 'compareWith', 'compareYear'], state, previousState)) {
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
             }
 
             if (propertiesDiffer(['linkVar'], state, previousState)) {
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare).then(map.setLayoutProperty('links', 'visibility', 'visible'))
+                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('links', 'visibility', 'visible'))
             }
 
             if (!state.linkVar) {
@@ -304,7 +313,7 @@ const app = {
             }
 
             if (propertiesDiffer(['matVar'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
+                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
             }
 
             if (!state.matVar) {
@@ -431,10 +440,10 @@ const menuView = state => {
                 )),
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
-                    m('label', {for: 'showctrls'}, 'Show controls: '),
-                    m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
+                    m('label', {for: 'showctrls'}, 'Show controls: ',
+                        m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
+                    ),
                     state.showctrl && [m('br'), m('label', {for: 'scenario'}, "Scenario"),
-                        // Ideally the initial selection would be set from state (i.e. the querystring/anchor)
                         m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
                             meta2options(state.meta.scenarios, state.scenario)
                         ),
@@ -443,18 +452,38 @@ const menuView = state => {
                             state.meta.scenarios[state.scenario] && (state.meta.scenarios[state.scenario].at.length > 1) && m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
                         ],
                         // Percent requires compare, so disabling compare unticks percent (and vice versa)
-                        m('label', {for: 'compare'}, 'Compare with base scenario'),
-                        m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked, percent: !(e.target.checked) ? false : state.percent})}),
+                        m('label', {for: 'compare'}, 'Compare with base: ',
+                            m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked, percent: !(e.target.checked) ? false : state.percent})}),
+                        ),
+                        state.meta.scenarios && state.compare && [
+                            m('br'), m('label', {for: 'scenario'}, "Base scenario"),
+                            m('select', {name: 'scenario', onchange: e =>  actions.updateBaseScenario(e.target.value, state.scenarioYear, state.meta)},
+                                meta2options(state.meta.scenarios, state.compareWith)
+                            ),
+                            m('label', {for: 'basetracksactive'}, 'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
+                                m('input', {name: 'basetracksactive', type:"checkbox", checked:(state.compareYear != "auto"), onchange: e => {
+                                    if (!e.target.checked) {
+                                        update({compareYear: "auto"})
+                                    } else {
+                                        update({compareYear: state.scenarioYear})
+                                    }
+                                }}),
+                            " )"),
+                            !(state.compareYear == "auto") && [
+                                m('br'),
+                                // m('label', {for: 'year'}, 'Base scenario year: ' + state.compareYear),
+                                state.meta.scenarios[state.compareWith] && (state.meta.scenarios[state.compareWith].at.length > 1) && m('input', {name: 'compyear', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.compareWith]), value:state.compareYear, onchange: e => update({compareYear: e.target.value})}),
+                            ],
+                        ],
                         m('br'),
                         m('label', {for: 'link_variable'}, "Links: Select variable"),
                         m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
                             m('option', {value: '', selected: state.linkVar === null}, 'None'),
                             meta2options(state.meta.links, state.linkVar)
                         ),
-                        m('label', {for: 'percent'}, 'Percentage difference'),
-                        m('br'),
-                        m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
-                        m('br'),
+                        state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
+                            m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
+                        ),
                         m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                         m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
                             m('option', {value: '', selected: state.linkVar === null}, 'None'),
@@ -546,15 +575,14 @@ function normalise(v,bounds,boundtype="midpoint",good="smaller") {
 }
 
 // Would be better to swap these args out for an object so we can name them
-async function colourMap(meta, domain, variable, scenario, percent, year, compare) {
+async function colourMap(meta, domain, variable, scenario, percent, year, compare, compareWith, compareYear="auto") {
     if (!variable) return
     let bounds, abs, data
 
-    // comparison hard coded for now
-    let compareWith = compare ? "DoNothing" : "none"
+    compareWith = compare ? compareWith : "none"
 
     if (percent) {
-        data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
+        data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
         bounds = [1, 0.5]
         abs = 'midpoint'
     } else {
@@ -563,8 +591,8 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
         // Quantiles should be overridden by metadata (ditto for colourscheme)
         ;[bounds, data] = await Promise.all([
             // Clamp at 99.99% and 0.01% quantiles
-            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith),
-            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith),
+            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
         ])
         if (compareWith != "none") {
             // For abs diffs, we want 0 to always be the midpoint.
