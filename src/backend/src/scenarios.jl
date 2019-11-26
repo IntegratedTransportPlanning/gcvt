@@ -62,7 +62,14 @@ function get_metadata(links, packdir)
     end
 
     for (k, v) in d
-        metadata["scenarios"][k]["at"] = v
+        try
+            metadata["scenarios"][k]["at"] = v
+        catch x
+            if isa(x, KeyError)
+                metadata["scenarios"][k] = Dict("use" => false)
+            else throw(x)
+            end
+        end
     end
 
     return metadata
