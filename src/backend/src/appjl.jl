@@ -122,7 +122,7 @@ route("/stats") do
         :scenario => "GreenMax",
         :year => "2030",
         :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
-        :compareyear => "2020",
+        :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
         :quantiles => "0.0001,0.9999",  # These default percentiles seem v. generous
@@ -147,7 +147,7 @@ route("/data") do
         :scenario => "GreenMax",
         :year => "2030",
         :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
-        :compareyear => "2020",
+        :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
     )
@@ -155,7 +155,7 @@ route("/data") do
     scenario = d[:scenario]
     year = parse(Int, d[:year])
     variable = d[:variable]
-    compareyear = parse(Int, d[:compareyear])
+    compareyear = d[:compareyear] == "auto" ? year : parse(Int, d[:compareyear])
     percent = d[:percent] == "true"
     comparewith = d[:comparewith]
     if d[:domain] == "od_matrices"
