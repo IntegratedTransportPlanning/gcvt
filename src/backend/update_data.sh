@@ -4,4 +4,4 @@
 cd "${0%/*}"
 
 # Docker won't let this be a symlink
-cp -r ../../data/sensitive/GCVT_Scenario_Pack data
+cp -r ../../data/sensitive/GCVT_Scenario_Pack/* data
