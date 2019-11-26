@@ -226,31 +226,32 @@ const app = {
                 }
             },
 
-            getVals: async (meta, domain, variable, scenario, percent, year) => {
-                // TODO: Record palette information somewhere?
-                // TODO: Record normalised data if we need it (might not)
-                let bounds, data
+            // NB: this is not used and very out of date - see colourMap instead
+            // getVals: async (meta, domain, variable, scenario, percent, year) => {
+            //     // TODO: Record palette information somewhere?
+            //     // TODO: Record normalised data if we need it (might not)
+            //     let bounds, data
 
-                if (percent) {
-                    data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
-                    bounds = [0.5, 1.5]
-                } else {
-                    const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
-                    ;[bounds, data] = await Promise.all([
-                        // Clamp at 99.99% and 0.01% quantiles
-                        getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
-                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
-                    ])
-                    // For abs diffs, we want 0 to always be the midpoint.
-                    const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
-                    bounds = [-maxb,maxb]
-                }
+            //     if (percent) {
+            //         data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
+            //         bounds = [0.5, 1.5]
+            //     } else {
+            //         const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
+            //         ;[bounds, data] = await Promise.all([
+            //             // Clamp at 99.99% and 0.01% quantiles
+            //             getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
+            //             getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
+            //         ])
+            //         // For abs diffs, we want 0 to always be the midpoint.
+            //         const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+            //         bounds = [-maxb,maxb]
+            //     }
 
-                const dir = meta[domain][variable]["good"]
-                const palette = meta[domain][variable]["palette"] || "RdYlGn"
+            //     const dir = meta[domain][variable]["good"]
+            //     const palette = meta[domain][variable]["palette"] || "RdYlGn"
 
-                update({[domain]: {bounds, data, dir, palette}})
-            }
+            //     update({[domain]: {bounds, data, dir, palette}})
+            // }
         }
     },
 
@@ -357,7 +358,7 @@ states.map(state => console.log('state', state))
                     }
                     return new mapboxgl.Popup()
                         .setLngLat(event.lngLat)
-                        .setHTML(numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.percent) + (state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.percent))
+                        .setHTML(numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
                         .addTo(map)
                 }
             }
@@ -434,8 +435,8 @@ const menuView = state => {
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.percent) }),
-                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.percent)}),
+                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent) }),
+                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent)}),
                     ]
                 )),
             m('div', {class: 'mapboxgl-ctrl'},
@@ -453,7 +454,7 @@ const menuView = state => {
                         ],
                         // Percent requires compare, so disabling compare unticks percent (and vice versa)
                         m('label', {for: 'compare'}, 'Compare with base: ',
-                            m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked, percent: !(e.target.checked) ? false : state.percent})}),
+                            m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked})}),
                         ),
                         state.meta.scenarios && state.compare && [
                             m('br'), m('label', {for: 'scenario'}, "Base scenario"),
@@ -482,7 +483,7 @@ const menuView = state => {
                             meta2options(state.meta.links, state.linkVar)
                         ),
                         state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
-                            m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked, compare: e.target.checked || state.compare})}),
+                            m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
                         ),
                         m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
                         m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
@@ -581,7 +582,7 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
 
     compareWith = compare ? compareWith : "none"
 
-    if (percent) {
+    if (percent && compare) {
         data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
         bounds = [1, 0.5]
         abs = 'midpoint'
