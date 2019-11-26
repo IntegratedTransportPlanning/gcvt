@@ -50,6 +50,7 @@ const DEFAULTS = {
     compareYear: "auto",
     showctrl: true,
     mapReady: false,
+    showDesc: false,
     mapUI: {
         // The locations to hover-over.
         popup: null,
@@ -69,7 +70,7 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare","showctrl"]) {
+    for (let k of ["percent","compare","showctrl","showDesc"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
         }
@@ -263,7 +264,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
-            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl","compareWith","compareYear"]
+            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl","compareWith","compareYear","showDesc"]
             let updateRequired = false
             const queryItems = []
             for (let key of nums_in_query) {
@@ -438,13 +439,16 @@ const menuView = state => {
                         state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent) }),
                         state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent)}),
                     ]
-                )),
+                )
+            ),
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
                     m('label', {for: 'showctrls'}, 'Show controls: ',
                         m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
                     ),
-                    state.showctrl && [m('br'), m('label', {for: 'scenario'}, "Scenario"),
+                    state.showctrl && [m('br'), m('label', {for: 'scenario'}, "Scenario (help? ",
+                            m('input', {name: 'showDesc', type:"checkbox", checked:state.showDesc, onchange: e => update({showDesc: e.target.checked})}),
+                        " )"),
                         m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
                             meta2options(state.meta.scenarios, state.scenario)
                         ),
@@ -491,8 +495,15 @@ const menuView = state => {
                             meta2options(state.meta.od_matrices, state.matVar)
                         ),
                     ],
+                ),
+            ),
+            m('div', {style: 'position: absolute; top: 0; display: ' + (state.showDesc == true ? "initial" : "none")},
+                m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
+                    [
+                        state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', state.meta.scenarios[state.scenario].name + ": " + state.meta.scenarios[state.scenario].description),
+                    ]
                 )
-            )
+            ),
         ])
     )
 }
