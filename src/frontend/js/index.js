@@ -387,6 +387,9 @@ const Legend = () => {
     let legendelem
     const drawLegend = vnode => {
         let bounds = vnode.attrs.bounds
+        if (vnode.attrs.flipped) {
+            bounds = [bounds[1], bounds[0]]
+        }
         if (vnode.attrs.percent) {
             bounds = bounds.map(x => x * 100)
         } 
@@ -436,8 +439,8 @@ const menuView = state => {
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent), palette: getPalette(state.meta, "links", state.linkVar, state.compare)}),
-                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent), palette: getPalette(state.meta, "od_matrices", state.matVar, state.compare)}),
+                        state.linkVar && state.meta.links && state.meta.links[state.linkVar] && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent), palette: getPalette(state.meta, "links", state.linkVar, state.compare), flipped: (state.meta.links[state.linkVar].good == "smaller")}),
+                        state.meta.od_matrices && state.matVar && state.meta.od_matrices[state.matVar] && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent), palette: getPalette(state.meta, "od_matrices", state.matVar, state.compare), flipped: (state.meta.od_matrices[state.matVar].good == "smaller")}),
                     ]
                 )
             ),
