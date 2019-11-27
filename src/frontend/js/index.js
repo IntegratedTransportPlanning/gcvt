@@ -393,7 +393,7 @@ const Legend = () => {
         const unit = vnode.attrs.unit
         legendelem && legendelem.remove()
         legendelem = legend({
-            color: d3.scaleSequential(bounds, d3.interpolateRdYlGn),
+            color: d3.scaleSequential(bounds, vnode.attrs.palette),
             title: vnode.attrs.title + ` (${unit})`,
         })
         vnode.dom.appendChild(legendelem)
@@ -436,8 +436,8 @@ const menuView = state => {
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent) }),
-                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent)}),
+                        state.linkVar && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent), palette: getPalette(state.meta, "links", state.linkVar, state.compare)}),
+                        state.matVar && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent), palette: getPalette(state.meta, "od_matrices", state.matVar, state.compare)}),
                     ]
                 )
             ),
@@ -535,7 +535,7 @@ function setOpacity() {
     map.setPaintProperty('links', 'fill-opacity', atFid(opacities))
 }
 
-function setColours(nums) {
+function setColours(nums, palette=d3.interpolateRdYlGn) {
     const num_zones = 282
     if (nums === undefined) {
         nums = []
@@ -545,7 +545,7 @@ function setColours(nums) {
     }
     const colours = []
     for (let i=0; i < num_zones; i++){
-        colours.push(d3.scaleSequential(d3.interpolateRdYlGn)(nums[i]))
+        colours.push(d3.scaleSequential(palette)(nums[i]))
     }
 
     // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
@@ -553,10 +553,10 @@ function setColours(nums) {
         ['to-color', atFid(colours)])
 }
 
-function setLinkColours(nums) {
+function setLinkColours(nums, palette=d3.interpolateRdYlGn) {
     const colours = []
     for (let n of nums){
-        colours.push(d3.scaleSequential(d3.interpolateRdYlGn)(n))
+        colours.push(d3.scaleSequential(palette)(n))
     }
 
     // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
@@ -620,12 +620,14 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
 
     const dir = meta[domain][variable]["good"]
 
+    const palette = getPalette(meta,domain,variable,compare)
+
     if (domain == "od_matrices"){
         actions.updateLegend(bounds,"matrix")
-        setColours(normalise(data, bounds, abs, dir))
+        setColours(normalise(data, bounds, abs, dir),palette)
     } else {
         actions.updateLegend(bounds,"link")
-        setLinkColours(normalise(data, bounds, abs, dir))
+        setLinkColours(normalise(data, bounds, abs, dir),palette)
     }
 
     // TODO: make functional (i.e. colourMap should accept data as an argument)
@@ -634,6 +636,16 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
     } else {
         update({linkVals: data})
     }
+}
+
+function getPalette(meta,domain,variable,compare){
+    if (!meta[domain][variable]) return d3.interpolateRdYlGn
+    const desiredPalette = continuousPalette(meta[domain][variable]["palette"] || "RdYlGn")
+    if (desiredPalette === undefined) {
+        console.warn(variable + " has an invalid colour scheme set in the metadata.")
+        return d3.interpolateRdYlGn
+    }
+    return !compare ? desiredPalette : d3.interpolateRdYlGn
 }
 
 async function getDataFromId(id,domain="links"){
@@ -667,4 +679,5 @@ if (DEBUG)
 
         stateFromSearch,
         merge,
+        continuousPalette,
     })
