@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "build": "parcel build js/index.html --out-dir www --public-url /map/",
+    "devbuild": "parcel build js/index.html --no-minify --out-dir www --public-url /map/",
     "watch": "parcel watch js/index.html --out-dir www --public-url /map/"
   },
   "browserslist": [
