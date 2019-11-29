@@ -10,7 +10,7 @@ import {m, render} from 'mithril'
 
 import * as UI from 'construct-ui'
 
-import turf from "@turf/turf"
+import * as turf from "@turf/turf"
 
 
 // UTILITY FUNCS
@@ -136,6 +136,28 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 maxzoom: 6,
             },
             "source-layer": "links",
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                visibility: 'none',
+            },
+        })
+        map.addLayer({
+            id: "centroidLines",
+            type: "line",
+            source: {
+                type: "geojson",
+                data: {
+                    "type": "Feature",
+                    "geometry": {
+                        type: "LineString",
+                        coordinates: [[0,0],[1,1]],
+                    },
+                    "properties": {
+                        "name": "Dummy line",
+                    },
+                },
+            },
             layout: {
                 'line-cap': 'round',
                 'line-join': 'round',
@@ -363,6 +385,48 @@ states.map(state => console.log('state', state))
                         .setLngLat(event.lngLat)
                         .setHTML(numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
                         .addTo(map)
+                },
+                lines: oldlines => {
+                    // if (oldlines) {
+                    //     // remove them
+                    //     map.setLayoutProperty("centroidLines","visibility","none")
+                    // }
+                    let clines = []
+
+                    const originPoint = turf.centroid(event.features[0].geometry)
+
+                    // let dests = [] // Need to get this from somewhere
+                    const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"})
+
+                        console.log(originPoint)
+                    for (let dest of dests) {
+                        const destPoint = turf.centroid(dest.geometry)
+                        const getPos = x => x.geometry.coordinates
+                        // if ((getPos(destPoint)[0] == getPos(originPoint)[0]) && (getPos(destPoint[1]) == getPos(originPoint)[1])) continue
+                        // const dPt = top.centroids.find(pt => {
+                        //     return pt.properties.fid === dest
+                        // })
+
+                        let props = {
+                            // weight:  pair[3],
+                            // opacity: pair[4]
+                        }
+
+                        let cline = turf.greatCircle(
+                            getPos(originPoint),
+                            getPos(destPoint),
+                            {properties: props}
+                        )
+
+                        clines.push(cline)
+                    }
+                    map.getSource("centroidLines").setData(turf.featureCollection(clines))
+                    // map.setPaintProperty("centroidLines","line-width",["get","weight"])
+                    // map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
+                    map.moveLayer("centroidLines")
+
+                    map.setLayoutProperty("centroidLines","visibility","visible")
+                    return "somelines"
                 }
             }
         })
@@ -685,4 +749,5 @@ if (DEBUG)
         stateFromSearch,
         merge,
         continuousPalette,
+        turf,
     })
