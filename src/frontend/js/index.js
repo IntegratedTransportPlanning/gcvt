@@ -390,7 +390,7 @@ states.map(state => console.log('state', state))
                         .setHTML(numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
                         .addTo(map)
                 },
-                lines: oldlines => {
+                lines: async oldlines => {
                     // if (oldlines) {
                     //     // remove them
                     //     map.setLayoutProperty("centroidLines","visibility","none")
@@ -402,19 +402,31 @@ states.map(state => console.log('state', state))
                     // let dests = [] // Need to get this from somewhere
                     const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"})
 
-                        console.log(originPoint)
+                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&byrow=true") // Compare currently unused
+                    const qs = [0.001,0.999]
+
+                    // const bounds = await getData("stats?domain=od_matrices&variable=" + state.matVar + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=none")
+                    const truncData = data.slice() // Make copy first so we don't mutate original
+                        .sort().slice(-20) // Draw top 20 lines
+                    const bounds = [Math.min(...truncData),Math.max(...truncData)]
+                    const normedData = normalise(data,bounds,"absolute") // Anything outside 0,1 is clamped by consumer
+                    const threshold = normedData.slice() // Make copy first so we don't mutate original
+                        .sort().slice(-20)[0] // Draw top 20 lines
+
+
                     for (let dest of dests) {
+                        // if (normedData[dest.properties.fid - 1] < threshold) continue
                         const destPoint = turf.centroid(dest.geometry)
                         const getPos = x => x.geometry.coordinates
-                        // if ((getPos(destPoint)[0] == getPos(originPoint)[0]) && (getPos(destPoint[1]) == getPos(originPoint)[1])) continue
-                        // const dPt = top.centroids.find(pt => {
-                        //     return pt.properties.fid === dest
-                        // })
+
+                        // Skip itself
+                        if ((getPos(destPoint)[0] == getPos(originPoint)[0]) && (getPos(destPoint)[1] == getPos(originPoint)[1])) continue
 
                         let props = {
-                            // weight:  pair[3],
-                            // opacity: pair[4]
+                            opacity: Math.pow(normedData[dest.properties.fid - 1] - 0.1,10) - 0.1, // Slightly weird heuristic but it looks nice
+                            weight: Math.pow(normedData[dest.properties.fid - 1] - 0.1,2)* 5
                         }
+                        if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
 
                         let cline = turf.greatCircle(
                             getPos(originPoint),
@@ -426,11 +438,11 @@ states.map(state => console.log('state', state))
                     }
                     map.getSource("centroidLines").setData(turf.featureCollection(clines))
                     // map.setPaintProperty("centroidLines","line-width",["get","weight"])
-                    // map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
+                    map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
                     map.moveLayer("centroidLines")
 
                     map.setLayoutProperty("centroidLines","visibility","visible")
-                    return "somelines"
+                    return clines
                 }
             }
         })
