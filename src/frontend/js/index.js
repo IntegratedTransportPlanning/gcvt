@@ -141,6 +141,10 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-join': 'round',
                 visibility: 'none',
             },
+            paint: {
+                'line-opacity': .8,
+                'line-color': 'gray',
+            },
         })
         map.addLayer({
             id: "centroidLines",
@@ -165,7 +169,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
             paint: {
                 'line-opacity': .8,
-                'line-color': 'blue',
+                'line-color': 'gray',
             },
         })
         actions.getMeta().then(async () => {
