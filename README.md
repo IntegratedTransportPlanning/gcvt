@@ -33,3 +33,21 @@ make back &
 
 # Access the map at http://localhost:2016
 ```
+
+Docker - recommended for deployment:
+
+```sh
+# Ensure you have yarn and docker-compose installed and on your path
+# Ensure processed data is in correct directory (e.g. ./src/backed/update_data.sh)
+
+# Build frontend (see issue #80)
+cd src/frontend/
+yarn install
+yarn run build
+
+# Launch all services (will take a while)
+cd ..
+sudo docker-compose up --build
+
+# Migrating WordPress installation is slightly tricky - see src/notes.md
+```
