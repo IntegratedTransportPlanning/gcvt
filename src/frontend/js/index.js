@@ -1,9 +1,9 @@
-import meiosisMergerino from "meiosis-setup/mergerino";
-import simpleStream from "meiosis-setup/simple-stream";
-import merge from "mergerino";
+import meiosisMergerino from "meiosis-setup/mergerino"
+import simpleStream from "meiosis-setup/simple-stream"
+import merge from "mergerino"
 
-import mapboxgl from 'mapbox-gl';
-import * as d3 from 'd3';
+import mapboxgl from 'mapbox-gl'
+import * as d3 from 'd3'
 import {legend} from "./d3-color-legend"
 
 import {m, render} from 'mithril'
@@ -329,10 +329,10 @@ const app = {
         },
     ],
 
-};
+}
 
 const { update, states, actions } =
-    meiosisMergerino({ stream: simpleStream, merge, app });
+    meiosisMergerino({ stream: simpleStream, merge, app })
 
 
 // VIEWS
