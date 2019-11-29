@@ -150,6 +150,7 @@ route("/data") do
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
+        :byrow => "false",
     )
     d = merge(defaults, getpayload())
     scenario = d[:scenario]
@@ -159,6 +160,9 @@ route("/data") do
     percent = d[:percent] == "true"
     comparewith = d[:comparewith]
     if d[:domain] == "od_matrices"
+        if d[:byrow] == "true"
+            return sum(mat_data(scenario, year, variable), dims = 1) |> Iterators.flatten |> collect |> json
+        end
         if d[:comparewith] == "none"
             sum(mat_data(scenario, year, variable), dims = 2) |> Iterators.flatten |> collect |> json
         else
