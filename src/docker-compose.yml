@@ -80,7 +80,7 @@ services:
     restart: unless-stopped
     volumes:
       - wordpress:/var/www/html
-      - ./wordpress-gcvt-plugin:/var/www/html/wp-content/plugins
+      - ./wordpress-gcvt-plugin/wordpress-gcvt-plugin.php:/var/www/html/wp-content/plugins/wordpress-gcvt-plugin.php
       # - frontend:/var/www/html/map # see issue #80
       - ./frontend/www:/var/www/html/map
       - ./backend/data/processed/tiles:/var/www/html/tiles
