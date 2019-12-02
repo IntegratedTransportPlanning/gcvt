@@ -388,13 +388,14 @@ states.map(state => console.log('state', state))
 
     map.on('click', 'zones', async event => ((event, state) => {
         console.log(event)
+        // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
                         oldpopup.remove()
                     }
-                    return new mapboxgl.Popup()
+                    return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(event.features[0].properties.NAME + "<br>" + numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
                         .addTo(map)
