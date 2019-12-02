@@ -387,7 +387,7 @@ states.map(state => console.log('state', state))
                     }
                     return new mapboxgl.Popup()
                         .setLngLat(event.lngLat)
-                        .setHTML(numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
+                        .setHTML(event.features[0].properties.NAME + "<br>" + numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
                         .addTo(map)
                 },
                 lines: async oldlines => {
