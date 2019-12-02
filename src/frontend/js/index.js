@@ -374,7 +374,7 @@ const { update, states, actions } =
 // VIEWS
 
 // Console view
-states.map(state => console.log('state', state))
+states.map(state => log('state', state))
 
 
 // Mapbox action callbacks
@@ -388,7 +388,7 @@ states.map(state => console.log('state', state))
     map.on("zoomend", positionUpdate)
 
     map.on('click', 'zones', async event => ((event, state) => {
-        console.log(event)
+        log(event)
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
             mapUI: {
@@ -821,7 +821,7 @@ function getPalette(meta,domain,variable,compare){
 async function getDataFromId(id,domain="links"){
     const state = states()
     const variable = domain == "links" ? state.linkVar : state.matVar
-    console.log("state is ", state)
+    log("state is ", state)
     const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
     const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
     return {absVal: absData[id], percVal: percData[id]}
@@ -829,7 +829,7 @@ async function getDataFromId(id,domain="links"){
 
 
 const DEBUG = true
-if (DEBUG)
+if (DEBUG) {
     Object.assign(window, {
         map,
         update,
@@ -853,3 +853,7 @@ if (DEBUG)
         turf,
         LTYPE_LOOKUP
     })
+    log = console.log
+} else {
+    log = _ => undefined
+}
