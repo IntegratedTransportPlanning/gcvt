@@ -717,6 +717,12 @@ function setLinkColours(nums, palette=d3.interpolateRdYlGn) {
     // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
+    map.setPaintProperty('links','line-offset', ['interpolate',
+        ['linear'],
+        ['zoom'],
+        4,0.5,
+        10, 1.8
+    ])
 }
 
 
