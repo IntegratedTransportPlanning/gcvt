@@ -27,6 +27,14 @@ const divergingPalette = _ => d3.interpolateRdYlGn
 const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateViridis
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
+// These were guessed by comparing TEN-T Rail only with TEN-T road and rail
+const LTYPE_LOOKUP = [
+    "Unknown",
+    "Maritime",
+    "Rail",
+    "Road",
+]
+
 
 // INITIAL STATE
 const DEFAULTS = {
@@ -183,6 +191,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 update({mapReady: true})
             })
         })
+        getLTypes().then(LTypes => update({LTypes}))
     }
 
     map.on('load', loadLayers)
@@ -447,6 +456,62 @@ states.map(state => console.log('state', state))
             }
         })
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+
+    map.on('click', 'links', async event => ((event, state) => {
+        update({
+            mapUI: {
+                popup: oldpopup => {
+                    if (oldpopup) {
+                        oldpopup.remove()
+                    }
+                    return new mapboxgl.Popup({closeButton: false})
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            "Link type: " + LTYPE_LOOKUP[state.LTypes[event.features[0].id] - 1] + "<br>" +
+                            numberToHuman(state.linkVals[event.features[0].id - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
+                        )
+                        .addTo(map)
+                },
+            }
+        })
+    })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+
+    map.on('mousemove', 'links', async event => ((event, state) => {
+        update({
+            mapUI: {
+                hover: oldpopup => {
+                    if (oldpopup) {
+                        oldpopup.remove()
+                    }
+                    return new mapboxgl.Popup(
+                        {
+                            closeButton: false,
+                            // closeOnClick: false,
+                        }
+                    )
+                        .setLngLat(event.lngLat)
+                        .setHTML(
+                            "Link type: " + LTYPE_LOOKUP[state.LTypes[event.features[0].id] - 1] + "<br>" +
+                            numberToHuman(state.linkVals[event.features[0].id - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
+                        )
+                        .addTo(map)
+                },
+            }
+        })
+    })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+
+    // // Found that this left 
+    // map.on('mouseleave','links', _ => {
+    //     update({
+    //         mapUI: {
+    //             hover: oldpopup => {
+    //                 if (oldpopup) {
+    //                     oldpopup.remove()
+    //                 }
+    //             }
+    //         }
+    //     })
+    // })
 }
 
 function numberToHuman(number,percent=false){
@@ -611,6 +676,10 @@ states.map(menuView)
 const atId = data => ['at', ['id'], ["literal", data]]
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
+async function getLTypes() {
+    return getData("data?domain=links&variable=LType&comparewith=none")
+}
+
 function setOpacity() {
     const num_zones = 282
     const opacities = []
@@ -766,4 +835,5 @@ if (DEBUG)
         merge,
         continuousPalette,
         turf,
+        LTYPE_LOOKUP
     })
