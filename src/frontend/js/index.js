@@ -795,6 +795,8 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
     } else {
         actions.updateLegend(bounds,"link")
         setLinkColours(normalise(data, bounds, abs, dir),palette)
+        // map.setPaintProperty('links', 'line-width',
+        //     ['to-number', atId(normalise(data,bounds,abs,dir))])
     }
 
     // TODO: make functional (i.e. colourMap should accept data as an argument)
