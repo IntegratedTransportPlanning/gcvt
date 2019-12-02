@@ -152,6 +152,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             paint: {
                 'line-opacity': .8,
                 'line-color': 'gray',
+                'line-width': 1.5,
             },
         })
         map.addLayer({
