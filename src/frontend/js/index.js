@@ -29,7 +29,7 @@ const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeT
 
 // These were guessed by comparing TEN-T Rail only with TEN-T road and rail
 const LTYPE_LOOKUP = [
-    "Unknown",
+    "Inland waterway",
     "Maritime",
     "Rail",
     "Road",
