@@ -395,6 +395,12 @@ states.map(state => console.log('state', state))
                     if (oldpopup) {
                         oldpopup.remove()
                     }
+                    (async state => {
+                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + event.features[0].properties.fid)
+                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
+                        actions.updateLegend(bounds,"matrix")
+                        setColours(normalise(data, bounds, true),getPalette(state.meta, "od_matrices", state.matVar, state.compare))
+                    })(state)
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(event.features[0].properties.NAME + "<br>" + numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
@@ -412,7 +418,7 @@ states.map(state => console.log('state', state))
                     // let dests = [] // Need to get this from somewhere
                     const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"})
 
-                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&byrow=true") // Compare currently unused
+                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
                     const qs = [0.001,0.999]
 
                     // const bounds = await getData("stats?domain=od_matrices&variable=" + state.matVar + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=none")

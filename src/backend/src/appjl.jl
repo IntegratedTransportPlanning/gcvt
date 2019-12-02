@@ -129,6 +129,7 @@ route("/stats") do
                                         # but we look at all possible differences
                                         # so overwhelming majority of differences are
                                         # tiny. Seems to work OK in practice.
+        :row => "false",
     )
     d = merge(defaults, getpayload())
     quantiles = parse.(Float64,split(d[:quantiles],","))
@@ -150,7 +151,7 @@ route("/data") do
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
-        :byrow => "false",
+        :row => "false",
     )
     d = merge(defaults, getpayload())
     scenario = d[:scenario]
@@ -160,8 +161,9 @@ route("/data") do
     percent = d[:percent] == "true"
     comparewith = d[:comparewith]
     if d[:domain] == "od_matrices"
-        if d[:byrow] == "true"
-            return sum(mat_data(scenario, year, variable), dims = 1) |> Iterators.flatten |> collect |> json
+        if d[:row] != "false"
+            row = parse(Int,d[:row])
+            return mat_data(scenario, year, variable)[row,:] |> json
         end
         if d[:comparewith] == "none"
             sum(mat_data(scenario, year, variable), dims = 2) |> Iterators.flatten |> collect |> json
