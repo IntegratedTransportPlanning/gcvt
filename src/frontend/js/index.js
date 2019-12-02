@@ -1,3 +1,6 @@
+const DEBUG = true
+const log = DEBUG ? console.log : _ => undefined
+
 import meiosisMergerino from "meiosis-setup/mergerino"
 import simpleStream from "meiosis-setup/simple-stream"
 import merge from "mergerino"
@@ -828,8 +831,7 @@ async function getDataFromId(id,domain="links"){
 }
 
 
-const DEBUG = true
-if (DEBUG) {
+if (DEBUG)
     Object.assign(window, {
         map,
         update,
@@ -853,7 +855,3 @@ if (DEBUG) {
         turf,
         LTYPE_LOOKUP
     })
-    log = console.log
-} else {
-    log = _ => undefined
-}
