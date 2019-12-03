@@ -356,7 +356,7 @@ const app = {
                         const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
                         const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
                         actions.updateLegend(bounds,"matrix")
-                        setColours(normalise(data, bounds, true),getPalette(state.meta, "od_matrices", state.matVar, false))
+                        setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
                     })(state)
                 } else {
                     colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
@@ -379,7 +379,7 @@ const app = {
                         const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
                         const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
                         actions.updateLegend(bounds,"matrix")
-                        setColours(normalise(data, bounds, true),getPalette(state.meta, "od_matrices", state.matVar, false))
+                        setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
                     })(state)
                 } else {
                     colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
@@ -451,7 +451,7 @@ states.map(state => log('state', state))
                     const truncData = data.slice() // Make copy first so we don't mutate original
                         .sort().slice(-20) // Draw top 20 lines
                     const bounds = [Math.min(...truncData),Math.max(...truncData)]
-                    const normedData = normalise(data,bounds,"absolute") // Anything outside 0,1 is clamped by consumer
+                    const normedData = normalise(data,bounds) // Anything outside 0,1 is clamped by consumer
                     const threshold = normedData.slice() // Make copy first so we don't mutate original
                         .sort().slice(-20)[0] // Draw top 20 lines
 
@@ -772,18 +772,11 @@ function setLinkColours(nums, palette=d3.interpolateRdYlGn) {
 
 
 // Some of this should probably go in d3.scale...().domain([])
-function normalise(v,bounds,boundtype="midpoint",good="smaller") {
-    if (bounds && boundtype == "midpoint") {
-        const tbounds = [...bounds]
-        bounds[0] = tbounds[0] - tbounds[1]
-        bounds[1] = tbounds[0] + tbounds[1]
-    }
+function normalise(v, bounds, good="smaller") {
     let min = bounds ? bounds[0] : Math.min(...v)
     let max = bounds ? bounds[1] : Math.max(...v)
     if (good == "smaller"){
-        const t = min
-        min = max
-        max = t
+        ;[min, max] = [max, min]
     }
     return v.map(x => {
         let e = x - min
@@ -801,8 +794,7 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
 
     if (percent && compare) {
         data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
-        bounds = [1, 0.5]
-        abs = 'midpoint'
+        bounds = [.5, 1.5]
     } else {
         const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
 
@@ -821,7 +813,6 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
                 bounds = [bounds[1], bounds[0]]
             }
         }
-        abs = 'absolute'
     }
 
     const dir = meta[domain][variable]["good"]
@@ -830,10 +821,10 @@ async function colourMap(meta, domain, variable, scenario, percent, year, compar
 
     if (domain == "od_matrices"){
         actions.updateLegend(bounds,"matrix")
-        setColours(normalise(data, bounds, abs, dir),palette)
+        setColours(normalise(data, bounds, dir),palette)
     } else {
         actions.updateLegend(bounds,"link")
-        setLinkColours(normalise(data, bounds, abs, dir),palette)
+        setLinkColours(normalise(data, bounds, dir),palette)
         // map.setPaintProperty('links', 'line-width',
         //     ['to-number', atId(normalise(data,bounds,abs,dir))])
     }
