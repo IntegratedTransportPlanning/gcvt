@@ -64,7 +64,7 @@ const DEFAULTS = {
     showctrl: true,
     mapReady: false,
     showDesc: false,
-    selectedZone: "none",
+    selectedZones: [],
     zoneNames: [],
     mapUI: {
         // The locations to hover-over.
@@ -350,9 +350,9 @@ const app = {
             if (!state.mapReady) return
 
             if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare', 'compareWith', 'compareYear'], state, previousState)) {
-                if (state.selectedZone !== "none") {
+                if (state.selectedZones.length !== 0) {
                     (async state => {
-                        const fid = state.selectedZone
+                        const fid = state.selectedZones[0] // Todo: support multiple zones
                         const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
                         const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
                         actions.updateLegend(bounds,"matrix")
@@ -372,10 +372,10 @@ const app = {
                 map.setLayoutProperty('links', 'visibility', 'none')
             }
 
-            if (propertiesDiffer(['matVar','selectedZone'], state, previousState)) {
-                if (state.selectedZone !== "none") {
+            if (propertiesDiffer(['matVar','selectedZones'], state, previousState)) {
+                if (state.selectedZones.length !== 0) {
                     (async state => {
-                        const fid = state.selectedZone
+                        const fid = state.selectedZones[0] // Todo: support multiple zones
                         const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
                         const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
                         actions.updateLegend(bounds,"matrix")
@@ -421,7 +421,7 @@ states.map(state => log('state', state))
         log(event)
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
-            selectedZone: event.features[0].properties.fid,
+            selectedZones: [event.features[0].properties.fid], // todo: push to this instead
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
@@ -620,7 +620,7 @@ const menuView = state => {
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
                         state.linkVar && state.meta.links && state.meta.links[state.linkVar] && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent), palette: getPalette(state.meta, "links", state.linkVar, state.compare), flipped: (state.meta.links[state.linkVar].good == "smaller")}),
-                        state.meta.od_matrices && state.matVar && state.meta.od_matrices[state.matVar] && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent && (state.selectedZone == "none"), unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent && (state.selectedZone == "none")), palette: getPalette(state.meta, "od_matrices", state.matVar, state.compare && (state.selectedZone == "none")), flipped: (state.meta.od_matrices[state.matVar].good == "smaller")}),
+                        state.meta.od_matrices && state.matVar && state.meta.od_matrices[state.matVar] && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent && (state.selectedZones.length == 0), unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent && (state.selectedZones.length == 0)), palette: getPalette(state.meta, "od_matrices", state.matVar, state.compare && (state.selectedZones.length == 0)), flipped: (state.meta.od_matrices[state.matVar].good == "smaller")}),
                     ]
                 )
             ),
@@ -677,9 +677,9 @@ const menuView = state => {
                             m('option', {value: '', selected: state.linkVar === null}, 'None'),
                             meta2options(state.meta.od_matrices, state.matVar)
                         ),
-                        (state.selectedZone !== "none") && [
-                            m('label', {for: 'deselect_zone'}, 'Showing flows to ', state.zoneNames[state.selectedZone] || 'zone ' + state.selectedZone, ' (deselect? ',
-                                m('input', {name: 'deselect_zone', type:"checkbox", checked:(state.selectedZone == "none"), onchange: e => update({selectedZone: "none"})}),
+                        (state.selectedZones.length !== 0) && [
+                            m('label', {for: 'deselect_zone'}, 'Showing flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
+                                m('input', {name: 'deselect_zone', type:"checkbox", checked: state.selectedZones.length == 0, onchange: e => update({selectedZones: []})}),
                             ')'),
                         ],
                     ],
