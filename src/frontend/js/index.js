@@ -65,6 +65,7 @@ const DEFAULTS = {
     mapReady: false,
     showDesc: false,
     selectedZone: "none",
+    zoneNames: [],
     mapUI: {
         // The locations to hover-over.
         popup: null,
@@ -201,6 +202,15 @@ const mapboxInit = ({lng, lat, zoom}) => {
     }
 
     map.on('load', loadLayers)
+    map.on('sourcedata', _ => {
+        if (map.getSource('zones') && map.isSourceLoaded('zones')) {
+            const a = []
+            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.NAME})
+            update({
+                zoneNames: a,
+            })
+        }
+    })
 
     return map
 }
@@ -340,9 +350,18 @@ const app = {
             if (!state.mapReady) return
 
             if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare', 'compareWith', 'compareYear'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
+                if (state.selectedZone !== "none") {
+                    (async state => {
+                        const fid = state.selectedZone
+                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
+                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
+                        actions.updateLegend(bounds,"matrix")
+                        setColours(normalise(data, bounds, true),getPalette(state.meta, "od_matrices", state.matVar, false))
+                    })(state)
+                } else {
+                    colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
+                }
                 colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
-                update({selectedZone: "none"})
             }
 
             if (propertiesDiffer(['linkVar'], state, previousState)) {
@@ -353,9 +372,18 @@ const app = {
                 map.setLayoutProperty('links', 'visibility', 'none')
             }
 
-            if (propertiesDiffer(['matVar'], state, previousState)) {
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
-                update({selectedZone: "none"})
+            if (propertiesDiffer(['matVar','selectedZone'], state, previousState)) {
+                if (state.selectedZone !== "none") {
+                    (async state => {
+                        const fid = state.selectedZone
+                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
+                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
+                        actions.updateLegend(bounds,"matrix")
+                        setColours(normalise(data, bounds, true),getPalette(state.meta, "od_matrices", state.matVar, false))
+                    })(state)
+                } else {
+                    colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
+                }
             }
 
             if (!state.matVar) {
@@ -393,19 +421,12 @@ states.map(state => log('state', state))
         log(event)
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
+            selectedZone: event.features[0].properties.fid,
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
                         oldpopup.remove()
                     }
-                    (async state => {
-                        const fid = event.features[0].properties.fid
-                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
-                        actions.updateLegend(bounds,"matrix")
-                        setColours(normalise(data, bounds, true),getPalette(state.meta, "od_matrices", state.matVar, false))
-                        update({selectedZone: fid})
-                    })(state)
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(event.features[0].properties.NAME + "<br>" + numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
@@ -656,6 +677,11 @@ const menuView = state => {
                             m('option', {value: '', selected: state.linkVar === null}, 'None'),
                             meta2options(state.meta.od_matrices, state.matVar)
                         ),
+                        (state.selectedZone !== "none") && [
+                            m('label', {for: 'deselect_zone'}, 'Showing flows to ', state.zoneNames[state.selectedZone] || 'zone ' + state.selectedZone, ' (deselect? ',
+                                m('input', {name: 'deselect_zone', type:"checkbox", checked:(state.selectedZone == "none"), onchange: e => update({selectedZone: "none"})}),
+                            ')'),
+                        ],
                     ],
                 ),
             ),
