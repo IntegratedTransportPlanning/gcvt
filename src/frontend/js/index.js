@@ -678,7 +678,7 @@ const menuView = state => {
                             meta2options(state.meta.od_matrices, state.matVar)
                         ),
                         (state.selectedZones.length !== 0) && [
-                            m('label', {for: 'deselect_zone'}, 'Showing flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
+                            m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
                                 m('input', {name: 'deselect_zone', type:"checkbox", checked: state.selectedZones.length == 0, onchange: e => update({selectedZones: []})}),
                             ')'),
                         ],
