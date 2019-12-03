@@ -22,7 +22,7 @@ const propertiesDiffer = (props, a, b) =>
     props.filter(key => a[key] !== b[key]).length !== 0
 
 // get data from Julia:
-const getData = async endpoint => (await (await fetch("/api/" + endpoint)).json())
+const getData = async endpoint => (await fetch("/api/" + endpoint)).json()
 
 // d3 really doesn't offer a sane way to pick these.
 // Supported list: https://github.com/d3/d3-scale-chromatic/blob/master/src/index.js
