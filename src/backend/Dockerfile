@@ -1,4 +1,4 @@
-FROM julia:1.1
+FROM julia:1.3
 COPY . /julia-gcvt/
 
 # Install toolchain needed for many Julia packages
