@@ -104,6 +104,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         style: 'mapbox://styles/mapbox/light-v10', // stylesheet location
         center: [lng, lat],
         zoom: zoom,
+        hash: true,
     })
 
     // disable map rotation using right click + drag
@@ -304,7 +305,7 @@ const app = {
         ({ state, previousState, patch }) => {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
-            const nums_in_query = [ "lng", "lat", "zoom" ] // These are really floats
+            const nums_in_query = [] // These are really floats
             const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl","compareWith","compareYear","showDesc"]
             let updateRequired = false
             const queryItems = []
@@ -336,11 +337,6 @@ const app = {
             // Update Mapbox's state if it differs from state.
 
             if (!state.mapReady) return
-
-            const mapPos = Object.assign(map.getCenter(), { zoom: map.getZoom() })
-            if (propertiesDiffer(['lng', 'lat', 'zoom'], state, mapPos)) {
-                map.jumpTo({ center: [state.lng, state.lat], zoom: state.zoom })
-            }
 
             if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare', 'compareWith', 'compareYear'], state, previousState)) {
                 colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
