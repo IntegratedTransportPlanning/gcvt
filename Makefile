@@ -13,7 +13,7 @@ http:
 	caddy
 
 back:
-	cd src/backend && julia --project=. src/backend.jl
+	cd src/backend && julia --project=. src/appjl.jl
 
 front:
 	cd src/frontend && yarn run watch
