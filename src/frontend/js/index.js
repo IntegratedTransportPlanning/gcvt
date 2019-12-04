@@ -184,7 +184,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
             paint: {
                 'line-opacity': .8,
-                'line-color': 'gray',
+                'line-color': 'red',
             },
         })
         actions.getMeta().then(async () => {
@@ -446,25 +446,18 @@ states.map(state => log('state', state))
                     const originPoint = turf.point(dests[event.features[0].properties.fid - 1])
 
                     const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
-                    const qs = [0.001,0.999]
+                    const sortedData = sane_sort(data)
+                    const bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
+                    const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
 
-                    // const bounds = await getData("stats?domain=od_matrices&variable=" + state.matVar + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=none")
-                    const truncData = data.slice() // Make copy first so we don't mutate original
-                        .sort().slice(-20) // Draw top 20 lines
-                    const bounds = [Math.min(...truncData),Math.max(...truncData)]
-                    const normedData = normalise(data,bounds) // Anything outside 0,1 is clamped by consumer
-                    const threshold = normedData.slice() // Make copy first so we don't mutate original
-                        .sort().slice(-20)[0] // Draw top 20 lines
-
-
+                    console.log(normedData)
                     const clines = dests.map((dest,index) => {
-                        // if (normedData[dest.properties.fid - 1] < threshold) continue
                         const destPoint = turf.point(dest)
                         const getPos = x => x.geometry.coordinates
 
                         let props = {
-                            opacity: Math.pow(normedData[index] - 0.1,10) - 0.1, // Slightly weird heuristic but it looks nice
-                            weight: Math.pow(normedData[index] - 0.1,2)* 5
+                            opacity: normedData[index],
+                            weight: 2.5 * normedData[index],
                         }
                         if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
 
@@ -477,7 +470,7 @@ states.map(state => log('state', state))
                         return cline
                     })
                     map.getSource("centroidLines").setData(turf.featureCollection(clines))
-                    // map.setPaintProperty("centroidLines","line-width",["get","weight"])
+                    map.setPaintProperty("centroidLines","line-width",["get","weight"])
                     map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
                     map.moveLayer("centroidLines")
 
@@ -562,6 +555,12 @@ function numberToHuman(number,percent=false){
     number = percent ? number * 100 : number
     return parseFloat(number.toPrecision(3)).toLocaleString()
 }
+
+// JavaScript sorts arrays as strings by default
+// even if all the elements are numbers
+// Luckily, [1,2,3,4,5].sort() is the same as sane_sort([1,2,3,4,5])
+// RIP 30 minutes of my time
+const sane_sort = array => array.slice().sort((a,b) => a - b)
 
 // Side menu
 
@@ -886,5 +885,6 @@ if (DEBUG)
         merge,
         continuousPalette,
         turf,
+        normalise,
         LTYPE_LOOKUP
     })
