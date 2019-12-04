@@ -40,6 +40,7 @@ const LTYPE_LOOKUP = [
 
 
 // INITIAL STATE
+
 const DEFAULTS = {
     lng: 33,
     lat: 48,
@@ -49,12 +50,14 @@ const DEFAULTS = {
         od_matrices: {},
         scenarios: {},
     },
-    linkVar: "GHG_perKm",
-    linkVals: [],
-    matVar: "Total_GHG",
-    matVals: [],
-    lBounds: [0,1],
-    mBounds: [0,1],
+    layers: {
+        links: {
+            variable: "GHG_perKm",
+        },
+        od_matrices: {
+            variable: "Total_GHG",
+        },
+    },
     percent: true,
     compare: true,
     scenario: "GreenMax",
@@ -75,7 +78,7 @@ const DEFAULTS = {
 
 function stateFromSearch(search) {
     const queryString = new URLSearchParams(search)
-    const qsObj = Object.fromEntries(queryString)
+    let qsObj = Object.fromEntries(queryString)
 
     // Floats in the query string
     for (let k of ["lat","lng","zoom"]) {
@@ -90,6 +93,25 @@ function stateFromSearch(search) {
             qsObj[k] = qsObj[k] == "true"
         }
     }
+
+    // Aliased variables
+    if (qsObj.hasOwnProperty("linkVar"))
+        qsObj = merge(qsObj, {
+            layers: {
+                links: {
+                    variable: qsObj.linkVar
+                }
+            }
+        })
+    if (qsObj.hasOwnProperty("matVar"))
+        qsObj = merge(qsObj, {
+            layers: {
+                od_matrices: {
+                    variable: qsObj.matVar
+                }
+            }
+        })
+
     return qsObj
 }
 
@@ -117,7 +139,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
 
     const BASEURL = document.location.origin
 
-    function loadLayers() {
+    async function loadLayers() {
         map.addLayer({
             id: 'zones',
             type: 'fill',
@@ -187,18 +209,12 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-color': 'gray',
             },
         })
-        actions.getMeta().then(async () => {
-            const state = states()
-            Promise.all([
-                colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear),
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear),
-            ]).finally(() => {
-                state.linkVar && map.setLayoutProperty('links', 'visibility', 'visible')
-                state.matVar && map.setLayoutProperty('zones', 'visibility', 'visible')
-                update({mapReady: true})
-            })
-        })
-        getLTypes().then(LTypes => update({LTypes}))
+
+        actions.getLTypes()
+        await actions.getMeta()
+        update({mapReady: true})
+        actions.fetchLayerData("od_matrices")
+        actions.fetchLayerData("links")
     }
 
     map.on('load', loadLayers)
@@ -223,89 +239,142 @@ const map = mapboxInit(initial)
 
 // https://github.com/foxdonut/meiosis/tree/master/helpers/setup#user-content-application
 const app = {
-    // TODO: populate from query string
     initial,
 
-    // TODO:
-    // change lat/lon/zoom
-    // receive info for menu
-    // change view params
-    //   scenario
-    //   year
-    //   variable
-    //   change-type
-    //   data-type
-    //   centroids
     Actions: update => {
         return {
             changePosition: (lng, lat, zoom) => {
                 update({lng, lat, zoom})
             },
-            updateScenario: (scenario, scenarioYear, meta) => {
-                const years = meta.scenarios[scenario]["at"] || ["2030"]
-                if (!years.includes(scenarioYear)){
-                    scenarioYear = years[0]
-                }
-                update({scenario, scenarioYear})
+            updateScenario: (scenario, scenarioYear) => {
+                update(state => {
+                    scenarioYear = Number(scenarioYear)
+                    const years = state.meta.scenarios[scenario]["at"] || [2030]
+                    if (!years.includes(scenarioYear)){
+                        scenarioYear = years[0]
+                    }
+                    return merge(state, {scenario, scenarioYear})
+                })
+                actions.fetchAllLayers()
             },
-            updateBaseScenario: (scenario, scenarioYear, meta) => {
-                const years = meta.scenarios[scenario]["at"] || ["2030"]
-                if (!years.includes(scenarioYear)){
-                    scenarioYear = years[0]
-                }
-                update({compareWith: scenario, compareYear: scenarioYear})
+            updateBaseScenario: (scenario, scenarioYear) => {
+                update(state => {
+                    scenarioYear = Number(scenarioYear)
+                    const years = state.meta.scenarios[scenario]["at"] || [2030]
+                    if (!years.includes(scenarioYear)){
+                        scenarioYear = years[0]
+                    }
+                    return merge(state, {compareWith: scenario, compareYear: scenarioYear})
+                })
+                actions.fetchAllLayers()
             },
-            setActiveScenario: v => {
-                update({linkVar: v})
+            changeLayerVariable: (domain, variable) => {
+                update({layers: { [domain]: { variable }}})
+                actions.fetchLayerData(domain)
+            },
+            setComparisonMode: ({compare, percent}) => {
+                if (compare === undefined)
+                    update({percent})
+                else if (percent === undefined)
+                    update({compare})
+                actions.fetchAllLayers()
             },
             getMeta: async () => {
-                const links = await getData("variables/links")
-                const od_matrices = await getData("variables/od_matrices")
-                const scenarios = await getData("scenarios")
+                const [links, od_matrices, scenarios] =
+                    await Promise.all([
+                        getData("variables/links"),
+                        getData("variables/od_matrices"),
+                        getData("scenarios"),
+                    ])
 
                 // TODO: read default from yaml properties
                 update({
                     meta: {links, od_matrices, scenarios},
-                    linkVar: old => old === null ? Object.keys(links)[0] : old,
-                    matVar: old => old === null ? Object.keys(od_matrices)[0] : old,
+                    layers: {
+                        links: {
+                            variable: old => old === null ? Object.keys(links)[0] : old,
+                        },
+                        od_matrices: {
+                            variable: old => old === null ? Object.keys(od_matrices)[0] : old,
+                        },
+                    },
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                 })
             },
-            updateLegend: (bounds, type) => {
-                if (type == "link") {
-                    update({lBounds: bounds})
-                }
-                else if (type == "matrix") {
-                    update({mBounds: bounds})
-                }
+            getLTypes: async () => update({LTypes: await getData("data?domain=links&variable=LType&comparewith=none")}),
+            fetchAllLayers: () => {
+                actions.fetchLayerData("links")
+                actions.fetchLayerData("od_matrices")
             },
+            fetchLayerData: async domain => {
 
-            // NB: this is not used and very out of date - see colourMap instead
-            // getVals: async (meta, domain, variable, scenario, percent, year) => {
-            //     // TODO: Record palette information somewhere?
-            //     // TODO: Record normalised data if we need it (might not)
-            //     let bounds, data
+                const state = states()
 
-            //     if (percent) {
-            //         data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario)
-            //         bounds = [0.5, 1.5]
-            //     } else {
-            //         const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
-            //         ;[bounds, data] = await Promise.all([
-            //             // Clamp at 99.99% and 0.01% quantiles
-            //             getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}`),
-            //             getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent),
-            //         ])
-            //         // For abs diffs, we want 0 to always be the midpoint.
-            //         const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
-            //         bounds = [-maxb,maxb]
-            //     }
+                const updateLayer = patch =>
+                    update({
+                        layers: {
+                            [domain] : patch
+                        }
+                    })
 
-            //     const dir = meta[domain][variable]["good"]
-            //     const palette = meta[domain][variable]["palette"] || "RdYlGn"
+                const variable = state.layers[domain].variable
 
-            //     update({[domain]: {bounds, data, dir, palette}})
-            // }
+                if (!variable) {
+                    return updateLayer({
+                        values: undefined,
+                        bounds: undefined,
+                        dir: undefined,
+                        palette: undefined,
+                        unit: undefined,
+                    })
+                }
+
+                // Else fetch data
+                const {compare, compareYear, scenario, scenarioYear: year, meta} = state
+                const compareWith = compare ? state.compareWith : "none"
+                const percent = compare && state.percent
+                let bounds, values
+
+                const dir = meta[domain][variable]["good"]
+                const palette = getPalette(meta, domain, variable, compare)
+                const unit = getUnit(meta, domain, variable, percent)
+
+                if (domain === "od_matrices" && state.selectedZones.length !== 0) {
+                    const fid = state.selectedZones[0] // Todo: support multiple zones
+                    values = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
+                    bounds = [ d3.quantile(values, 0.1), d3.quantile(values, 0.9) ]
+                } else if (percent) {
+                    values = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                    bounds = [.5, 1.5]
+                } else {
+                    // TODO: We should probably not be defining default quantile assumptions on both server and client.
+                    const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
+
+                    // Quantiles should be overridden by metadata
+                    ;[bounds, values] = await Promise.all([
+                        // Clamp at 99.99% and 0.01% quantiles
+                        getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                    ])
+                    if (compare) {
+                        // For abs diffs, we want 0 to always be the midpoint.
+                        const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+                        bounds = [-maxb,maxb]
+                    } else {
+                        dir == "smaller" && bounds.reverse()
+                    }
+                }
+
+                // Race warning: This can race. Don't worry about it for now.
+                return updateLayer({
+                    values,
+                    bounds,
+                    dir,
+                    // In an array otherwise it gets executed by the patch func
+                    palette: [palette],
+                    unit,
+                })
+            },
         }
     },
 
@@ -317,29 +386,34 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
-            const strings_in_query = [ "linkVar", "matVar", "scenario", "scenarioYear", "percent", "compare", "showctrl","compareWith","compareYear","showDesc"]
-            let updateRequired = false
-            const queryItems = []
+            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc"]
+
+            const updateQS = () => {
+                const queryItems = [
+                    `linkVar=${state.layers.links.variable}`,
+                    `matVar=${state.layers.od_matrices.variable}`,
+                    ...strings_in_query.map(key => `${key}=${state[key]}`),
+                    ...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`),
+                ]
+                history.replaceState({},"", "?" + queryItems.join("&"))
+            }
+
             for (let key of nums_in_query) {
                 if (state[key].toPrecision(5) !== previousState[key].toPrecision(5)) {
-                    updateRequired = true
-                    break
+                    return updateQS()
                 }
             }
 
-            if (!updateRequired) {
-                for (let key of strings_in_query) {
-                    if (state[key] !== previousState[key]) {
-                        updateRequired = true
-                        break
-                    }
+            for (let key of strings_in_query) {
+                if (state[key] !== previousState[key]) {
+                    return updateQS()
                 }
             }
 
-            if (updateRequired) {
-                queryItems.push(...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`))
-                queryItems.push(...strings_in_query.map(key => `${key}=${state[key]}`))
-                history.replaceState({},"", "?" + queryItems.join("&"))
+            for (let key of Object.keys(state.layers)) {
+                if (state.layers[key].variable !== previousState.layers[key].variable) {
+                    return updateQS()
+                }
             }
         },
 
@@ -349,49 +423,14 @@ const app = {
 
             if (!state.mapReady) return
 
-            if (state.scenario && propertiesDiffer(['scenario','percent','scenarioYear', 'compare', 'compareWith', 'compareYear'], state, previousState)) {
-                if (state.selectedZones.length !== 0) {
-                    (async state => {
-                        const fid = state.selectedZones[0] // Todo: support multiple zones
-                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
-                        actions.updateLegend(bounds,"matrix")
-                        setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
-                    })(state)
-                } else {
-                    colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
-                }
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear)
-            }
-
-            if (propertiesDiffer(['linkVar'], state, previousState)) {
-                colourMap(state.meta, 'links', state.linkVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('links', 'visibility', 'visible'))
-            }
-
-            if (!state.linkVar) {
-                map.setLayoutProperty('links', 'visibility', 'none')
-            }
-
-            if (propertiesDiffer(['matVar','selectedZones'], state, previousState)) {
-                if (state.selectedZones.length !== 0) {
-                    (async state => {
-                        const fid = state.selectedZones[0] // Todo: support multiple zones
-                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
-                        actions.updateLegend(bounds,"matrix")
-                        setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
-                    })(state)
-                } else {
-                    colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
+            for (let layer of Object.keys(state.layers)) {
+                if (state.layers[layer] !== previousState.layers[layer]) {
+                    paint(layer, state.layers[layer])
                 }
             }
 
-            if (!state.matVar) {
-                map.setLayoutProperty('zones', 'visibility', 'none')
-            }
-
-            if (propertiesDiffer(['mapUI'], state, previousState)) {
-            }
+            // Centroid drawing code should go here.
+            // Centroid calculation code should go in an action
         },
     ],
 
@@ -422,14 +461,22 @@ states.map(state => log('state', state))
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
             selectedZones: [event.features[0].properties.fid], // todo: push to this instead
+            compare: false,
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
                         oldpopup.remove()
                     }
+                    const percent = false
+                    const layer = state.layers.od_matrices
+                    const {NAME, fid} = event.features[0].properties
+                    const value =
+                        numberToHuman(layer.values[fid - 1], percent) +
+                            (percent ? "" : " ") +
+                            layer.unit
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
-                        .setHTML(event.features[0].properties.NAME + "<br>" + numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
+                        .setHTML(`${NAME}<br>${value}`)
                         .addTo(map)
                 },
                 lines: async oldlines => {
@@ -444,7 +491,7 @@ states.map(state => log('state', state))
                     // let dests = [] // Need to get this from somewhere
                     const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"})
 
-                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
+                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.layers.od_matrices.variable + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
                     const qs = [0.001,0.999]
 
                     // const bounds = await getData("stats?domain=od_matrices&variable=" + state.matVar + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=none")
@@ -500,7 +547,7 @@ states.map(state => log('state', state))
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    let value = numberToHuman(state.linkVals[id], state.compare && state.percent) +
+                    let value = numberToHuman(state.layers.links.values[id], state.compare && state.percent) +
                         (state.compare && state.percent ? "" : " ") +
                         getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
                     return new mapboxgl.Popup({closeButton: false})
@@ -526,7 +573,7 @@ states.map(state => log('state', state))
                     }
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    let value = numberToHuman(state.linkVals[id], state.compare && state.percent) +
+                    let value = numberToHuman(state.layers.links.values[id], state.compare && state.percent) +
                         (state.compare && state.percent ? "" : " ") +
                         getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
                     return new mapboxgl.Popup({closeButton: false})
@@ -540,19 +587,6 @@ states.map(state => log('state', state))
             }
         })
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
-
-    // // Found that this left 
-    // map.on('mouseleave','links', _ => {
-    //     update({
-    //         mapUI: {
-    //             hover: oldpopup => {
-    //                 if (oldpopup) {
-    //                     oldpopup.remove()
-    //                 }
-    //             }
-    //         }
-    //     })
-    // })
 }
 
 function numberToHuman(number,percent=false){
@@ -575,16 +609,16 @@ const Legend = () => {
     let legendelem
     const drawLegend = vnode => {
         let bounds = vnode.attrs.bounds
-        if (vnode.attrs.flipped) {
+        if (vnode.attrs.dir == "smaller") {
             bounds = [bounds[1], bounds[0]]
         }
         if (vnode.attrs.percent) {
             bounds = bounds.map(x => x * 100)
-        } 
+        }
         const unit = vnode.attrs.unit
         legendelem && legendelem.remove()
         legendelem = legend({
-            color: d3.scaleSequential(bounds, vnode.attrs.palette),
+            color: d3.scaleSequential(bounds, vnode.attrs.palette[0]),
             title: vnode.attrs.title + ` (${unit})`,
         })
         vnode.dom.appendChild(legendelem)
@@ -627,8 +661,16 @@ const menuView = state => {
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.linkVar && state.meta.links && state.meta.links[state.linkVar] && m(Legend, {title: 'Links', bounds: state.lBounds, percent: state.compare && state.percent, unit: getUnit(state.meta,"links",state.linkVar, state.compare && state.percent), palette: getPalette(state.meta, "links", state.linkVar, state.compare), flipped: (state.meta.links[state.linkVar].good == "smaller")}),
-                        state.meta.od_matrices && state.matVar && state.meta.od_matrices[state.matVar] && m(Legend, {title: 'Zones', bounds: state.mBounds, percent: state.compare && state.percent && (state.selectedZones.length == 0), unit: getUnit(state.meta,"od_matrices",state.matVar, state.compare && state.percent && (state.selectedZones.length == 0)), palette: getPalette(state.meta, "od_matrices", state.matVar, state.compare && (state.selectedZones.length == 0)), flipped: (state.meta.od_matrices[state.matVar].good == "smaller")}),
+                        state.layers.links.bounds && m(Legend, {
+                            title: 'Links',
+                            percent: state.compare && state.percent,
+                            ...state.layers.links
+                        }),
+                        state.layers.od_matrices.bounds && m(Legend, {
+                            title: 'Zones',
+                            percent: state.compare && state.percent,
+                            ...state.layers.od_matrices
+                        }),
                     ]
                 )
             ),
@@ -637,25 +679,53 @@ const menuView = state => {
                     m('label', {for: 'showctrls'}, 'Show controls: ',
                         m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
                     ),
-                    state.showctrl && [m('br'), m('label', {for: 'scenario'}, "Scenario (help? ",
+                    state.showctrl && [
+                        m('br'),
+
+                        m('label', {for: 'scenario'}, "Scenario (help? ",
                             m('input', {name: 'showDesc', type:"checkbox", checked:state.showDesc, onchange: e => update({showDesc: e.target.checked})}),
                         " )"),
-                        m('select', {name: 'scenario', onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state.meta)},
+                        m('select', {
+                            name: 'scenario',
+                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
+                        },
                             meta2options(state.meta.scenarios, state.scenario)
                         ),
+
                         state.meta.scenarios && [
                             m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
-                            state.meta.scenarios[state.scenario] && (state.meta.scenarios[state.scenario].at.length > 1) && m('input', {name: 'year', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.scenario]), value:state.scenarioYear, onchange: e => update({scenarioYear: e.target.value})}),
+                            state.meta.scenarios[state.scenario] &&
+                            state.meta.scenarios[state.scenario].at.length > 1 &&
+                            m('input', {
+                                name: 'year',
+                                type:"range",
+                                ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
+                                value: state.scenarioYear,
+                                onchange: e =>
+                                    actions.updateScenario(state.scenario, e.target.value)
+                            }),
                         ],
-                        // Percent requires compare, so disabling compare unticks percent (and vice versa)
+
                         m('label', {for: 'compare'}, 'Compare with base: ',
-                            m('input', {name: 'compare', type:"checkbox", checked:state.compare, onchange: e => update({compare: e.target.checked})}),
+                            m('input', {
+                                name: 'compare',
+                                type:"checkbox",
+                                checked: state.compare,
+                                onchange: e => actions.setComparisonMode({compare: e.target.checked})
+                            }),
                         ),
+
                         state.meta.scenarios && state.compare && [
-                            m('br'), m('label', {for: 'scenario'}, "Base scenario"),
-                            m('select', {name: 'scenario', onchange: e =>  actions.updateBaseScenario(e.target.value, state.scenarioYear, state.meta)},
+                            m('br'),
+                            m('label', {for: 'scenario'}, "Base scenario"),
+                            m('select', {
+                                name: 'scenario',
+                                onchange: e =>
+                                    actions.updateBaseScenario(e.target.value, state.scenarioYear, state.meta)
+                            },
                                 meta2options(state.meta.scenarios, state.compareWith)
                             ),
+
                             m('label', {for: 'basetracksactive'}, 'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
                                 m('input', {name: 'basetracksactive', type:"checkbox", checked:(state.compareYear != "auto"), onchange: e => {
                                     if (!e.target.checked) {
@@ -665,27 +735,50 @@ const menuView = state => {
                                     }
                                 }}),
                             " )"),
-                            !(state.compareYear == "auto") && [
+
+                            state.compareYear !== "auto" && [
                                 m('br'),
-                                // m('label', {for: 'year'}, 'Base scenario year: ' + state.compareYear),
-                                state.meta.scenarios[state.compareWith] && (state.meta.scenarios[state.compareWith].at.length > 1) && m('input', {name: 'compyear', type:"range", ...getScenMinMaxStep(state.meta.scenarios[state.compareWith]), value:state.compareYear, onchange: e => update({compareYear: e.target.value})}),
+                                state.meta.scenarios[state.compareWith] &&
+                                (state.meta.scenarios[state.compareWith].at.length > 1) &&
+                                m('input', {
+                                    name: 'compyear',
+                                    type: "range",
+                                    ...getScenMinMaxStep(state.meta.scenarios[state.compareWith]),
+                                    value: state.compareYear,
+                                    onchange: e => update({compareYear: e.target.value})
+                                }),
                             ],
                         ],
+
                         state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
-                            m('input', {name: 'percent', type:"checkbox", checked:state.percent, onchange: e => update({percent: e.target.checked})}),
+                            m('input', {
+                                name: 'percent',
+                                type:"checkbox",
+                                checked: state.percent,
+                                onchange: e => actions.setComparisonMode({percent: e.target.checked}),
+                            }),
                         ),
+
                         m('br'),
                         m('label', {for: 'link_variable'}, "Links: Select variable"),
-                        m('select', {name: 'link_variable', onchange: e => update({linkVar: e.target.value})},
-                            m('option', {value: '', selected: state.linkVar === null}, 'None'),
-                            meta2options(state.meta.links, state.linkVar)
+                        m('select', {
+                            name: 'link_variable',
+                            onchange: e => actions.changeLayerVariable("links", e.target.value),
+                        },
+                            m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
+                            meta2options(state.meta.links, state.layers.links.variable)
                         ),
+
                         m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
-                        m('select', {name: 'matrix_variable', onchange: e => update({matVar: e.target.value})},
-                            m('option', {value: '', selected: state.linkVar === null}, 'None'),
-                            meta2options(state.meta.od_matrices, state.matVar)
+                        m('select', {
+                            name: 'matrix_variable',
+                            onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
+                        },
+                            m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
+                            meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
                         ),
-                        (state.selectedZones.length !== 0) && [
+
+                        state.selectedZones.length !== 0 && [
                             m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
                                 m('input', {name: 'deselect_zone', type:"checkbox", checked: state.selectedZones.length == 0, onchange: e => update({selectedZones: []})}),
                             ')'),
@@ -693,7 +786,8 @@ const menuView = state => {
                     ],
                 ),
             ),
-            m('div', {style: 'position: absolute; top: 0; display: ' + (state.showDesc == true ? "initial" : "none")},
+
+            state.showDesc && m('div', {style: 'position: absolute; top: 0'},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
                     [
                         state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', state.meta.scenarios[state.scenario].name + ": " + state.meta.scenarios[state.scenario].description),
@@ -717,14 +811,9 @@ states.map(menuView)
 
 // look at src/app/mb.js for more examples
 
-// At the moment, `map` is coming from the window, but these functions should
-// really take it as a parameter.
+// At the moment, `map` is global.
 const atId = data => ['at', ['id'], ["literal", data]]
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
-
-async function getLTypes() {
-    return getData("data?domain=links&variable=LType&comparewith=none")
-}
 
 function setOpacity() {
     const num_zones = 282
@@ -785,55 +874,22 @@ function normalise(v, bounds, good="smaller") {
     })
 }
 
-// Would be better to swap these args out for an object so we can name them
-async function colourMap(meta, domain, variable, scenario, percent, year, compare, compareWith, compareYear="auto") {
-    if (!variable) return
-    let bounds, abs, data
-
-    compareWith = compare ? compareWith : "none"
-
-    if (percent && compare) {
-        data = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
-        bounds = [.5, 1.5]
+function paint(domain, {variable, values, bounds, dir, palette}) {
+    const mapLayers = {
+        "od_matrices": "zones",
+        "links": "links",
+    }
+    if (!variable) {
+        map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
-        const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
-
-        // Quantiles should be overridden by metadata (ditto for colourscheme)
-        ;[bounds, data] = await Promise.all([
-            // Clamp at 99.99% and 0.01% quantiles
-            getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
-            getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
-        ])
-        if (compareWith != "none") {
-            // For abs diffs, we want 0 to always be the midpoint.
-            const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
-            bounds = [-maxb,maxb]
+        if (domain == "od_matrices"){
+            setColours(normalise(values, bounds, dir),palette[0])
         } else {
-            if (meta[domain][variable]["good"] == "smaller") {
-                bounds = [bounds[1], bounds[0]]
-            }
+            setLinkColours(normalise(values, bounds, dir),palette[0])
+            // map.setPaintProperty('links', 'line-width',
+            //     ['to-number', atId(normalise(data,bounds,abs,dir))])
         }
-    }
-
-    const dir = meta[domain][variable]["good"]
-
-    const palette = getPalette(meta,domain,variable,compare)
-
-    if (domain == "od_matrices"){
-        actions.updateLegend(bounds,"matrix")
-        setColours(normalise(data, bounds, dir),palette)
-    } else {
-        actions.updateLegend(bounds,"link")
-        setLinkColours(normalise(data, bounds, dir),palette)
-        // map.setPaintProperty('links', 'line-width',
-        //     ['to-number', atId(normalise(data,bounds,abs,dir))])
-    }
-
-    // TODO: make functional (i.e. colourMap should accept data as an argument)
-    if (domain == "od_matrices") {
-        update({matVals: data})
-    } else {
-        update({linkVals: data})
+        map.setLayoutProperty(mapLayers[domain], "visibility", "visible")
     }
 }
 
@@ -849,7 +905,7 @@ function getPalette(meta,domain,variable,compare){
 
 async function getDataFromId(id,domain="links"){
     const state = states()
-    const variable = domain == "links" ? state.linkVar : state.matVar
+    const variable = state.layers[domain].variable
     log("state is ", state)
     const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
     const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
@@ -868,7 +924,7 @@ if (DEBUG)
         d3,
         legend,
 
-        colourMap,
+        paint,
         getData,
 
         mapboxgl,
