@@ -439,10 +439,13 @@ states.map(state => log('state', state))
                     // }
                     let clines = []
 
-                    const originPoint = turf.centroid(event.features[0].geometry)
 
                     // let dests = [] // Need to get this from somewhere
-                    const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"})
+                    const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"}) // doesn't check tiles outside the viewport. Woops.
+                    
+                    const origGeoms = dests.filter(x=>x.properties.fid==event.features[0].properties.fid)
+
+                    const originPoint = turf.centroid(turf.featureCollection(origGeoms))
 
                     const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
                     const qs = [0.001,0.999]
