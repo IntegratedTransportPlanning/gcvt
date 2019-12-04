@@ -16,6 +16,10 @@ using Base.Iterators: flatten, product
 
 import HTTP
 
+import GeoJSON
+
+import Turf
+
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
@@ -35,6 +39,13 @@ end
 ### APP ###
 
 include("$(@__DIR__)/scenarios.jl")
+
+zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
+
+zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
+for f in zones.features
+    zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates 
+end
 
 # This should probably be reloaded periodically so server doesn't need to be restarted?
 links, mats, metadata = load_scenarios(packdir)
@@ -107,6 +118,7 @@ end
     end
     vcat(vars...) |> Iterators.flatten |> x -> quantile(x,quantiles)
 end
+
 
 println("Warming up the cache: links")
 @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
@@ -193,6 +205,10 @@ route("/data") do
     else
         throw(DomainError(d[:domain]))
     end
+end
+
+route("/centroids") do
+    zone_centroids |> json
 end
 
 # Want to provide:
