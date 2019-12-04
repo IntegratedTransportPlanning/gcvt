@@ -12,6 +12,8 @@ using Genie.Renderer: html
 using Memoize: @memoize
 using ProgressMeter: @showprogress
 
+using Base.Iterators: flatten, product
+
 import HTTP
 
 # This converts its argument to json and sets the appropriate headers for content type
@@ -65,10 +67,20 @@ link_comp(args...; kwargs...) = comp(link_data, args...; kwargs...)
 function comp(data, scenario, year, variable, comparison_scenario, comparison_year;percent=true)
     # TODO: palettes, normalisation, etc.
 
+    main = data(scenario, year, variable)
+    comparator = data(comparison_scenario, comparison_year, variable)
+
     # dims = 2 sums rows; dims = 1 sums cols
     # Returns Array{Float,2} but we want Array{Float,1} so we flatten it
-    percent && return sum(data(scenario, year, variable), dims = 2) ./ sum(data(comparison_scenario, comparison_year, variable), dims = 2) |> Iterators.flatten |> collect
-    return sum(data(scenario, year, variable) .- data(comparison_scenario, comparison_year, variable), dims = 2) |> Iterators.flatten |> collect
+    if percent
+        # Avoid NaN from dividing by zero.
+        eps = mean(sum(main, dims = 2)) / 10000
+        result = (sum(main, dims = 2) .+ eps) ./ (sum(comparator, dims = 2) .+ eps)
+    else
+        result = sum(main .- comparator, dims = 2)
+    end
+
+    return collect(flatten(result))
 end
 
 @memoize function var_stats(domain,variable,quantiles=(0,1))
@@ -80,7 +92,9 @@ end
         vars = [get(v,Symbol(variable),[]) for (k,v) in links]
     end
     # Sample arrays because it's slow
-    vcat([rand(vars[a].-vars[b],10000) for (a,b) in Iterators.product(1:length(mats),1:length(mats))]...) |> Iterators.flatten |> x -> quantile(x,quantiles)
+    vcat([rand(vars[a].-vars[b],10000) for (a,b) in product(1:length(mats),1:length(mats))]...) |>
+        flatten |>
+        x -> quantile(x,quantiles)
 end
 
 @memoize function var_stats_1d(domain,variable,quantiles=(0,1))
