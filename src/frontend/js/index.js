@@ -103,7 +103,25 @@ const mapboxInit = ({lng, lat, zoom}) => {
 
     const map = new mapboxgl.Map({
         container: 'map', // container id
-        style: 'mapbox://styles/mapbox/light-v10', // stylesheet location
+		style: {
+			"version": 8,
+			"sources": {
+				"raster-tiles": {
+					"type": "raster",
+					"tiles": ["https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg"],
+					"tileSize": 256,
+					"attribution": 'Map tiles by <a target="_top" rel="noopener" href="http://stamen.com">Stamen Design</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a target="_top" rel="noopener" href="http://openstreetmap.org">OpenStreetMap</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>'
+				}
+			},
+			"layers": [{
+				"id": "simple-tiles",
+				"type": "raster",
+				"source": "raster-tiles",
+				"minzoom": 0,
+				"maxzoom": 22
+			}]
+		},
+        // style: 'mapbox://styles/mapbox/light-v10', // stylesheet location
         center: [lng, lat],
         zoom: zoom,
         hash: true,
@@ -133,7 +151,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             paint: {
                 'fill-color': 'grey',
                 'fill-outline-color': '#aaa',
-                'fill-opacity': 0.5,
+                'fill-opacity': 0.7,
             },
             layout: {
                 visibility: 'none'
