@@ -573,14 +573,19 @@ states.map(state => log('state', state))
                     }
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    let value = numberToHuman(state.layers.links.values[id], state.compare && state.percent) +
-                        (state.compare && state.percent ? "" : " ") +
-                        getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
+                    let value = state.layers.links.values[id]
+                    let str
+                    if (value === null)
+                        str = "No data"
+                    else
+                        str = numberToHuman(value, state.compare && state.percent) +
+                            (state.compare && state.percent ? "" : " ") +
+                            state.layers.links.unit
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(
                             `Link type: ${ltype}<br>
-                            ${value}`
+                            ${str}`
                         )
                         .addTo(map)
                 },
