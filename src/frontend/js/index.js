@@ -199,6 +199,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             })
         })
         getLTypes().then(LTypes => update({LTypes}))
+        getCentres().then(centroids => update({zoneCentres: centroids}))
     }
 
     map.on('load', loadLayers)
@@ -437,15 +438,12 @@ states.map(state => log('state', state))
                     //     // remove them
                     //     map.setLayoutProperty("centroidLines","visibility","none")
                     // }
-                    let clines = []
 
 
                     // let dests = [] // Need to get this from somewhere
-                    const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"}) // doesn't check tiles outside the viewport. Woops.
+                    const dests = state.zoneCentres
                     
-                    const origGeoms = dests.filter(x=>x.properties.fid==event.features[0].properties.fid)
-
-                    const originPoint = turf.centroid(turf.featureCollection(origGeoms))
+                    const originPoint = turf.point(dests[event.features[0].properties.fid - 1])
 
                     const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
                     const qs = [0.001,0.999]
@@ -459,17 +457,14 @@ states.map(state => log('state', state))
                         .sort().slice(-20)[0] // Draw top 20 lines
 
 
-                    for (let dest of dests) {
+                    const clines = dests.map((dest,index) => {
                         // if (normedData[dest.properties.fid - 1] < threshold) continue
-                        const destPoint = turf.centroid(dest.geometry)
+                        const destPoint = turf.point(dest)
                         const getPos = x => x.geometry.coordinates
 
-                        // Skip itself
-                        if ((getPos(destPoint)[0] == getPos(originPoint)[0]) && (getPos(destPoint)[1] == getPos(originPoint)[1])) continue
-
                         let props = {
-                            opacity: Math.pow(normedData[dest.properties.fid - 1] - 0.1,10) - 0.1, // Slightly weird heuristic but it looks nice
-                            weight: Math.pow(normedData[dest.properties.fid - 1] - 0.1,2)* 5
+                            opacity: Math.pow(normedData[index] - 0.1,10) - 0.1, // Slightly weird heuristic but it looks nice
+                            weight: Math.pow(normedData[index] - 0.1,2)* 5
                         }
                         if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
 
@@ -479,8 +474,8 @@ states.map(state => log('state', state))
                             {properties: props}
                         )
 
-                        clines.push(cline)
-                    }
+                        return cline
+                    })
                     map.getSource("centroidLines").setData(turf.featureCollection(clines))
                     // map.setPaintProperty("centroidLines","line-width",["get","weight"])
                     map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
@@ -732,6 +727,10 @@ const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 async function getLTypes() {
     return getData("data?domain=links&variable=LType&comparewith=none")
+}
+
+async function getCentres() {
+    return getData("centroids")
 }
 
 function setOpacity() {
