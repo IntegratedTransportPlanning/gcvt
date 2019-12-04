@@ -355,7 +355,8 @@ const app = {
                     (async state => {
                         const fid = state.selectedZones[0] // Todo: support multiple zones
                         const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
+                        const sortedData = sane_sort(data)
+                        const bounds = [d3.quantile(sortedData,0.1),d3.quantile(sortedData,0.9)] // d3.quantile needs sorted data but I'm not sure this works either
                         actions.updateLegend(bounds,"matrix")
                         setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
                     })(state)
@@ -378,7 +379,8 @@ const app = {
                     (async state => {
                         const fid = state.selectedZones[0] // Todo: support multiple zones
                         const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                        const bounds = [d3.quantile(data,0.1),d3.quantile(data,0.9)]
+                        const sortedData = sane_sort(data)
+                        const bounds = [d3.quantile(sortedData,0.1),d3.quantile(sortedData,0.9)]
                         actions.updateLegend(bounds,"matrix")
                         setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
                     })(state)
