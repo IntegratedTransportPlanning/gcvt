@@ -500,16 +500,21 @@ states.map(state => log('state', state))
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    let value = numberToHuman(state.linkVals[id], state.compare && state.percent) +
-                        (state.compare && state.percent ? "" : " ") +
-                        getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
+                    let str = ""
+                    let value = state.linkVals[id]
+                    if (value === null)
+                        str = "No data"
+                    else
+                        str = numberToHuman(value, state.compare && state.percent) +
+                            (state.compare && state.percent ? "" : " ") +
+                            getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(
                             `Click!<br>
                             ID: ${id}<br>
                             Link type: ${ltype}<br>
-                            ${value}`
+                            ${str}`
                         )
                         .addTo(map)
                 },
