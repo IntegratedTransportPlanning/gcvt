@@ -384,29 +384,22 @@ const app = {
                 const palette = getPalette(meta, domain, variable, compare)
                 const unit = getUnit(meta, domain, variable, percent)
 
-                const centroidLineWeights = async () => {
-                    const {
-                        selectedZones,
-                        layers: { od_matrices: { values } },
-                    } = state
-
-                    const fid = selectedZones[0]
-
-                    const sortedData = sort(values)
-                    const bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
-
-                    // Normalise and clamp
-                    return normalise(values, bounds)
-                        .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
-                }
-
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     const fid = state.selectedZones[0] // Todo: support multiple zones
-                    const values = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.layers.od_matrices.variable + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + fid) // Compare currently unused
+
+                    values = await getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + fid) // Compare currently unused
+
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
+
+                    const centroidBounds =
+                        [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+                    // Normalise and clamp
+                    const centroidLineWeights = normalise(values, centroidBounds)
+                        .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
+
                     return update({
-                        centroidLineWeights: await centroidLineWeights(),
+                        centroidLineWeights,
                         layers: {
                             [domain]: {
                                 values,
