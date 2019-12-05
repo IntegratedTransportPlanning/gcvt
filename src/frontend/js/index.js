@@ -379,13 +379,15 @@ const app = {
                     if (state.selectedZones.length !== 0) {
                         (async state => {
 
+                            const goodness = state.meta.od_matrices[state.matVar].good
+
                             // Colour zones
                             const fid = state.selectedZones[0] // Todo: support multiple zones
                             const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + fid) // Compare currently unused
                             const sortedData = sane_sort(data)
                             let bounds = [d3.quantile(sortedData,0.1),d3.quantile(sortedData,0.9)]
                             actions.updateLegend(bounds,"matrix")
-                            setColours(normalise(data, bounds,"bigger"),getPalette(state.meta, "od_matrices", state.matVar, false))
+                            setColours(normalise(data, bounds,goodness),getPalette(state.meta, "od_matrices", state.matVar, false))
                             map.setLayoutProperty('zones', 'visibility', 'visible')
 
 
@@ -394,6 +396,11 @@ const app = {
                             const originPoint = turf.point(dests[state.selectedZones[0] - 1])
                             bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
                             const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
+
+                            // This performs poorly for some variables (e.g. don't really care about cheapest GHG zone)
+                            // const qs = goodness == "bigger" ? [0.6,0.99] : [0.01,0.3]
+                            // bounds = [d3.quantile(sortedData,qs[0]),d3.quantile(sortedData,qs[1])]
+                            // const normedData = normalise(data,bounds,goodness).map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
 
                             const clines = dests.map((dest,index) => {
                                 const destPoint = turf.point(dest)
