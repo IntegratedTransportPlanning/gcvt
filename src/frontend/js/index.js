@@ -15,6 +15,8 @@ import * as UI from 'construct-ui'
 
 import * as turf from "@turf/turf"
 
+import * as R from "ramda"
+
 
 // UTILITY FUNCS
 
@@ -38,6 +40,8 @@ const LTYPE_LOOKUP = [
     "Road",
 ]
 
+// e.g. [1,2] == [2,1]
+const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
 
 // INITIAL STATE
 
@@ -89,9 +93,16 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare","showctrl","showDesc"]) {
+    for (let k of ["percent","compare","showctrl","showDesc","showClines"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
+        }
+    }
+
+    // Arrays in the querty string
+    for (let k of ["selectedZones"]) {
+        if (qsObj.hasOwnProperty(k)) {
+            qsObj[k] = JSON.parse(qsObj[k])
         }
     }
 
@@ -449,7 +460,8 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
-            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc"]
+            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines"]
+            const arrays_in_query = ["selectedZones"]
 
             const updateQS = () => {
                 const queryItems = [
@@ -457,12 +469,19 @@ const app = {
                     `matVar=${state.layers.od_matrices.variable}`,
                     ...strings_in_query.map(key => `${key}=${state[key]}`),
                     ...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`),
+                    ...arrays_in_query.map(k => `${k}=${JSON.stringify(state[k])}`),
                 ]
                 history.replaceState({},"", "?" + queryItems.join("&"))
             }
 
             for (let key of nums_in_query) {
                 if (state[key].toPrecision(5) !== previousState[key].toPrecision(5)) {
+                    return updateQS()
+                }
+            }
+
+            for (let key of arrays_in_query) {
+                if (!setEqual(state[key], previousState[key])) {
                     return updateQS()
                 }
             }
@@ -1028,5 +1047,7 @@ if (DEBUG)
         continuousPalette,
         turf,
         normalise,
-        LTYPE_LOOKUP
+        LTYPE_LOOKUP,
+        R,
+        setEqual
     })
