@@ -343,7 +343,8 @@ const app = {
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     const fid = state.selectedZones[0] // Todo: support multiple zones
                     values = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                    bounds = [ d3.quantile(values, 0.1), d3.quantile(values, 0.9) ]
+                    const sortedValues = sort(values)
+                    bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
                 } else if (percent) {
                     values = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     bounds = [.5, 1.5]
@@ -598,6 +599,18 @@ states.map(state => log('state', state))
 function numberToHuman(number,percent=false){
     number = percent ? number * 100 : number
     return parseFloat(number.toPrecision(3)).toLocaleString()
+}
+
+/*
+ * Rtn a sorted array. `by` defaults to something sensible
+ * for strings and numbers.
+ */
+function sort(arr, by) {
+    // Make a copy of an array (or make an array from something else)
+    arr = Array.from(arr)
+    if (by === undefined)
+        by = (a, b) => a > b ? 1 : -1
+    return arr.sort(by)
 }
 
 // Side menu
