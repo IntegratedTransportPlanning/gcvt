@@ -424,7 +424,7 @@ states.map(state => log('state', state))
         log(event)
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
-            selectedZones: [event.features[0].properties.fid], // todo: push to this instead
+            // selectedZones: [event.features[0].properties.fid], // todo: push to this instead // disabled for now as colours didn't make sense (e.g. more daily trips to Germany than nearby regions)
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
