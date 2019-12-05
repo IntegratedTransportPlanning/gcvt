@@ -328,11 +328,6 @@ const app = {
                 actions.fetchLayerData("od_matrices")
             },
             toggleCentroids: showness => {
-                if (showness) {
-                    paintCentroids(states())
-                } else {
-                    hideCentroids()
-                }
                 update({showClines: showness})
             },
             clickZone: event => {
@@ -523,7 +518,8 @@ const app = {
             }
 
             if (state.layers.od_matrices !== previousState.layers.od_matrices ||
-                state.centroidLineWeights !== previousState.centroidLineWeights) {
+                state.centroidLineWeights !== previousState.centroidLineWeights ||
+                state.showClines !== previousState.showClines) {
                 if (!state.layers.od_matrices.variable || !state.centroidLineWeights || !state.showClines) {
                     hideCentroids()
                 } else {
