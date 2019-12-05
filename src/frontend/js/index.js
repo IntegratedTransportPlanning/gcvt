@@ -311,6 +311,46 @@ const app = {
                 actions.fetchLayerData("links")
                 actions.fetchLayerData("od_matrices")
             },
+            clickZone: event => {
+                const state = states()
+                const fid = event.features[0].properties.fid
+
+                let selectedZones = state.selectedZones.slice()
+
+                if (selectedZones.includes(fid)) {
+                    selectedZones = selectedZones.filter(x => x !== fid)
+                } else {
+                    selectedZones = [fid]
+                }
+                // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
+
+                update(
+                {
+                    selectedZones,
+                    compare: false,
+                    // Clear existing centroids
+                    centroidLineWeights: null,
+                    // mapUI: {
+                    //     popup: oldpopup => {
+                    //         if (oldpopup) {
+                    //             oldpopup.remove()
+                    //         }
+                    //         const percent = false
+                    //         const layer = state.layers.od_matrices
+                    //         const {NAME, fid} = event.features[0].properties
+                    //         const value =
+                    //             numberToHuman(layer.values[fid - 1], percent) +
+                    //             (percent ? "" : " ") +
+                    //             layer.unit
+                    //         return new mapboxgl.Popup({closeButton: false})
+                    //             .setLngLat(event.lngLat)
+                    //             .setHTML(`${NAME}<br>${value}`)
+                    //             .addTo(map)
+                    //     },
+                    // }
+                })
+                actions.fetchLayerData("od_matrices")
+            },
             fetchLayerData: async domain => {
 
                 const state = states()
@@ -344,11 +384,40 @@ const app = {
                 const palette = getPalette(meta, domain, variable, compare)
                 const unit = getUnit(meta, domain, variable, percent)
 
+                const centroidLineWeights = async () => {
+                    const {
+                        selectedZones,
+                        layers: { od_matrices: { values } },
+                    } = state
+
+                    const fid = selectedZones[0]
+
+                    const sortedData = sort(values)
+                    const bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
+
+                    // Normalise and clamp
+                    return normalise(values, bounds)
+                        .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
+                }
+
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     const fid = state.selectedZones[0] // Todo: support multiple zones
-                    values = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
+                    const values = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.layers.od_matrices.variable + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + fid) // Compare currently unused
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
+                    return update({
+                        centroidLineWeights: await centroidLineWeights(),
+                        layers: {
+                            [domain]: {
+                                values,
+                                bounds,
+                                dir,
+                                // In an array otherwise it gets executed by the patch func
+                                palette: [palette],
+                                unit,
+                            }
+                        }
+                    })
                 } else if (percent) {
                     values = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     bounds = [.5, 1.5]
@@ -429,14 +498,57 @@ const app = {
 
             if (!state.mapReady) return
 
+            // Race: if we get layer data before the map is ready, we won't draw it.
+            // Will probably never happen.
+
             for (let layer of Object.keys(state.layers)) {
                 if (state.layers[layer] !== previousState.layers[layer]) {
                     paint(layer, state.layers[layer])
                 }
             }
 
-            // Centroid drawing code should go here.
-            // Centroid calculation code should go in an action
+            if (state.layers.od_matrices !== previousState.layers.od_matrices ||
+                state.selectedZones !== previousState.selectedZones ||
+                state.centroidLineWeights !== previousState.centroidLineWeights) {
+                paintCentroids(state)
+            }
+
+            function paintCentroids(state) {
+                const {zoneCentres, selectedZones, centroidLineWeights} = state
+                if (!state.layers.od_matrices.variable || !centroidLineWeights) {
+                    map.setLayoutProperty("centroidLines","visibility","none")
+                    return
+                }
+                const id = selectedZones[0] - 1
+                const originPoint = turf.point(zoneCentres[id])
+                const weights = centroidLineWeights
+
+                const centroidLines = []
+                zoneCentres.forEach((dest, index) => {
+                    const destPoint = turf.point(dest)
+                    const getPos = x => x.geometry.coordinates
+
+                    let props = {
+                        opacity: weights[index],
+                        weight: 2.5 * weights[index],
+                    }
+                    if (props.weight > 10) props.weight = 10
+
+                    let cline = turf.greatCircle(
+                        getPos(originPoint),
+                        getPos(destPoint),
+                        {properties: props}
+                    )
+
+                    centroidLines.push(cline)
+                })
+
+                map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
+                map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
+                map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
+                map.moveLayer("centroidLines")
+                map.setLayoutProperty("centroidLines", "visibility", "visible")
+            }
         },
     ],
 
@@ -462,77 +574,7 @@ states.map(state => log('state', state))
     map.on("moveend", positionUpdate)
     map.on("zoomend", positionUpdate)
 
-    map.on('click', 'zones', async event => ((event, state) => {
-        log(event)
-        // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
-        update({
-            // selectedZones: [event.features[0].properties.fid], // todo: push to this instead // disabled for now as colours didn't make sense (e.g. more daily trips to Germany than nearby regions)
-            compare: false,
-            mapUI: {
-                popup: oldpopup => {
-                    if (oldpopup) {
-                        oldpopup.remove()
-                    }
-                    const percent = false
-                    const layer = state.layers.od_matrices
-                    const {NAME, fid} = event.features[0].properties
-                    const value =
-                        numberToHuman(layer.values[fid - 1], percent) +
-                            (percent ? "" : " ") +
-                            layer.unit
-                    return new mapboxgl.Popup({closeButton: false})
-                        .setLngLat(event.lngLat)
-                        .setHTML(`${NAME}<br>${value}`)
-                        .addTo(map)
-                },
-                lines: async oldlines => {
-                    // if (oldlines) {
-                    //     // remove them
-                    //     map.setLayoutProperty("centroidLines","visibility","none")
-                    // }
-
-
-                    // let dests = [] // Need to get this from somewhere
-                    const dests = state.zoneCentres
-
-                    const originPoint = turf.point(dests[event.features[0].properties.fid - 1])
-
-                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.layers.od_matrices.variable + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
-                    const sortedData = sort(data)
-                    const bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
-                    const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
-
-                    console.log(normedData)
-                    const clines = dests.map((dest,index) => {
-                        const destPoint = turf.point(dest)
-                        const getPos = x => x.geometry.coordinates
-
-                        let props = {
-                            opacity: normedData[index],
-                            weight: 2.5 * normedData[index],
-                        }
-                        if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
-
-                        let cline = turf.greatCircle(
-                            getPos(originPoint),
-                            getPos(destPoint),
-                            {properties: props}
-                        )
-
-                        return cline
-                    })
-                    map.getSource("centroidLines").setData(turf.featureCollection(clines))
-                    map.setPaintProperty("centroidLines","line-width",["get","weight"])
-                    map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
-                    map.moveLayer("centroidLines")
-
-                    map.setLayoutProperty("centroidLines","visibility","visible")
-                    return clines
-                }
-            }
-        })
-        // actions.fetchLayerData("od_matrices")
-    })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+    map.on('click', 'zones', actions.clickZone)
 
     map.on('click', 'links', async event => ((event, state) => {
         update({
