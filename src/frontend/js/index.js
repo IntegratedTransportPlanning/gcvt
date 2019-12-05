@@ -943,9 +943,13 @@ function normalise(v, bounds, good) {
         ;[min, max] = [max, min]
     }
     return v.map(x => {
-        let e = x - min
-        e = e/(max - min)
-        return e
+        const d = max - min
+        if (d == 0) {
+            // TODO: Missing data problems.
+            return 0
+        } else {
+            return (x - min) / d
+        }
     })
 }
 
