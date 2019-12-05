@@ -428,6 +428,7 @@ const app = {
 
             if (!state.matVar) {
                 map.setLayoutProperty('zones', 'visibility', 'none')
+                map.setLayoutProperty("centroidLines","visibility","none")
             }
 
             if (propertiesDiffer(['mapUI'], state, previousState)) {
