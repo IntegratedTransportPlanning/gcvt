@@ -333,15 +333,15 @@ const app = {
             clickZone: event => {
                 const state = states()
                 const fid = event.features[0].properties.fid
+                const ctrlPressed = event.originalEvent.ctrlKey
 
                 let selectedZones = state.selectedZones.slice()
 
                 if (selectedZones.includes(fid)) {
-                    selectedZones = selectedZones.filter(x => x !== fid)
+                    selectedZones = ctrlPressed ? selectedZones.filter(x => x !== fid) : []
                 } else {
-                    selectedZones = [fid]
+                    selectedZones = ctrlPressed ? [...state.selectedZones, fid]: [fid]
                 }
-                // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
 
                 let oldcompare
                 update(
@@ -394,9 +394,7 @@ const app = {
                 const unit = getUnit(meta, domain, variable, percent)
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
-                    const fid = state.selectedZones[0] // Todo: support multiple zones
-
-                    values = await getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + fid) // Compare currently unused
+                    values = await getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones) // Compare currently unused
 
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
@@ -840,7 +838,7 @@ const menuView = state => {
                         ),
 
                         state.selectedZones.length !== 0 && [
-                            m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
+                            m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', arrayToHumanList(state.selectedZones.map(id => zoneToHuman(id,state))), ' (deselect? ',
                                 m('input', {
                                     name: 'deselect_zone',
                                     type:"checkbox",
@@ -870,6 +868,16 @@ const menuView = state => {
             ),
         ])
     )
+}
+
+function zoneToHuman(zoneID,state) {
+    return state.zoneNames[zoneID] || 'zone ' + zoneID
+}
+
+function arrayToHumanList(array){
+    if (array.length == 1) return array
+    else if (array.length == 0) return ""
+    return array.slice(0,-1).reduce((l,r) => `${l}, ${r}`) + ` and ${array.slice(-1)}`
 }
 
 function getScenMinMaxStep(scenario){
@@ -958,7 +966,9 @@ function hideCentroids() {
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     const id = selectedZones[0] - 1
-    const originPoint = turf.point(zoneCentres[id])
+    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1])) // Todo: draw a small circle on each
+    const originPoint = turf.centroid(turf.featureCollection(originPoints))
+    // const originPoint = turf.point(zoneCentres[id])
     const weights = centroidLineWeights
 
     const centroidLines = []
@@ -979,6 +989,21 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         )
 
         centroidLines.push(cline)
+    })
+
+    // Draw little circles on selected zones
+    // This should really be another layer but I'm feeling lazy
+    selectedZones.length > 1 && originPoints.forEach(origin => {
+        centroidLines.push(turf.circle(
+            origin,
+            10,
+            {
+                properties: {
+                    weight: 2,
+                    opacity: 1,
+                },
+            },
+        ))
     })
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
