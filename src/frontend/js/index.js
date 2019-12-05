@@ -805,7 +805,17 @@ const menuView = state => {
 
                         state.selectedZones.length !== 0 && [
                             m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
-                                m('input', {name: 'deselect_zone', type:"checkbox", checked: state.selectedZones.length == 0, onchange: e => update({selectedZones: []})}),
+                                m('input', {
+                                    name: 'deselect_zone',
+                                    type:"checkbox",
+                                    checked: state.selectedZones.length == 0,
+                                    onchange: e => {
+                                        update({
+                                            selectedZones: [],
+                                            centroidLineWeights: null,
+                                        })
+                                        actions.fetchLayerData("od_matrices")
+                                    }}),
                             ')'),
                             m('label', {for: 'show_clines'}, 'Flow lines: ',
                                 m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => actions.toggleCentroids(e.target.checked)}),
