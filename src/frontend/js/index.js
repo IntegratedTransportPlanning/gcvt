@@ -554,7 +554,7 @@ const { update, states, actions } =
         })
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
 
-    map.on('mouseenter', 'zones', event => {
+    map.on('mousemove', 'zones', event => {
         update(state => {
             const percent = false
             const layer = state.layers.od_matrices
