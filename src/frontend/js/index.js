@@ -501,46 +501,12 @@ const app = {
             }
 
             if (state.layers.od_matrices !== previousState.layers.od_matrices ||
-                state.selectedZones !== previousState.selectedZones ||
                 state.centroidLineWeights !== previousState.centroidLineWeights) {
-                paintCentroids(state)
-            }
-
-            function paintCentroids(state) {
-                const {zoneCentres, selectedZones, centroidLineWeights} = state
-                if (!state.layers.od_matrices.variable || !centroidLineWeights) {
-                    map.setLayoutProperty("centroidLines","visibility","none")
-                    return
+                if (!state.layers.od_matrices.variable || !state.centroidLineWeights) {
+                    hideCentroids()
+                } else {
+                    paintCentroids(state)
                 }
-                const id = selectedZones[0] - 1
-                const originPoint = turf.point(zoneCentres[id])
-                const weights = centroidLineWeights
-
-                const centroidLines = []
-                zoneCentres.forEach((dest, index) => {
-                    const destPoint = turf.point(dest)
-                    const getPos = x => x.geometry.coordinates
-
-                    let props = {
-                        opacity: weights[index],
-                        weight: 2.5 * weights[index],
-                    }
-                    if (props.weight > 10) props.weight = 10
-
-                    let cline = turf.greatCircle(
-                        getPos(originPoint),
-                        getPos(destPoint),
-                        {properties: props}
-                    )
-
-                    centroidLines.push(cline)
-                })
-
-                map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
-                map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
-                map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
-                map.moveLayer("centroidLines")
-                map.setLayoutProperty("centroidLines", "visibility", "visible")
             }
         },
     ],
@@ -923,6 +889,42 @@ function normalise(v, bounds, good) {
         e = e/(max - min)
         return e
     })
+}
+
+function hideCentroids() {
+    map.setLayoutProperty("centroidLines","visibility","none")
+}
+
+function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
+    const id = selectedZones[0] - 1
+    const originPoint = turf.point(zoneCentres[id])
+    const weights = centroidLineWeights
+
+    const centroidLines = []
+    zoneCentres.forEach((dest, index) => {
+        const destPoint = turf.point(dest)
+        const getPos = x => x.geometry.coordinates
+
+        let props = {
+            opacity: weights[index],
+            weight: 2.5 * weights[index],
+        }
+        if (props.weight > 10) props.weight = 10
+
+        let cline = turf.greatCircle(
+            getPos(originPoint),
+            getPos(destPoint),
+            {properties: props}
+        )
+
+        centroidLines.push(cline)
+    })
+
+    map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
+    map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
+    map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
+    map.moveLayer("centroidLines")
+    map.setLayoutProperty("centroidLines", "visibility", "visible")
 }
 
 function paint(domain, {variable, values, bounds, dir, palette}) {
