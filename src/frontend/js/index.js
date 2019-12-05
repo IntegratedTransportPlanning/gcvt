@@ -375,17 +375,54 @@ const app = {
             }
 
             if (propertiesDiffer(['matVar','selectedZones'], state, previousState)) {
-                if (state.selectedZones.length !== 0) {
-                    (async state => {
-                        const fid = state.selectedZones[0] // Todo: support multiple zones
-                        const data = await getData("data?domain=od_matrices&comparewith=none&row=" + fid)
-                        const sortedData = sane_sort(data)
-                        const bounds = [d3.quantile(sortedData,0.1),d3.quantile(sortedData,0.9)]
-                        actions.updateLegend(bounds,"matrix")
-                        setColours(normalise(data, bounds),getPalette(state.meta, "od_matrices", state.matVar, false))
-                    })(state)
-                } else {
-                    colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
+                if (state.matVar != "none") {
+                    if (state.selectedZones.length !== 0) {
+                        (async state => {
+
+                            // Colour zones
+                            const fid = state.selectedZones[0] // Todo: support multiple zones
+                            const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + fid) // Compare currently unused
+                            const sortedData = sane_sort(data)
+                            let bounds = [d3.quantile(sortedData,0.1),d3.quantile(sortedData,0.9)]
+                            actions.updateLegend(bounds,"matrix")
+                            setColours(normalise(data, bounds,"bigger"),getPalette(state.meta, "od_matrices", state.matVar, false))
+                            map.setLayoutProperty('zones', 'visibility', 'visible')
+
+
+                            // Centroid lines
+                            const dests = state.zoneCentres
+                            const originPoint = turf.point(dests[state.selectedZones[0] - 1])
+                            bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
+                            const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
+
+                            const clines = dests.map((dest,index) => {
+                                const destPoint = turf.point(dest)
+                                const getPos = x => x.geometry.coordinates
+
+                                let props = {
+                                    opacity: normedData[index],
+                                    weight: 2.5 * normedData[index],
+                                }
+                                if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
+
+                                let cline = turf.greatCircle(
+                                    getPos(originPoint),
+                                    getPos(destPoint),
+                                    {properties: props}
+                                )
+
+                                return cline
+                            })
+                            map.getSource("centroidLines").setData(turf.featureCollection(clines))
+                            map.setPaintProperty("centroidLines","line-width",["get","weight"])
+                            map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
+                            map.moveLayer("centroidLines")
+                            map.setLayoutProperty("centroidLines","visibility","visible")
+                        })(state)
+                    } else {
+                        colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
+                        map.setLayoutProperty("centroidLines","visibility","none")
+                    }
                 }
             }
 
@@ -424,7 +461,7 @@ states.map(state => log('state', state))
         log(event)
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
-            // selectedZones: [event.features[0].properties.fid], // todo: push to this instead // disabled for now as colours didn't make sense (e.g. more daily trips to Germany than nearby regions)
+            selectedZones: [event.features[0].properties.fid], // todo: push to this instead // disabled for now as colours didn't make sense (e.g. more daily trips to Germany than nearby regions)
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
@@ -435,50 +472,6 @@ states.map(state => log('state', state))
                         .setHTML(event.features[0].properties.NAME + "<br>" + numberToHuman(state.matVals[event.features[0].properties.fid - 1], state.compare && state.percent) + (state.compare && state.percent ? "" : " ") + getUnit(state.meta,"od_matrices",state.matVar,state.compare && state.percent))
                         .addTo(map)
                 },
-                lines: async oldlines => {
-                    // if (oldlines) {
-                    //     // remove them
-                    //     map.setLayoutProperty("centroidLines","visibility","none")
-                    // }
-
-
-                    // let dests = [] // Need to get this from somewhere
-                    const dests = state.zoneCentres
-                    
-                    const originPoint = turf.point(dests[event.features[0].properties.fid - 1])
-
-                    const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.matVar + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
-                    const sortedData = sane_sort(data)
-                    const bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
-                    const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
-
-                    console.log(normedData)
-                    const clines = dests.map((dest,index) => {
-                        const destPoint = turf.point(dest)
-                        const getPos = x => x.geometry.coordinates
-
-                        let props = {
-                            opacity: normedData[index],
-                            weight: 2.5 * normedData[index],
-                        }
-                        if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
-
-                        let cline = turf.greatCircle(
-                            getPos(originPoint),
-                            getPos(destPoint),
-                            {properties: props}
-                        )
-
-                        return cline
-                    })
-                    map.getSource("centroidLines").setData(turf.featureCollection(clines))
-                    map.setPaintProperty("centroidLines","line-width",["get","weight"])
-                    map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
-                    map.moveLayer("centroidLines")
-
-                    map.setLayoutProperty("centroidLines","visibility","visible")
-                    return clines
-                }
             }
         })
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
