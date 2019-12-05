@@ -188,8 +188,8 @@ route("/data") do
     comparewith = d[:comparewith]
     if d[:domain] == "od_matrices"
         if d[:row] != "false"
-            row = parse(Int,d[:row])
-            return mat_data(scenario, year, variable)[row,:] |> json
+            rows = parse.(Int,split(d[:row],','))
+            return sum([mat_data(scenario, year, variable)[row,:] for row in rows]) |> json
         end
         if d[:comparewith] == "none"
             sum(mat_data(scenario, year, variable), dims = 2) |> Iterators.flatten |> collect |> json
