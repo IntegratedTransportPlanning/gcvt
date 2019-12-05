@@ -560,9 +560,6 @@ const { update, states, actions } =
 
 // VIEWS
 
-// Console view
-states.map(state => log('state', state))
-
 
 // Mapbox action callbacks
 {
