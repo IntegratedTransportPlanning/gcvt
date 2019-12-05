@@ -435,7 +435,7 @@ const app = {
                     ])
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
-                        const maxb = Math.abs(Math.max(...(bounds.map(Math.abs))))
+                        const maxb = Math.max(...(bounds.map(Math.abs)))
                         bounds = [-maxb,maxb]
                     } else {
                         dir == "smaller" && bounds.reverse()
