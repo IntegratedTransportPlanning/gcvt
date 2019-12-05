@@ -71,6 +71,8 @@ const DEFAULTS = {
     showctrl: true,
     mapReady: false,
     showDesc: false,
+    showMatHelp: false,
+    showLinkHelp: false,
     showClines: true,
     selectedZones: [],
     zoneNames: [],
@@ -93,7 +95,7 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare","showctrl","showDesc","showClines"]) {
+    for (let k of ["percent","compare","showctrl","showDesc","showClines","showLinkHelp","showMatHelp"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
         }
@@ -459,7 +461,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
-            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines"]
+            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp"]
             const arrays_in_query = ["selectedZones"]
 
             const updateQS = () => {
@@ -819,7 +821,9 @@ const menuView = state => {
                         ),
 
                         m('br'),
-                        m('label', {for: 'link_variable'}, "Links: Select variable"),
+                        m('label', {for: 'link_variable'}, "Links (help? ",
+                            m('input', {name: 'showLinkHelp', type:"checkbox", checked:state.showLinkHelp, onchange: e => update({showLinkHelp: e.target.checked})}),
+                        " )"),
                         m('select', {
                             name: 'link_variable',
                             onchange: e => actions.changeLayerVariable("links", e.target.value),
@@ -828,7 +832,9 @@ const menuView = state => {
                             meta2options(state.meta.links, state.layers.links.variable)
                         ),
 
-                        m('label', {for: 'matrix_variable'}, "Zones: Select variable"),
+                        m('label', {for: 'matrix_variable'}, "Zones (help? ",
+                            m('input', {name: 'showMatHelp', type:"checkbox", checked:state.showMatHelp, onchange: e => update({showMatHelp: e.target.checked})}),
+                        " )"),
                         m('select', {
                             name: 'matrix_variable',
                             onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
@@ -859,10 +865,12 @@ const menuView = state => {
                 ),
             ),
 
-            state.showDesc && m('div', {style: 'position: absolute; top: 0'},
+            (state.showDesc || state.showLinkHelp || state.showMatHelp) && m('div', {style: 'position: absolute; top: 0'},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
                     [
-                        state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', state.meta.scenarios[state.scenario].name + ": " + state.meta.scenarios[state.scenario].description),
+                        state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || "")),
+                        state.showLinkHelp && state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
+                        state.showMatHelp && state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
                     ]
                 )
             ),
