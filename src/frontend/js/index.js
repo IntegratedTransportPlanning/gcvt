@@ -272,7 +272,11 @@ const app = {
                 actions.fetchLayerData(domain)
             },
             setCompare: compare => {
-                update({compare})
+                update({
+                    compare,
+                    centroidLineWeights: null,
+                    selectedZones: [],
+                })
                 actions.fetchAllLayers()
             },
             setPercent: percent => {
