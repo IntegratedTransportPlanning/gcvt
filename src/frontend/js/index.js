@@ -547,8 +547,7 @@ const { update, states, actions } =
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(
-                            `Click!<br>
-                            ID: ${id}<br>
+                            `ID: ${id}<br>
                             Link type: ${ltype}<br>
                             ${str}`
                         )
