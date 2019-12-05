@@ -272,11 +272,12 @@ const app = {
                 update({layers: { [domain]: { variable }}})
                 actions.fetchLayerData(domain)
             },
-            setComparisonMode: ({compare, percent}) => {
-                if (compare === undefined)
-                    update({percent})
-                else if (percent === undefined)
-                    update({compare})
+            setCompare: compare => {
+                update({compare})
+                actions.fetchAllLayers()
+            },
+            setPercent: percent => {
+                update({percent})
                 actions.fetchAllLayers()
             },
             getMeta: async () => {
@@ -716,7 +717,7 @@ const menuView = state => {
                                 name: 'compare',
                                 type:"checkbox",
                                 checked: state.compare,
-                                onchange: e => actions.setComparisonMode({compare: e.target.checked})
+                                onchange: e => actions.setCompare(e.target.checked),
                             }),
                         ),
 
@@ -760,7 +761,7 @@ const menuView = state => {
                                 name: 'percent',
                                 type:"checkbox",
                                 checked: state.percent,
-                                onchange: e => actions.setComparisonMode({percent: e.target.checked}),
+                                onchange: e => actions.setPercent(e.target.checked),
                             }),
                         ),
 
