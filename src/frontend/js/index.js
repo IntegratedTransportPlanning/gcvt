@@ -437,8 +437,6 @@ const app = {
                         // For abs diffs, we want 0 to always be the midpoint.
                         const maxb = Math.max(...(bounds.map(Math.abs)))
                         bounds = [-maxb,maxb]
-                    } else {
-                        dir == "smaller" && bounds.reverse()
                     }
                 }
 
@@ -675,9 +673,6 @@ const Legend = () => {
     let legendelem
     const drawLegend = vnode => {
         let bounds = vnode.attrs.bounds
-        if (vnode.attrs.dir == "smaller") {
-            bounds = [bounds[1], bounds[0]]
-        }
         if (vnode.attrs.percent) {
             bounds = bounds.map(x => x * 100)
         }
