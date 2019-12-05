@@ -311,6 +311,14 @@ const app = {
                 actions.fetchLayerData("links")
                 actions.fetchLayerData("od_matrices")
             },
+            toggleCentroids: showness => {
+                if (showness) {
+                    paintCentroids(states())
+                } else {
+                    hideCentroids()
+                }
+                update({showClines: showness})
+            },
             clickZone: event => {
                 const state = states()
                 const fid = event.features[0].properties.fid
@@ -502,7 +510,7 @@ const app = {
 
             if (state.layers.od_matrices !== previousState.layers.od_matrices ||
                 state.centroidLineWeights !== previousState.centroidLineWeights) {
-                if (!state.layers.od_matrices.variable || !state.centroidLineWeights) {
+                if (!state.layers.od_matrices.variable || !state.centroidLineWeights || !state.showClines) {
                     hideCentroids()
                 } else {
                     paintCentroids(state)
@@ -799,6 +807,9 @@ const menuView = state => {
                             m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
                                 m('input', {name: 'deselect_zone', type:"checkbox", checked: state.selectedZones.length == 0, onchange: e => update({selectedZones: []})}),
                             ')'),
+                            m('label', {for: 'show_clines'}, 'Flow lines: ',
+                                m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => actions.toggleCentroids(e.target.checked)}),
+                            ),
                         ],
                     ],
                 ),
