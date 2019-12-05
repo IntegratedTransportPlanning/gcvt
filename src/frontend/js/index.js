@@ -132,7 +132,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             "source-layer": "zones",
             paint: {
                 'fill-color': 'grey',
-                'fill-outline-color': '#aaa',
+                'fill-outline-color': '#000',
                 'fill-opacity': 0.5,
             },
             layout: {
