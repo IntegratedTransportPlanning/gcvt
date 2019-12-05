@@ -374,7 +374,7 @@ const app = {
                 map.setLayoutProperty('links', 'visibility', 'none')
             }
 
-            if (propertiesDiffer(['matVar','selectedZones'], state, previousState)) {
+            if (propertiesDiffer(['matVar','selectedZones','showClines'], state, previousState)) {
                 if (state.matVar != "none") {
                     if (state.selectedZones.length !== 0) {
                         (async state => {
@@ -392,39 +392,43 @@ const app = {
 
 
                             // Centroid lines
-                            const dests = state.zoneCentres
-                            const originPoint = turf.point(dests[state.selectedZones[0] - 1])
-                            bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
-                            const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
+                            if (state.showClines) {
+                                const dests = state.zoneCentres
+                                const originPoint = turf.point(dests[state.selectedZones[0] - 1])
+                                bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
+                                const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
 
-                            // This performs poorly for some variables (e.g. don't really care about cheapest GHG zone)
-                            // const qs = goodness == "bigger" ? [0.6,0.99] : [0.01,0.3]
-                            // bounds = [d3.quantile(sortedData,qs[0]),d3.quantile(sortedData,qs[1])]
-                            // const normedData = normalise(data,bounds,goodness).map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
+                                // This performs poorly for some variables (e.g. don't really care about cheapest GHG zone)
+                                // const qs = goodness == "bigger" ? [0.6,0.99] : [0.01,0.3]
+                                // bounds = [d3.quantile(sortedData,qs[0]),d3.quantile(sortedData,qs[1])]
+                                // const normedData = normalise(data,bounds,goodness).map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
 
-                            const clines = dests.map((dest,index) => {
-                                const destPoint = turf.point(dest)
-                                const getPos = x => x.geometry.coordinates
+                                const clines = dests.map((dest,index) => {
+                                    const destPoint = turf.point(dest)
+                                    const getPos = x => x.geometry.coordinates
 
-                                let props = {
-                                    opacity: normedData[index],
-                                    weight: 2.5 * normedData[index],
-                                }
-                                if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
+                                    let props = {
+                                        opacity: normedData[index],
+                                        weight: 2.5 * normedData[index],
+                                    }
+                                    if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
 
-                                let cline = turf.greatCircle(
-                                    getPos(originPoint),
-                                    getPos(destPoint),
-                                    {properties: props}
-                                )
+                                    let cline = turf.greatCircle(
+                                        getPos(originPoint),
+                                        getPos(destPoint),
+                                        {properties: props}
+                                    )
 
-                                return cline
-                            })
-                            map.getSource("centroidLines").setData(turf.featureCollection(clines))
-                            map.setPaintProperty("centroidLines","line-width",["get","weight"])
-                            map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
-                            map.moveLayer("centroidLines")
-                            map.setLayoutProperty("centroidLines","visibility","visible")
+                                    return cline
+                                })
+                                map.getSource("centroidLines").setData(turf.featureCollection(clines))
+                                map.setPaintProperty("centroidLines","line-width",["get","weight"])
+                                map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
+                                map.moveLayer("centroidLines")
+                                map.setLayoutProperty("centroidLines","visibility","visible")
+                            } else {
+                                map.setLayoutProperty("centroidLines","visibility","none")
+                            }
                         })(state)
                     } else {
                         colourMap(state.meta, 'od_matrices', state.matVar, state.scenario, state.percent, state.scenarioYear, state.compare, state.compareWith, state.compareYear).then(map.setLayoutProperty('zones', 'visibility', 'visible'))
@@ -694,6 +698,9 @@ const menuView = state => {
                             m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', state.zoneNames[state.selectedZones[0]] || 'zone ' + state.selectedZones[0], ' (deselect? ',
                                 m('input', {name: 'deselect_zone', type:"checkbox", checked: state.selectedZones.length == 0, onchange: e => update({selectedZones: []})}),
                             ')'),
+                            m('label', {for: 'show_clines'}, 'Flow lines: ',
+                                m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => update({showClines: e.target.checked})}),
+                            ),
                         ],
                     ],
                 ),
