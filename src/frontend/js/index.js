@@ -466,7 +466,7 @@ states.map(state => log('state', state))
         log(event)
         // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
         update({
-            selectedZones: [event.features[0].properties.fid], // todo: push to this instead
+            // selectedZones: [event.features[0].properties.fid], // todo: push to this instead // disabled for now as colours didn't make sense (e.g. more daily trips to Germany than nearby regions)
             compare: false,
             mapUI: {
                 popup: oldpopup => {
@@ -531,7 +531,7 @@ states.map(state => log('state', state))
                 }
             }
         })
-        actions.fetchLayerData("od_matrices")
+        // actions.fetchLayerData("od_matrices")
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
 
     map.on('click', 'links', async event => ((event, state) => {
