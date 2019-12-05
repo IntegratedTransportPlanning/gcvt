@@ -348,14 +348,22 @@ const app = {
                 }
                 // const ctrlPressed = event.orignalEvent.ctrlKey // handy for selecting multiple zones
 
+                let oldcompare
                 update(
                 {
                     selectedZones,
-                    compare: false,
+                    compare: old => {
+                        oldcompare = old
+                        return false
+                    },
                     // Clear existing centroids
                     centroidLineWeights: null,
                 })
-                actions.fetchLayerData("od_matrices")
+                if (oldcompare) {
+                    actions.fetchAllLayers()
+                } else {
+                    actions.fetchLayerData("od_matrices")
+                }
             },
             fetchLayerData: async domain => {
 
