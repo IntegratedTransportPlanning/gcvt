@@ -67,6 +67,7 @@ const DEFAULTS = {
     showctrl: true,
     mapReady: false,
     showDesc: false,
+    showClines: true,
     selectedZones: [],
     zoneNames: [],
     mapUI: {
