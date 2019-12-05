@@ -880,7 +880,7 @@ function setLinkColours(nums, palette=d3.interpolateRdYlGn) {
 
 
 // Some of this should probably go in d3.scale...().domain([])
-function normalise(v, bounds, good="smaller") {
+function normalise(v, bounds, good) {
     let min = bounds ? bounds[0] : Math.min(...v)
     let max = bounds ? bounds[1] : Math.max(...v)
     if (good == "smaller"){
