@@ -154,13 +154,13 @@ const mapboxInit = ({lng, lat, zoom}) => {
     const BASEURL = document.location.origin
 
     async function loadLayers() {
+
         map.addLayer({
             id: 'zones',
             type: 'fill',
             source: {
                 type: 'vector',
                 tiles: [BASEURL + '/tiles/zones/{z}/{x}/{y}.pbf',],
-                // url: 'http://127.0.0.1:6767/zones.json'
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
@@ -175,6 +175,27 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 visibility: 'none'
             }
         })
+
+        map.addLayer({
+            id: 'zoneBorders',
+            type: 'line',
+            source: {
+                type: 'vector',
+                tiles: [BASEURL + '/tiles/zones/{z}/{x}/{y}.pbf',],
+                // If you don't have this, mapbox doesn't show tiles beyond the
+                // zoom level of the tiles, which is not what we want.
+                maxzoom: 6,
+            },
+            "source-layer": "zones",
+            paint: {
+                'line-color': 'red',
+                'line-width': 2,
+            },
+            layout: {
+                visibility: 'none'
+            }
+        })
+
         map.addLayer({
             id: 'links',
             type: 'line',
@@ -197,6 +218,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-width': 1.5,
             },
         })
+
         map.addLayer({
             id: "centroidLines",
             type: "line",
@@ -223,6 +245,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-color': 'red',
             },
         })
+
         actions.getLTypes()
         actions.getCentres()
         await actions.getMeta()
@@ -970,6 +993,7 @@ function normalise(v, bounds, good) {
 
 function hideCentroids() {
     map.setLayoutProperty("centroidLines","visibility","none")
+    // map.setLayoutProperty("zoneBorders", "visibility", "none")
 }
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
@@ -1019,6 +1043,11 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
     map.moveLayer("centroidLines")
     map.setLayoutProperty("centroidLines", "visibility", "visible")
+
+    // Currently looks a bit too shit to use, but maybe we'll want something like it
+    // in the future.
+    // map.setPaintProperty("zoneBorders", "line-opacity", ["to-number", ["==", ["get", "fid"], id + 1]])
+    // map.setLayoutProperty("zoneBorders", "visibility", "visible")
 }
 
 function paint(domain, {variable, values, bounds, dir, palette}) {
