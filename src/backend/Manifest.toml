@@ -35,9 +35,9 @@ version = "0.5.8"
 
 [[CategoricalArrays]]
 deps = ["Compat", "DataAPI", "Future", "JSON", "Missings", "Printf", "Reexport", "Unicode"]
-git-tree-sha1 = "45101c4d0df3946acb6e9bfcfd3a8c32abbd421b"
+git-tree-sha1 = "4d85a015093760ff23b20f3e25fa195b4cb76794"
 uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-version = "0.7.1"
+version = "0.7.3"
 
 [[CodeTracking]]
 deps = ["InteractiveUtils", "UUIDs"]
@@ -76,9 +76,9 @@ version = "0.19.4"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "1fe8fad5fc84686dcbc674aa255bc867a64f8132"
+git-tree-sha1 = "a1b652fb77ae8ca7ea328fa7ba5aa151036e5c10"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.17.5"
+version = "0.17.6"
 
 [[DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -105,9 +105,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[EzXML]]
 deps = ["BinaryProvider", "Libdl", "Printf"]
-git-tree-sha1 = "aed48d722e528bc634bd36a7d0e090fa2952a3c0"
+git-tree-sha1 = "469de9cb996a9c03f31905619ff3c33e905711f3"
 uuid = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
-version = "0.9.4"
+version = "0.9.5"
 
 [[FileIO]]
 deps = ["Pkg"]
@@ -127,6 +127,18 @@ deps = ["ArgParse", "Dates", "Distributed", "Gumbo", "HTTP", "HttpCommon", "JSON
 git-tree-sha1 = "12584aeea451a2f7bfa15d62120fa35ca3faf0ba"
 uuid = "c43c736e-a2d1-11e8-161f-af95117fbd1e"
 version = "0.11.1"
+
+[[GeoInterface]]
+deps = ["RecipesBase", "Test"]
+git-tree-sha1 = "0c0c0bf9c79b10e48aa089e78ac504ebc43db3a0"
+uuid = "cf35fbd7-0cd7-5166-be24-54bfbe79505f"
+version = "0.4.1"
+
+[[GeoJSON]]
+deps = ["GeoInterface", "JSON", "Test"]
+git-tree-sha1 = "1a09ab107eeb872d4f6266e0e0c8ac495e7c7457"
+uuid = "61d90e0f-e114-555e-ac52-39dfb47a3ef9"
+version = "0.4.0"
 
 [[Gumbo]]
 deps = ["AbstractTrees", "BinaryProvider", "Libdl", "Test"]
@@ -212,15 +224,15 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LoweredCodeUtils]]
 deps = ["JuliaInterpreter"]
-git-tree-sha1 = "ea065f38cccb556b4eabe43b3b3b91e1c67cbffd"
+git-tree-sha1 = "b416a30717e9109fffd4d9869f2f962b5dca3162"
 uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
-version = "0.3.8"
+version = "0.4.2"
 
 [[MacroTools]]
-deps = ["Compat", "DataStructures", "Test"]
-git-tree-sha1 = "82921f0e3bde6aebb8e524efc20f4042373c0c06"
+deps = ["DataStructures", "Markdown", "Random"]
+git-tree-sha1 = "e2fc7a55bb2224e203bbd8b59f72b91323233458"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.2"
+version = "0.5.3"
 
 [[Markdown]]
 deps = ["Base64"]
@@ -276,10 +288,9 @@ uuid = "49dea1ee-f6fa-5aa6-9a11-8816cee7d4b9"
 version = "0.4.0"
 
 [[Nullables]]
-deps = ["Compat"]
-git-tree-sha1 = "ae1a63457e14554df2159b0b028f48536125092d"
+git-tree-sha1 = "8f87854cc8f3685a60689d8edecaa29d2251979b"
 uuid = "4d1e1d77-625e-5b40-9113-a560ec7a8ecd"
-version = "0.0.8"
+version = "1.0.0"
 
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
@@ -289,9 +300,9 @@ version = "1.1.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "c56ecb484f286639f161e712b8311f5ab77e8d32"
+git-tree-sha1 = "0139ba59ce9bc680e2925aec5b7db79065d60556"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "0.3.8"
+version = "0.3.10"
 
 [[Pidfile]]
 deps = ["FileWatching", "Test"]
@@ -344,6 +355,11 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
+[[RecipesBase]]
+git-tree-sha1 = "7bdce29bc9b2f5660a6e5e64d64d91ec941f6aa2"
+uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+version = "0.7.0"
+
 [[Reexport]]
 deps = ["Pkg"]
 git-tree-sha1 = "7b1d07f411bc8ddb7977ec7f377b97b158514fe0"
@@ -358,9 +374,9 @@ version = "0.5.2"
 
 [[Revise]]
 deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "UUIDs", "Unicode"]
-git-tree-sha1 = "301706196827bdcc045658fc6df3e52fd3d76f83"
+git-tree-sha1 = "855751b1fc9337d8cbe1e6d80ab6aa948a004a7e"
 uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
-version = "2.2.2"
+version = "2.3.2"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -409,9 +425,9 @@ version = "1.0.0"
 
 [[TableTraitsUtils]]
 deps = ["DataValues", "IteratorInterfaceExtensions", "Missings", "TableTraits"]
-git-tree-sha1 = "fbc53f586630fa2a72190f7a792ba4106fd0776a"
+git-tree-sha1 = "8fc12ae66deac83e44454e61b02c37b326493233"
 uuid = "382cd787-c1b6-5bf2-a167-d5b971a19bda"
-version = "1.0.0"
+version = "1.0.1"
 
 [[Tables]]
 deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "TableTraits", "Test"]
@@ -431,15 +447,23 @@ version = "0.3.0"
 
 [[TimeZones]]
 deps = ["Dates", "EzXML", "Mocking", "Printf", "Serialization", "Unicode"]
-git-tree-sha1 = "4d2d681e1dd715fdaa47d31a7208cead357bb357"
+git-tree-sha1 = "29c7ae3f50f291358043e21db47b3e1a516df891"
 uuid = "f269a46b-ccf7-5d73-abea-4c690281aa53"
-version = "0.10.2"
+version = "0.10.3"
 
 [[TranscodingStreams]]
 deps = ["Random", "Test"]
 git-tree-sha1 = "7c53c35547de1c5b9d46a4797cf6d8253807108c"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.9.5"
+
+[[Turf]]
+deps = ["GeoInterface", "GeoJSON", "Reexport", "Statistics", "Test"]
+git-tree-sha1 = "f3e2e943b2f9c4900b2f2752156685c448c43f79"
+repo-rev = "multipoly_centroid"
+repo-url = "https://github.com/bovine3dom/Turf.jl"
+uuid = "e89237b0-9201-11e9-31b0-6361926203f7"
+version = "0.2.0"
 
 [[URIParser]]
 deps = ["Test", "Unicode"]

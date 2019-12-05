@@ -154,7 +154,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             "source-layer": "zones",
             paint: {
                 'fill-color': 'grey',
-                'fill-outline-color': '#aaa',
+                'fill-outline-color': '#000',
                 'fill-opacity': 0.5,
             },
             layout: {
@@ -206,15 +206,14 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
             paint: {
                 'line-opacity': .8,
-                'line-color': 'gray',
+                'line-color': 'red',
             },
         })
-
         actions.getLTypes()
+        actions.getCentres()
         await actions.getMeta()
         update({mapReady: true})
-        actions.fetchLayerData("od_matrices")
-        actions.fetchLayerData("links")
+        actions.fetchAllLayers()
     }
 
     map.on('load', loadLayers)
@@ -302,7 +301,12 @@ const app = {
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                 })
             },
-            getLTypes: async () => update({LTypes: await getData("data?domain=links&variable=LType&comparewith=none")}),
+            getLTypes: async () => update({
+                LTypes: await getData("data?domain=links&variable=LType&comparewith=none")
+            }),
+            getCentres: async () => update({
+                zoneCentres: await getData("centroids")
+            }),
             fetchAllLayers: () => {
                 actions.fetchLayerData("links")
                 actions.fetchLayerData("od_matrices")
@@ -486,36 +490,26 @@ states.map(state => log('state', state))
                     //     // remove them
                     //     map.setLayoutProperty("centroidLines","visibility","none")
                     // }
-                    let clines = []
 
-                    const originPoint = turf.centroid(event.features[0].geometry)
 
                     // let dests = [] // Need to get this from somewhere
-                    const dests = map.querySourceFeatures("zones",{sourceLayer: "zones"})
+                    const dests = state.zoneCentres
+
+                    const originPoint = turf.point(dests[event.features[0].properties.fid - 1])
 
                     const data = await getData("data?domain=od_matrices&year=" + state.scenarioYear + "&variable=" + state.layers.od_matrices.variable + "&scenario=" + state.scenario + "&comparewith=" + state.compareWith + "&compareyear=" + state.compareYear + "&row=" + event.features[0].properties.fid) // Compare currently unused
-                    const qs = [0.001,0.999]
+                    const sortedData = sort(data)
+                    const bounds = [d3.quantile(sortedData,0.6),d3.quantile(sortedData,0.99)]
+                    const normedData = normalise(data,bounds,"bigger").map(x=>x < 0 ? 0 : x > 1 ? 1 : x)
 
-                    // const bounds = await getData("stats?domain=od_matrices&variable=" + state.matVar + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=none")
-                    const truncData = data.slice() // Make copy first so we don't mutate original
-                        .sort().slice(-20) // Draw top 20 lines
-                    const bounds = [Math.min(...truncData),Math.max(...truncData)]
-                    const normedData = normalise(data,bounds) // Anything outside 0,1 is clamped by consumer
-                    const threshold = normedData.slice() // Make copy first so we don't mutate original
-                        .sort().slice(-20)[0] // Draw top 20 lines
-
-
-                    for (let dest of dests) {
-                        // if (normedData[dest.properties.fid - 1] < threshold) continue
-                        const destPoint = turf.centroid(dest.geometry)
+                    console.log(normedData)
+                    const clines = dests.map((dest,index) => {
+                        const destPoint = turf.point(dest)
                         const getPos = x => x.geometry.coordinates
 
-                        // Skip itself
-                        if ((getPos(destPoint)[0] == getPos(originPoint)[0]) && (getPos(destPoint)[1] == getPos(originPoint)[1])) continue
-
                         let props = {
-                            opacity: Math.pow(normedData[dest.properties.fid - 1] - 0.1,10) - 0.1, // Slightly weird heuristic but it looks nice
-                            weight: Math.pow(normedData[dest.properties.fid - 1] - 0.1,2)* 5
+                            opacity: normedData[index],
+                            weight: 2.5 * normedData[index],
                         }
                         if (props.weight > 10) props.weight = 10 // Some values explode and go white, further investigation needed
 
@@ -525,10 +519,10 @@ states.map(state => log('state', state))
                             {properties: props}
                         )
 
-                        clines.push(cline)
-                    }
+                        return cline
+                    })
                     map.getSource("centroidLines").setData(turf.featureCollection(clines))
-                    // map.setPaintProperty("centroidLines","line-width",["get","weight"])
+                    map.setPaintProperty("centroidLines","line-width",["get","weight"])
                     map.setPaintProperty("centroidLines","line-opacity",["get","opacity"])
                     map.moveLayer("centroidLines")
 
@@ -537,6 +531,7 @@ states.map(state => log('state', state))
                 }
             }
         })
+        actions.fetchLayerData("od_matrices")
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
 
     map.on('click', 'links', async event => ((event, state) => {
@@ -549,16 +544,21 @@ states.map(state => log('state', state))
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    let value = numberToHuman(state.layers.links.values[id], state.compare && state.percent) +
-                        (state.compare && state.percent ? "" : " ") +
-                        getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
+                    let str = ""
+                    let value = state.layers.links.values[id]
+                    if (value === null)
+                        str = "No data"
+                    else
+                        str = numberToHuman(value, state.compare && state.percent) +
+                            (state.compare && state.percent ? "" : " ") +
+                            getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
                     return new mapboxgl.Popup({closeButton: false})
                         .setLngLat(event.lngLat)
                         .setHTML(
                             `Click!<br>
                             ID: ${id}<br>
                             Link type: ${ltype}<br>
-                            ${value}`
+                            ${str}`
                         )
                         .addTo(map)
                 },
@@ -954,5 +954,6 @@ if (DEBUG)
         merge,
         continuousPalette,
         turf,
+        normalise,
         LTYPE_LOOKUP
     })
