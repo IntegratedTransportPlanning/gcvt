@@ -338,24 +338,6 @@ const app = {
                     compare: false,
                     // Clear existing centroids
                     centroidLineWeights: null,
-                    // mapUI: {
-                    //     popup: oldpopup => {
-                    //         if (oldpopup) {
-                    //             oldpopup.remove()
-                    //         }
-                    //         const percent = false
-                    //         const layer = state.layers.od_matrices
-                    //         const {NAME, fid} = event.features[0].properties
-                    //         const value =
-                    //             numberToHuman(layer.values[fid - 1], percent) +
-                    //             (percent ? "" : " ") +
-                    //             layer.unit
-                    //         return new mapboxgl.Popup({closeButton: false})
-                    //             .setLngLat(event.lngLat)
-                    //             .setHTML(`${NAME}<br>${value}`)
-                    //             .addTo(map)
-                    //     },
-                    // }
                 })
                 actions.fetchLayerData("od_matrices")
             },
@@ -571,6 +553,38 @@ const { update, states, actions } =
             }
         })
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+
+    map.on('mouseenter', 'zones', event => {
+        update(state => {
+            const percent = false
+            const layer = state.layers.od_matrices
+            const {NAME, fid} = event.features[0].properties
+            const value =
+                numberToHuman(layer.values[fid - 1], percent) +
+                (percent ? "" : " ") +
+                layer.unit
+
+            return merge(state, {
+                    mapUI: {
+                        hover: oldhover => {
+                            if (oldhover) {
+                                oldhover.remove()
+                            }
+                            return new mapboxgl.Popup({closeButton: false})
+                                .setLngLat(event.lngLat)
+                                .setHTML(`${NAME}<br>${value}`)
+                                .addTo(map)
+                                .trackPointer()
+                        },
+                    }
+            })
+        })
+    })
+
+    map.on('mouseleave', 'zones', event => {
+        const hover = states().mapUI.hover
+        hover && hover.remove()
+    })
 
     map.on('mousemove', 'links', async event => ((event, state) => {
         update({
