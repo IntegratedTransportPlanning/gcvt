@@ -898,7 +898,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         "od_matrices": "zones",
         "links": "links",
     }
-    if (!variable) {
+    if (!variable || !values) {
         map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
         if (domain == "od_matrices"){
