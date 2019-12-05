@@ -950,7 +950,13 @@ function setColours(nums, palette=d3.interpolateRdYlGn) {
         colours.push(d3.scaleSequential(palette)(nums[i]))
     }
 
-    // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
+    // Quick proof of concept.
+    // TODO: Handle missings here.
+    map.setPaintProperty("zones", "fill-opacity", [
+        "match", atFid(nums),
+        0, 0,
+        /* fallback */ .5
+    ])
     map.setPaintProperty('zones', 'fill-color',
         ['to-color', atFid(colours)])
 }
@@ -961,7 +967,12 @@ function setLinkColours(nums, palette=d3.interpolateRdYlGn) {
         colours.push(d3.scaleSequential(palette)(n))
     }
 
-    // map.setPaintProperty('zones', 'fill-opacity', atFid(opacities))
+    // This doesn't work for some reason.
+    // map.setPaintProperty("links", "line-opacity", [
+    //     "match", atId(nums),
+    //     0, 0,
+    //     /* fallback */ .8
+    // ])
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
     map.setPaintProperty('links','line-offset', ['interpolate',
