@@ -293,14 +293,22 @@ const app = {
                 })
                 actions.fetchAllLayers()
             },
-            updateBaseScenario: (scenario, scenarioYear) => {
+            updateBaseScenario: ({scenario, year}) => {
                 update(state => {
-                    scenarioYear = Number(scenarioYear)
+                    scenario = R.defaultTo(state.compareWith, scenario)
+                    year = R.defaultTo(state.compareYear, year)
+
+                    // Validate year
+                    year = Number(year)
                     const years = state.meta.scenarios[scenario]["at"] || [2030]
-                    if (!years.includes(scenarioYear)){
-                        scenarioYear = years[0]
+                    if (!years.includes(year)){
+                        year = years[0]
                     }
-                    return merge(state, {compareWith: scenario, compareYear: scenarioYear})
+
+                    return merge(state, {
+                        compareYear: year,
+                        compareWith: scenario,
+                    })
                 })
                 actions.fetchAllLayers()
             },
@@ -805,17 +813,22 @@ const menuView = state => {
                             m('select', {
                                 name: 'scenario',
                                 onchange: e =>
-                                    actions.updateBaseScenario(e.target.value, state.scenarioYear, state.meta)
+                                    actions.updateBaseScenario({scenario: e.target.value})
                             },
                                 meta2options(state.meta.scenarios, state.compareWith)
                             ),
 
-                            m('label', {for: 'basetracksactive'}, 'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
+                            m('label', {for: 'basetracksactive'},
+                                'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
                                 m('input', {name: 'basetracksactive', type:"checkbox", checked:(state.compareYear != "auto"), onchange: e => {
                                     if (!e.target.checked) {
-                                        update({compareYear: "auto"})
+                                        actions.updateBaseScenario({
+                                            year: "auto",
+                                        })
                                     } else {
-                                        update({compareYear: state.scenarioYear})
+                                        actions.updateBaseScenario({
+                                            year: state.scenarioYear,
+                                        })
                                     }
                                 }}),
                             " )"),
@@ -829,7 +842,9 @@ const menuView = state => {
                                     type: "range",
                                     ...getScenMinMaxStep(state.meta.scenarios[state.compareWith]),
                                     value: state.compareYear,
-                                    onchange: e => update({compareYear: e.target.value})
+                                    onchange: e => actions.updateBaseScenario({
+                                        year: e.target.value,
+                                    })
                                 }),
                             ],
                         ],
