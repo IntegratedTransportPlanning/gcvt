@@ -432,9 +432,13 @@ const app = {
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
                     const centroidBounds =
                         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+
                     // Normalise and clamp
-                    const centroidLineWeights = normalise(values, centroidBounds)
-                        .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
+                    // const centroidLineWeights = normalise(values, centroidBounds)
+                    //     .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
+
+                    const centroidLineWeights = values.map(
+                        d3.scaleLinear(centroidBounds, [0, 1]).clamp(true))
 
                     const palette = d3.scaleSequential(
                         dir == "smaller" ? R.reverse(bounds) : bounds,
@@ -995,23 +999,23 @@ function setLinkColours(nums, colour) {
 }
 
 
-// Some of this should probably go in d3.scale...().domain([])
-function normalise(v, bounds, good) {
-    let min = bounds ? bounds[0] : Math.min(...v)
-    let max = bounds ? bounds[1] : Math.max(...v)
-    if (good == "smaller"){
-        ;[min, max] = [max, min]
-    }
-    return v.map(x => {
-        const d = max - min
-        if (d == 0) {
-            // TODO: Missing data problems.
-            return 0
-        } else {
-            return (x - min) / d
-        }
-    })
-}
+// This is now unused.
+// function normalise(v, bounds, good) {
+//     let min = bounds ? bounds[0] : Math.min(...v)
+//     let max = bounds ? bounds[1] : Math.max(...v)
+//     if (good == "smaller"){
+//         ;[min, max] = [max, min]
+//     }
+//     return v.map(x => {
+//         const d = max - min
+//         if (d == 0) {
+//             // TODO: Missing data problems.
+//             return 0
+//         } else {
+//             return (x - min) / d
+//         }
+//     })
+// }
 
 function hideCentroids() {
     map.setLayoutProperty("centroidLines","visibility","none")
@@ -1136,7 +1140,6 @@ if (DEBUG)
         merge,
         continuousPalette,
         turf,
-        normalise,
         LTYPE_LOOKUP,
         R,
         setEqual
