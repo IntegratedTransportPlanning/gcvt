@@ -564,7 +564,7 @@ const app = {
                 state.centroidLineWeights !== previousState.centroidLineWeights ||
                 state.showClines !== previousState.showClines) {
                 if (!state.layers.od_matrices.variable || !state.centroidLineWeights || !state.showClines) {
-                    hideCentroids()
+                    hideCentroids(state)
                 } else {
                     paintCentroids(state)
                 }
@@ -1023,9 +1023,20 @@ function setLinkColours(nums, colour) {
 //     })
 // }
 
-function hideCentroids() {
+function hideCentroids({selectedZones}) {
     map.setLayoutProperty("centroidLines","visibility","none")
-    // map.setLayoutProperty("zoneBorders", "visibility", "none")
+    if (selectedZones.length) {
+        // Currently looks a bit too shit to use, but maybe we'll want something like it
+        // in the future.
+        const lookup = {}
+        selectedZones.forEach(id => lookup[id] = true)
+        map.setPaintProperty("zoneBorders", "line-opacity",
+            ["to-number", ["has", ["to-string", ["get", "fid"]], ["literal", lookup]]])
+        map.setLayoutProperty("zoneBorders", "visibility", "visible")
+    } else {
+        map.setLayoutProperty("zoneBorders", "visibility", "none")
+    }
+
 }
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
@@ -1070,16 +1081,13 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         ))
     })
 
+    map.setLayoutProperty("zoneBorders", "visibility", "none")
+
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
     map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
     map.moveLayer("centroidLines")
     map.setLayoutProperty("centroidLines", "visibility", "visible")
-
-    // Currently looks a bit too shit to use, but maybe we'll want something like it
-    // in the future.
-    // map.setPaintProperty("zoneBorders", "line-opacity", ["to-number", ["==", ["get", "fid"], id + 1]])
-    // map.setLayoutProperty("zoneBorders", "visibility", "visible")
 }
 
 function paint(domain, {variable, values, bounds, dir, palette}) {
