@@ -20,6 +20,8 @@ import GeoJSON
 
 import Turf
 
+import VegaLite
+
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
@@ -120,17 +122,17 @@ end
 end
 
 
-println("Warming up the cache: links")
-@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
-    # get these quantiles from colourMap in index.js
-    var_stats("links",variable,(0.1,0.9))
-end
-
-println("Warming up the cache: matrices")
-@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
-    # get these quantiles from colourMap in index.js
-    var_stats("od_matrices",variable,(0.0001,0.9999))
-end
+# println("Warming up the cache: links")
+# @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
+#     # get these quantiles from colourMap in index.js
+#     var_stats("links",variable,(0.1,0.9))
+# end
+# 
+# println("Warming up the cache: matrices")
+# @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
+#     # get these quantiles from colourMap in index.js
+#     var_stats("od_matrices",variable,(0.0001,0.9999))
+# end
 
 route("/scenarios") do
     list_scenarios() |> json
@@ -243,6 +245,61 @@ route("/oembed") do
        ))
 end
 
+const a = VegaLite.@vlplot(
+    data={
+        values=[
+            {a="A",b=28},{a="B",b=55},{a="C",b=43},
+            {a="D",b=91},{a="E",b=81},{a="F",b=53},
+            {a="G",b=19},{a="H",b=87},{a="I",b=52}
+        ]
+    },
+    mark="bar",
+    encoding={
+        x={field="a", typ="ordinal"},
+        y={field="b", typ="quantitative"}
+    }
+)
+
+# Adapted from VegaLite.jl
+function vegalite_to_html(vl,title="Greener Connectivity Plot")
+    spec = VegaLite.convert_vl_to_vg(vl)
+    """
+      <html>
+        <head>
+          <title>$title</title>
+          <meta charset="UTF-8">
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/vega/5.6.0/vega.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/5.1.2/vega-embed.min.js"></script>
+        </head>
+        <body>
+          <div id="gcvt-chart"></div>
+        </body>
+        <style media="screen">
+          .vega-actions a {
+            margin-right: 10px;
+            font-family: sans-serif;
+            font-size: x-small;
+            font-style: italic;
+          }
+        </style>
+        <script type="text/javascript">
+          var opt = {
+            mode: "vega",
+            renderer: "$(VegaLite.RENDERER)",
+            actions: $(VegaLite.ACTIONSLINKS)
+          }
+          var spec = $spec
+          vegaEmbed('#gcvt-chart', spec, opt);
+        </script>
+      </html>
+    """
+end
+
+route("/graphs") do 
+    vegalite_to_html(a)
+end
+
 Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)
+
 
 end
