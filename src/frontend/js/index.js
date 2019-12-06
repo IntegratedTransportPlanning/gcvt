@@ -23,6 +23,35 @@ import * as R from "ramda"
 const propertiesDiffer = (props, a, b) =>
     props.filter(key => a[key] !== b[key]).length !== 0
 
+// Error function - broadly linear in -1 <= x <= 1, which accounts for the central
+// 85% of the range of (-1,1) all abs(x) > 1 are mapped to the remaining 15%.
+// Adapted from picomath, https://hewgill.com/picomath/index.html
+function erf(x) {
+    // constants
+    const a1 =  0.254829592
+    const a2 = -0.284496736
+    const a3 =  1.421413741
+    const a4 = -1.453152027
+    const a5 =  1.061405429
+    const p  =  0.3275911
+
+    // Save the sign of x
+    let sign = 1
+    if (x < 0) sign = -1
+    x = Math.abs(x)
+
+    // A&S formula 7.1.26
+    const t = 1.0/(1.0 + p*x)
+    const y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*Math.exp(-x*x)
+
+    return sign*y
+}
+
+// Error function with range of [0,1] and domain mostly [0,1] (85% of range from those inputs)
+// Essentially: maps any number between 0,1 to 0.08,0.92 in a fairly linear fashion
+// Any number outside that range (i.e. those denoted outliers by normalise) will fall in 0,0.08 and 0.92,1
+const nerf = x => erf(x*2-1)/2
+
 // get data from Julia:
 const getData = async endpoint => (await fetch("/api/" + endpoint)).json()
 
@@ -973,6 +1002,7 @@ function setOpacity() {
 
 function setColours(nums, colour) {
     const colours = nums.map(colour)
+    // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
     // Quick proof of concept.
     // TODO: Handle missings here.
