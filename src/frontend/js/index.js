@@ -423,7 +423,6 @@ const app = {
                 let bounds, values
 
                 const dir = meta[domain][variable]["good"]
-                const palette = getPalette(meta, domain, variable, compare)
                 const unit = getUnit(meta, domain, variable, percent)
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
@@ -431,12 +430,16 @@ const app = {
 
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
-
                     const centroidBounds =
                         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
                     // Normalise and clamp
                     const centroidLineWeights = normalise(values, centroidBounds)
                         .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
+
+                    const palette = d3.scaleSequential(
+                        dir == "smaller" ? R.reverse(bounds) : bounds,
+                        getPalette(meta[domain][variable].palette, compare)
+                    )
 
                     return update({
                         centroidLineWeights,
@@ -470,6 +473,11 @@ const app = {
                         bounds = [-maxb,maxb]
                     }
                 }
+
+                const palette = d3.scaleSequential(
+                    dir == "smaller" ? R.reverse(bounds) : bounds,
+                    getPalette(meta[domain][variable].palette, compare)
+                )
 
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer({
@@ -703,14 +711,15 @@ function meta2options(metadata, selected) {
 const Legend = () => {
     let legendelem
     const drawLegend = vnode => {
-        let bounds = vnode.attrs.bounds
+        let palette = vnode.attrs.palette[0]
         if (vnode.attrs.percent) {
-            bounds = bounds.map(x => x * 100)
+            palette = palette.copy()
+            palette.domain(palette.domain().map(x => x * 100))
         }
         const unit = vnode.attrs.unit
         legendelem && legendelem.remove()
         legendelem = legend({
-            color: d3.scaleSequential(bounds, vnode.attrs.palette[0]),
+            color: palette,
             title: vnode.attrs.title + ` (${unit})`,
         })
         vnode.dom.appendChild(legendelem)
@@ -952,18 +961,8 @@ function setOpacity() {
     map.setPaintProperty('links', 'fill-opacity', atFid(opacities))
 }
 
-function setColours(nums, palette=d3.interpolateRdYlGn) {
-    const num_zones = 282
-    if (nums === undefined) {
-        nums = []
-        for (let i=0; i < num_zones; i++){
-            nums.push(Math.random())
-        }
-    }
-    const colours = []
-    for (let i=0; i < num_zones; i++){
-        colours.push(d3.scaleSequential(palette)(nums[i]))
-    }
+function setColours(nums, colour) {
+    const colours = nums.map(colour)
 
     // Quick proof of concept.
     // TODO: Handle missings here.
@@ -976,11 +975,8 @@ function setColours(nums, palette=d3.interpolateRdYlGn) {
         ['to-color', atFid(colours)])
 }
 
-function setLinkColours(nums, palette=d3.interpolateRdYlGn) {
-    const colours = []
-    for (let n of nums){
-        colours.push(d3.scaleSequential(palette)(n))
-    }
+function setLinkColours(nums, colour) {
+    const colours = nums.map(colour)
 
     // This doesn't work for some reason.
     // map.setPaintProperty("links", "line-opacity", [
@@ -1085,24 +1081,27 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
         if (domain == "od_matrices"){
-            setColours(normalise(values, bounds, dir),palette[0])
+            setColours(values, palette[0])
         } else {
-            setLinkColours(normalise(values, bounds, dir),palette[0])
-            // map.setPaintProperty('links', 'line-width',
-            //     ['to-number', atId(normalise(data,bounds,abs,dir))])
+            setLinkColours(values, palette[0])
         }
         map.setLayoutProperty(mapLayers[domain], "visibility", "visible")
     }
 }
 
-function getPalette(meta,domain,variable,compare){
-    if (!meta[domain][variable]) return d3.interpolateRdYlGn
-    const desiredPalette = continuousPalette(meta[domain][variable]["palette"] || "RdYlGn")
-    if (desiredPalette === undefined) {
-        console.warn(variable + " has an invalid colour scheme set in the metadata.")
-        return d3.interpolateRdYlGn
+// TODO: support categorical variables
+// TODO: consider removing this as it's pretty vestigial now
+function getPalette(preferred, compare) {
+    if (compare) {
+        return divergingPalette()
+    } else {
+        let pal =  continuousPalette(preferred)
+        if (pal === undefined) {
+            console.warn(variable + " has an invalid colour scheme set in the metadata.")
+            pal = continuousPalette()
+        }
+        return pal
     }
-    return !compare ? desiredPalette : d3.interpolateRdYlGn
 }
 
 async function getDataFromId(id,domain="links"){

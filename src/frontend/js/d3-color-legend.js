@@ -30,13 +30,20 @@ export function legend({
             .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
             {range() { return [marginLeft, width - marginRight]; }});
 
+        // Flip the ticks if the domain descends
+        if (x.domain()[0] > x.domain()[1]) {
+            const domain = x.domain()
+            domain.reverse()
+            x.domain(domain)
+        }
+
         svg.append("image")
             .attr("x", marginLeft)
             .attr("y", marginTop)
             .attr("width", width - marginLeft - marginRight)
             .attr("height", height - marginTop - marginBottom)
             .attr("preserveAspectRatio", "none")
-            .attr("xlink:href", ramp(color.interpolator()).toDataURL());
+            .attr("xlink:href", ramp(color).toDataURL());
 
         // scaleSequentialQuantile doesn’t implement ticks or tickFormat.
         if (!x.ticks) {
@@ -105,8 +112,15 @@ function ramp(color, n = 256) {
     canvas.setAttribute('height', 1)
 
     const context = canvas.getContext("2d");
+
+    // Flip the ramp if the domain descends
+    if (color.domain()[0] > color.domain()[1]) {
+        context.translate(n, 0)
+        context.scale(-1, 1)
+    }
+
     for (let i = 0; i < n; ++i) {
-        context.fillStyle = color(i / (n - 1));
+        context.fillStyle = color.interpolator()(i / (n - 1));
         context.fillRect(i, 0, 1, 1);
     }
     return canvas;
