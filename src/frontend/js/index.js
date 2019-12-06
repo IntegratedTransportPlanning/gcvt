@@ -298,11 +298,13 @@ const app = {
                     scenario = R.defaultTo(state.compareWith, scenario)
                     year = R.defaultTo(state.compareYear, year)
 
-                    // Validate year
-                    year = Number(year)
-                    const years = state.meta.scenarios[scenario]["at"] || [2030]
-                    if (!years.includes(year)){
-                        year = years[0]
+                    if (year !== "auto") {
+                        // Validate year
+                        year = Number(year)
+                        const years = state.meta.scenarios[scenario]["at"] || [2030]
+                        if (!years.includes(year)){
+                            year = years[0]
+                        }
                     }
 
                     return merge(state, {
@@ -833,17 +835,21 @@ const menuView = state => {
 
                             m('label', {for: 'basetracksactive'},
                                 'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
-                                m('input', {name: 'basetracksactive', type:"checkbox", checked:(state.compareYear != "auto"), onchange: e => {
-                                    if (!e.target.checked) {
-                                        actions.updateBaseScenario({
-                                            year: "auto",
-                                        })
-                                    } else {
-                                        actions.updateBaseScenario({
-                                            year: state.scenarioYear,
-                                        })
-                                    }
-                                }}),
+                                m('input', {
+                                    name: 'basetracksactive',
+                                    type:"checkbox",
+                                    checked: state.compareYear !== "auto",
+                                    onchange: e => {
+                                        if (!e.target.checked) {
+                                            actions.updateBaseScenario({
+                                                year: "auto",
+                                            })
+                                        } else {
+                                            actions.updateBaseScenario({
+                                                year: state.scenarioYear,
+                                            })
+                                        }
+                                    }}),
                             " )"),
 
                             state.compareYear !== "auto" && [
