@@ -22,6 +22,8 @@ import Turf
 
 import VegaLite
 
+VegaLite.actionlinks(false) # Global setting - disable action button on all plots
+
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
@@ -49,6 +51,8 @@ for f in zones.features
     zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
 end
 
+const NUM_ZONES = zone_centroids |> length
+
 # This should probably be reloaded periodically so server doesn't need to be restarted?
 links, mats, metadata = load_scenarios(packdir)
 
@@ -67,7 +71,15 @@ function list_variables(domain)
 end
 
 function mat_data(scenario, year, variable)
-    mats[(scenario, year)][variable]
+    try
+        mats[(scenario, year)][variable]
+    catch e
+        if e isa KeyError
+            return ones(Missing,NUM_ZONES,NUM_ZONES)
+        else 
+            throw(e)
+        end
+    end
 end
 
 function link_data(scenario, year, variable)
@@ -245,21 +257,6 @@ route("/oembed") do
        ))
 end
 
-const a = VegaLite.@vlplot(
-    data={
-        values=[
-            {a="A",b=28},{a="B",b=55},{a="C",b=43},
-            {a="D",b=91},{a="E",b=81},{a="F",b=53},
-            {a="G",b=19},{a="H",b=87},{a="I",b=52}
-        ]
-    },
-    mark="bar",
-    encoding={
-        x={field="a", typ="ordinal"},
-        y={field="b", typ="quantitative"}
-    }
-)
-
 # Adapted from VegaLite.jl
 function vegalite_to_html(vl,title="Greener Connectivity Plot")
     spec = VegaLite.convert_vl_to_vg(vl)
@@ -285,8 +282,8 @@ function vegalite_to_html(vl,title="Greener Connectivity Plot")
         <script type="text/javascript">
           var opt = {
             mode: "vega",
-            renderer: "$(VegaLite.RENDERER)",
-            actions: $(VegaLite.ACTIONSLINKS)
+            renderer: "$(VegaLite.renderer())",
+            actions: $(VegaLite.actionlinks())
           }
           var spec = $spec
           vegaEmbed('#gcvt-chart', spec, opt);
@@ -295,8 +292,47 @@ function vegalite_to_html(vl,title="Greener Connectivity Plot")
     """
 end
 
+# Todo: 
+# resolve scenario etc to pretty name
+# don't hardcode years - use metadata
+# display units
+# sensible ticks for years
+#
+# Usage:
+# E.g. http://localhost:2016/api/graphs?scenarios=GreenMax,Fleet,DoNothing&width=300&height=300
+# Probably embed in an iframe
 route("/graphs") do 
-    vegalite_to_html(a)
+    defaults = Dict(
+        :domain => "od_matrices", # Unused
+        :scenarios => "GreenMax,DoNothing", 
+        :variable => "Total_GHG",
+        :rows => "all", # Unused
+        :width => "200",
+        :height => "200",
+    )
+    d = merge(defaults, getpayload())
+    d[:rows] = d[:rows] == "all" ? Colon() : parse.(Int,split(d[:rows],","))
+    years = 2020:5:2030
+    df = DataFrame(year=Int[],val=[],scenario=String[])
+    scenyear2dict(scenario,year) = Dict(:year => year, :scenario => scenario, :val=>mat_data(scenario,year,d[:variable])[d[:rows],:]|>sum)
+    for y in years
+        for scenario in split(d[:scenarios],",")
+            push!(df,scenyear2dict(scenario,y))
+        end
+    end
+
+    vl = df |> VegaLite.@vlplot(
+        width=parse(Int,d[:width]),
+        height=parse(Int,d[:height]),
+        mark={
+            :line,
+            point={filled=false,fill=:white},
+        },
+        color=:scenario,
+        x={:year,title="Year"},
+        y={:val,title=""},
+    )
+    vegalite_to_html(vl)
 end
 
 Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)
