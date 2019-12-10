@@ -314,7 +314,7 @@ route("/charts") do
     d[:rows] = d[:rows] == "all" ? Colon() : parse.(Int,split(d[:rows],","))
     years = 2020:5:2030
     df = DataFrame(year=String[],val=[],scenario=String[])
-    scenyear2dict(scenario,year) = Dict(:year => string(year), :scenario => scenario, :val=>mat_data(scenario,year,d[:variable])[d[:rows],:]|>sum)
+    scenyear2dict(scenario,year) = Dict(:year => string(year), :scenario => get(metadata["scenarios"][scenario],"name",scenario), :val=>mat_data(scenario,year,d[:variable])[d[:rows],:]|>sum)
     for y in years
         for scenario in split(d[:scenarios],",")
             push!(df,scenyear2dict(scenario,y))
@@ -328,9 +328,12 @@ route("/charts") do
             :line,
             point={filled=false,fill=:white},
         },
-        color=:scenario,
+        color={
+            :scenario,
+            legend={title=nothing},
+        },
         x={:year,title="Year",type="temporal"},
-        y={:val,title=""},
+        y={:val,title=get(metadata["od_matrices"]["columns"][d[:variable]],"unit",d[:variable])},
     )
     vegalite_to_html(vl)
 end
