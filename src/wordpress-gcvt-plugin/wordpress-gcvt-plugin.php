@@ -5,4 +5,5 @@
  * Author: Oliver Blanthorn
  */
     wp_oembed_add_provider('http://gcvt.cmcaine.co.uk/map/*','http://gcvt.cmcaine.co.uk/api/oembed');
+    wp_oembed_add_provider('http://gcvt.cmcaine.co.uk/api/charts/*','http://gcvt.cmcaine.co.uk/api/oembed');
 ?>
