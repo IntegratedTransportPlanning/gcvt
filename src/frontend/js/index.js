@@ -1015,8 +1015,27 @@ function setColours(nums, colour) {
         ['to-color', atFid(colours)])
 }
 
-function setLinkColours(nums, colour) {
+function setLinkColours(nums, colour,weights) {
     const colours = nums.map(colour)
+
+    let bounds = [d3.quantile(sort(weights),0.1),d3.quantile(sort(weights),0.9)]
+
+    const COMPARE_MODE = states().compare // This is not kosher
+
+    if (COMPARE_MODE) {
+        const b = Math.max(...bounds.map(x=>Math.abs(x)))
+        bounds = [-b,b]
+    }
+
+    // TODO: make this optional
+    weights = weights ? normalise(weights,bounds,"bigger").map(x=>
+        Math.max( // Set minimum width to 0.1
+            0.1,
+            nerf( // Squash outliers into [0,1]
+                COMPARE_MODE ? Math.abs(x-0.5) : x // if comparison, x=0.5 is boring, want to see x=0,1; otherwise x=0 is dull, want to see x=1
+            )*3 // Max width of 3
+        )
+    ) : nums.map(x=>1.5) // if weights isn't given, default to 1.5 for everything
 
     // This doesn't work for some reason.
     // map.setPaintProperty("links", "line-opacity", [
@@ -1024,6 +1043,7 @@ function setLinkColours(nums, colour) {
     //     0, 0,
     //     /* fallback */ .8
     // ])
+    map.setPaintProperty("links", "line-width", atId(weights))
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
     map.setPaintProperty('links','line-offset', ['interpolate',
@@ -1035,23 +1055,23 @@ function setLinkColours(nums, colour) {
 }
 
 
-// This is now unused.
-// function normalise(v, bounds, good) {
-//     let min = bounds ? bounds[0] : Math.min(...v)
-//     let max = bounds ? bounds[1] : Math.max(...v)
-//     if (good == "smaller"){
-//         ;[min, max] = [max, min]
-//     }
-//     return v.map(x => {
-//         const d = max - min
-//         if (d == 0) {
-//             // TODO: Missing data problems.
-//             return 0
-//         } else {
-//             return (x - min) / d
-//         }
-//     })
-// }
+// This is now not unused.
+function normalise(v, bounds, good) {
+    let min = bounds ? bounds[0] : Math.min(...v)
+    let max = bounds ? bounds[1] : Math.max(...v)
+    if (good == "smaller"){
+        ;[min, max] = [max, min]
+    }
+    return v.map(x => {
+        const d = max - min
+        if (d == 0) {
+            // TODO: Missing data problems.
+            return 0
+        } else {
+            return (x - min) / d
+        }
+    })
+}
 
 function hideCentroids({selectedZones}) {
     map.setLayoutProperty("centroidLines","visibility","none")
@@ -1131,7 +1151,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         if (domain == "od_matrices"){
             setColours(values, palette[0])
         } else {
-            setLinkColours(values, palette[0])
+            setLinkColours(values, palette[0],values)
         }
         map.setLayoutProperty(mapLayers[domain], "visibility", "visible")
     }
@@ -1186,5 +1206,6 @@ if (DEBUG)
         turf,
         LTYPE_LOOKUP,
         R,
-        setEqual
+        setEqual,
+        nerf
     })
