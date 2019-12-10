@@ -299,9 +299,9 @@ end
 # sensible ticks for years
 #
 # Usage:
-# E.g. http://localhost:2016/api/graphs?scenarios=GreenMax,Fleet,DoNothing&width=300&height=300
+# E.g. http://localhost:2016/api/charts?scenarios=GreenMax,Fleet,DoNothing&width=300&height=300
 # Probably embed in an iframe
-route("/graphs") do 
+route("/charts") do 
     defaults = Dict(
         :domain => "od_matrices", # Unused
         :scenarios => "GreenMax,DoNothing", 
