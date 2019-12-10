@@ -50,7 +50,7 @@ function erf(x) {
 // Error function with range of [0,1] and domain mostly [0,1] (85% of range from those inputs)
 // Essentially: maps any number between 0,1 to 0.08,0.92 in a fairly linear fashion
 // Any number outside that range (i.e. those denoted outliers by normalise) will fall in 0,0.08 and 0.92,1
-const nerf = x => erf(x*2-1)/2
+const nerf = x => (1+erf(x*2-1))/2
 
 // get data from Julia:
 const getData = async endpoint => (await fetch("/api/" + endpoint)).json()
