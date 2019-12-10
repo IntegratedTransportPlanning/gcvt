@@ -258,7 +258,7 @@ route("/oembed") do
 end
 
 # Adapted from VegaLite.jl
-function vegalite_to_html(vl,title="Greener Connectivity Plot")
+function vegalite_to_html(vl;title="Greener Connectivity Plot",width=200,height=200)
     spec = VegaLite.convert_vl_to_vg(vl)
     """
       <html>
@@ -282,11 +282,14 @@ function vegalite_to_html(vl,title="Greener Connectivity Plot")
         <script type="text/javascript">
           var opt = {
             mode: "vega",
-            renderer: "$(VegaLite.renderer())",
+            renderer: "svg",
             actions: $(VegaLite.actionlinks())
           }
           var spec = $spec
-          vegaEmbed('#gcvt-chart', spec, opt);
+          vegaEmbed('#gcvt-chart', spec, opt).then(function(error, result){ // Resize SVG
+              document.querySelector("#gcvt-chart > svg").setAttribute("width",$width);
+              document.querySelector("#gcvt-chart > svg").setAttribute("height",$height);
+          });
         </script>
       </html>
     """
@@ -321,9 +324,11 @@ route("/charts") do
         end
     end
 
+    width=parse(Int,d[:width])
+    height=parse(Int,d[:height])
     vl = df |> VegaLite.@vlplot(
-        width=parse(Int,d[:width]),
-        height=parse(Int,d[:height]),
+        width=width*0.5, # Awful heuristic - these control size of plot excluding legend, labels etc
+        height=height*0.5,
         mark={
             :line,
             point={filled=false,fill=:white},
@@ -333,9 +338,9 @@ route("/charts") do
             legend={title=nothing},
         },
         x={:year,title="Year",type="temporal"},
-        y={:val,title=get(metadata["od_matrices"]["columns"][d[:variable]],"unit",d[:variable])},
+        y={:val,title=get(metadata["od_matrices"]["columns"][d[:variable]],"unit",d[:variable]),type="quantitative"},
     )
-    vegalite_to_html(vl)
+    vegalite_to_html(vl;width=width,height=height)
 end
 
 Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)

@@ -963,7 +963,8 @@ const menuView = state => {
             (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
                     [
-                        m('iframe',{frameBorder:0, width: "100%", height: "100%", src: `http://localhost:2016/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}&width=100&height=80`}), // Currently you can't select a zone and compare so this is a little less useful than it could be
+                        m('iframe',{frameBorder:0, width: "100%", height: "100%", src: `http://localhost:2016/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}&width=320&height=160`}), // Currently you can't select a zone and compare so this is a little less useful than it could be
+                        // Todo: set width + height programmatically
                     ]
                 )
             ),
