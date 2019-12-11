@@ -134,17 +134,17 @@ end
 end
 
 
-# println("Warming up the cache: links")
-# @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
-#     # get these quantiles from colourMap in index.js
-#     var_stats("links",variable,(0.1,0.9))
-# end
-# 
-# println("Warming up the cache: matrices")
-# @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
-#     # get these quantiles from colourMap in index.js
-#     var_stats("od_matrices",variable,(0.0001,0.9999))
-# end
+println("Warming up the cache: links")
+@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
+    # get these quantiles from colourMap in index.js
+    var_stats("links",variable,(0.1,0.9))
+end
+
+println("Warming up the cache: matrices")
+@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
+    # get these quantiles from colourMap in index.js
+    var_stats("od_matrices",variable,(0.0001,0.9999))
+end
 
 route("/scenarios") do
     list_scenarios() |> json
