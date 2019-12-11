@@ -20,6 +20,10 @@ import GeoJSON
 
 import Turf
 
+import VegaLite
+
+VegaLite.actionlinks(false) # Global setting - disable action button on all plots
+
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
@@ -47,6 +51,8 @@ for f in zones.features
     zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
 end
 
+const NUM_ZONES = zone_centroids |> length
+
 # This should probably be reloaded periodically so server doesn't need to be restarted?
 links, mats, metadata = load_scenarios(packdir)
 
@@ -65,7 +71,15 @@ function list_variables(domain)
 end
 
 function mat_data(scenario, year, variable)
-    mats[(scenario, year)][variable]
+    try
+        mats[(scenario, year)][variable]
+    catch e
+        if e isa KeyError
+            return ones(Missing,NUM_ZONES,NUM_ZONES)
+        else 
+            throw(e)
+        end
+    end
 end
 
 function link_data(scenario, year, variable)
@@ -120,17 +134,17 @@ end
 end
 
 
-println("Warming up the cache: links")
-@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
-    # get these quantiles from colourMap in index.js
-    var_stats("links",variable,(0.1,0.9))
-end
-
-println("Warming up the cache: matrices")
-@showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
-    # get these quantiles from colourMap in index.js
-    var_stats("od_matrices",variable,(0.0001,0.9999))
-end
+# println("Warming up the cache: links")
+# @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
+#     # get these quantiles from colourMap in index.js
+#     var_stats("links",variable,(0.1,0.9))
+# end
+# 
+# println("Warming up the cache: matrices")
+# @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
+#     # get these quantiles from colourMap in index.js
+#     var_stats("od_matrices",variable,(0.0001,0.9999))
+# end
 
 route("/scenarios") do
     list_scenarios() |> json
@@ -243,6 +257,93 @@ route("/oembed") do
        ))
 end
 
+# Adapted from VegaLite.jl
+function vegalite_to_html(vl;title="Greener Connectivity Plot",width=200,height=200)
+    spec = VegaLite.convert_vl_to_vg(vl)
+    """
+      <html>
+        <head>
+          <title>$title</title>
+          <meta charset="UTF-8">
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/vega/5.6.0/vega.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/5.1.2/vega-embed.min.js"></script>
+        </head>
+        <body>
+          <div id="gcvt-chart"></div>
+        </body>
+        <style media="screen">
+          .vega-actions a {
+            margin-right: 10px;
+            font-family: sans-serif;
+            font-size: x-small;
+            font-style: italic;
+          }
+        </style>
+        <script type="text/javascript">
+          var opt = {
+            mode: "vega",
+            renderer: "svg",
+            actions: $(VegaLite.actionlinks())
+          }
+          var spec = $spec
+          vegaEmbed('#gcvt-chart', spec, opt).then(function(error, result){ // Resize SVG
+              document.querySelector("#gcvt-chart > svg").setAttribute("width",$width);
+              document.querySelector("#gcvt-chart > svg").setAttribute("height",$height);
+          });
+        </script>
+      </html>
+    """
+end
+
+# Todo: 
+# resolve scenario etc to pretty name
+# don't hardcode years - use metadata
+# display units
+# sensible ticks for years
+#
+# Usage:
+# E.g. http://localhost:2016/api/charts?scenarios=GreenMax,Fleet,DoNothing&width=300&height=300
+# Probably embed in an iframe
+route("/charts") do 
+    defaults = Dict(
+        :domain => "od_matrices", # Unused
+        :scenarios => "GreenMax,DoNothing", 
+        :variable => "Total_GHG",
+        :rows => "all", # Unused
+        :width => "200",
+        :height => "200",
+    )
+    d = merge(defaults, getpayload())
+    d[:rows] = d[:rows] == "all" ? Colon() : parse.(Int,split(d[:rows],","))
+    years = 2020:5:2030
+    df = DataFrame(year=String[],val=[],scenario=String[])
+    scenyear2dict(scenario,year) = Dict(:year => string(year), :scenario => get(metadata["scenarios"][scenario],"name",scenario), :val=>mat_data(scenario,year,d[:variable])[d[:rows],:]|>sum)
+    for y in years
+        for scenario in split(d[:scenarios],",")
+            push!(df,scenyear2dict(scenario,y))
+        end
+    end
+
+    width=parse(Int,d[:width])
+    height=parse(Int,d[:height])
+    vl = df |> VegaLite.@vlplot(
+        width=width*0.5, # Awful heuristic - these control size of plot excluding legend, labels etc
+        height=height*0.5,
+        mark={
+            :line,
+            point={filled=false,fill=:white},
+        },
+        color={
+            :scenario,
+            legend={title=nothing},
+        },
+        x={:year,title="Year",type="temporal"},
+        y={:val,title=get(metadata["od_matrices"]["columns"][d[:variable]],"unit",d[:variable]),type="quantitative"},
+    )
+    vegalite_to_html(vl;width=width,height=height)
+end
+
 Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)
+
 
 end

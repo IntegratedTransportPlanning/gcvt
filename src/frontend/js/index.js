@@ -103,6 +103,7 @@ const DEFAULTS = {
     showMatHelp: false,
     showLinkHelp: false,
     showClines: true,
+    showChart: false,
     selectedZones: [],
     zoneNames: [],
     mapUI: {
@@ -124,7 +125,7 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare","showctrl","showDesc","showClines","showLinkHelp","showMatHelp"]) {
+    for (let k of ["percent","compare","showctrl","showDesc","showClines","showLinkHelp","showMatHelp","showChart"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
         }
@@ -535,7 +536,7 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
-            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp"]
+            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
             const arrays_in_query = ["selectedZones"]
 
             const updateQS = () => {
@@ -920,7 +921,12 @@ const menuView = state => {
 
                         m('label', {for: 'matrix_variable'}, "Zones (help? ",
                             m('input', {name: 'showMatHelp', type:"checkbox", checked:state.showMatHelp, onchange: e => update({showMatHelp: e.target.checked})}),
-                        " )"),
+                            (state.layers.od_matrices.variable !== "") && [
+                                " chart? ",
+                                m('input', {name: 'showChart', type:"checkbox", checked:state.showChart, onchange: e => update({showChart: e.target.checked})}),
+                            ],
+                            ")",
+                        ),
                         m('select', {
                             name: 'matrix_variable',
                             onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
@@ -960,6 +966,15 @@ const menuView = state => {
                     ]
                 )
             ),
+            state.showChart && (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
+                m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
+                    [
+                        m('iframe',{frameBorder:0, width: "100%", height: "100%", src: `http://localhost:2016/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}&width=320&height=160`}), // Currently you can't select a zone and compare so this is a little less useful than it could be
+                        // Todo: set width + height programmatically
+                    ]
+                )
+            ),
+
         ])
     )
 }
