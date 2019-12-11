@@ -1,12 +1,6 @@
 FROM julia:1.3
 COPY . /julia-gcvt/
 
-# Dependency for NodeJS / VegaLite
-RUN set -eux; \
-        apt-get update; \
-        apt-get install -y --no-install-recommends xz-utils; \
-        rm -rf /var/lib/apt/lists/*
-
 # Install toolchain needed for many Julia packages
 # Uncomment this if we later use a package that needs it
 # RUN set -eux; \
