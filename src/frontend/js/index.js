@@ -18,6 +18,7 @@ import * as turf from "@turf/turf"
 import * as R from "ramda"
 
 
+
 // UTILITY FUNCS
 
 const propertiesDiffer = (props, a, b) =>
@@ -51,6 +52,9 @@ function erf(x) {
 // Essentially: maps any number between 0,1 to 0.08,0.92 in a fairly linear fashion
 // Any number outside that range (i.e. those denoted outliers by normalise) will fall in 0,0.08 and 0.92,1
 const nerf = x => (1+erf(x*2-1))/2
+
+// Similar to nerf but linear below 0.5 - use when true domain is [0,infty]
+const positive_nerf = x => x > 0.5 ? nerf(x) : x
 
 // get data from Julia:
 const getData = async endpoint => (await fetch("/api/" + endpoint)).json()
@@ -748,10 +752,11 @@ const Legend = () => {
     let legendelem
     const drawLegend = vnode => {
         let palette = vnode.attrs.palette[0]
+        palette = palette.copy()
         if (vnode.attrs.percent) {
-            palette = palette.copy()
             palette.domain(palette.domain().map(x => x * 100))
         }
+        palette.ticks = (_) => [1,2,3,4,5,6] // I think this should override the ticks shown. It doesn't.
         const unit = vnode.attrs.unit
         legendelem && legendelem.remove()
         legendelem = legend({
@@ -1029,8 +1034,19 @@ function setOpacity() {
 }
 
 function setColours(nums, colour) {
-    const colours = nums.map(colour)
-    // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
+    colour = colour.copy()
+    const bounds = colour.domain()
+    nums = normalise(nums,bounds,"bigger")
+
+    colour.domain([0,1])
+
+    console.log(bounds)
+    // TODO: 
+    // - use similar logic in link colours
+    // - display accurate ticks on legend
+    const colours = Math.min(bounds[0],bounds[1]) == 0 ? // If a bound is exactly 0 then variable is probably strictly positive
+        nums.map(x=>colour(positive_nerf(x))) :          // so don't try to account for negative values
+        nums.map(x => colour(nerf(x)))
 
     // Quick proof of concept.
     // TODO: Handle missings here.
@@ -1041,6 +1057,7 @@ function setColours(nums, colour) {
     ])
     map.setPaintProperty('zones', 'fill-color',
         ['to-color', atFid(colours)])
+
 }
 
 function setLinkColours(nums, colour,weights) {
@@ -1091,14 +1108,18 @@ function normalise(v, bounds, good) {
         ;[min, max] = [max, min]
     }
     return v.map(x => {
-        const d = max - min
-        if (d == 0) {
-            // TODO: Missing data problems.
-            return 0
-        } else {
-            return (x - min) / d
-        }
+        return single_normalise(x,min,max)
     })
+}
+
+function single_normalise(val, min, max) {
+    const d = max - min
+    if (d == 0) {
+        // TODO: Missing data problems.
+        return 0
+    } else {
+        return (val - min) / d
+    }
 }
 
 function hideCentroids({selectedZones}) {
@@ -1247,5 +1268,5 @@ if (DEBUG)
         LTYPE_LOOKUP,
         R,
         setEqual,
-        nerf
+        nerf,
     })
