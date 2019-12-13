@@ -254,6 +254,8 @@ route("/oembed") do
         :html => "<iframe src=$(HTTP.unescapeuri(params[:url])) width=$(params[:maxwidth]) height=$(params[:maxheight])></iframe>",
         :width => params[:maxwidth],
         :height => params[:maxheight],
+        :provider_name => "Integrated Transport Planning",
+        :provider_url => "https://www.itpworld.net/",
        ))
 end
 
