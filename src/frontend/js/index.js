@@ -816,6 +816,15 @@ const menuView = state => {
                     m('label', {for: 'showctrls'}, 'Show controls: ',
                         m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
                     ),
+                    " ",
+                    m('a', {href: document.location.href, onclick: e => {
+                        toClipboard(e.target.href)
+
+                        // Provide feedback to user
+                        e.target.innerText = "Link copied!";
+                        setTimeout(_ => e.target.innerText = "Copy link", 3000)
+
+                    }}, "Copy link"),
                     state.showctrl && [
                         m('br'),
 
@@ -968,10 +977,14 @@ const menuView = state => {
             ),
             state.showChart && (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
-                    [
-                        m('iframe',{frameBorder:0, width: "100%", height: "100%", src: `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}&width=320&height=160`}), // Currently you can't select a zone and compare so this is a little less useful than it could be
-                        // Todo: set width + height programmatically
-                    ]
+                    (() => {
+                        const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
+                        return [
+                            m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
+                            m('iframe',{frameBorder:0, width: "100%", height: "100%", src: chartURL + "&width=320&height=160"}), // Currently you can't select a zone and compare so this is a little less useful than it could be
+                        ]
+                    })(),
+                    // Todo: set width + height programmatically
                 )
             ),
 
@@ -1194,6 +1207,18 @@ async function getDataFromId(id,domain="links"){
     const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
     const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
     return {absVal: absData[id], percVal: percData[id]}
+}
+
+function toClipboard(str) {
+    const t = document.createElement("textarea")
+    t.value = str
+    t.setAttribute('readonly','')
+    t.style.position = "absolute"
+    t.style.left = "-1337px"
+    document.body.appendChild(t)
+    t.select()
+    document.execCommand("copy")
+    document.body.removeChild(t)
 }
 
 
