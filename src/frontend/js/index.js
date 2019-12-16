@@ -462,15 +462,8 @@ const app = {
 
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
-                    const centroidBounds =
-                        [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
 
-                    // Normalise and clamp
-                    // const centroidLineWeights = normalise(values, centroidBounds)
-                    //     .map(x => x < 0 ? 0 : x > 1 ? 1 : x)
-
-                    const centroidLineWeights = values.map(
-                        d3.scaleLinear(centroidBounds, [0, 1]).clamp(true))
+                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
                     const palette = d3.scaleSequential(
                         dir == "smaller" ? R.reverse(bounds) : bounds,
@@ -1119,30 +1112,35 @@ function hideCentroids({selectedZones}) {
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     const id = selectedZones[0] - 1
-    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1])) // Todo: draw a small circle on each
-    const originPoint = turf.centroid(turf.featureCollection(originPoints))
-    // const originPoint = turf.point(zoneCentres[id])
-    const weights = centroidLineWeights
+    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1]))
+    const sortedValues = sort(R.flatten(centroidLineWeights)) // This is quick and dirty. Probably want top 40% per zone rather than overall
+    const centroidBounds =
+        [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+    const weights = centroidLineWeights.map(x=>x.map(
+        d3.scaleLinear(centroidBounds, [0, 1]).clamp(true)))
 
     const centroidLines = []
-    zoneCentres.forEach((dest, index) => {
-        const destPoint = turf.point(dest)
-        const getPos = x => x.geometry.coordinates
 
-        let props = {
-            opacity: weights[index],
-            weight: 2.5 * weights[index],
-        }
-        if (props.weight > 10) props.weight = 10
+    for (const [origIndex, originPoint] of originPoints.entries()) {
+        zoneCentres.forEach((dest, index) => {
+            const destPoint = turf.point(dest)
+            const getPos = x => x.geometry.coordinates
 
-        let cline = turf.greatCircle(
-            getPos(originPoint),
-            getPos(destPoint),
-            {properties: props}
-        )
+            let props = {
+                opacity: weights[origIndex][index],
+                weight: 2.5 * weights[origIndex][index],
+            }
+            if (props.weight > 10) props.weight = 10
 
-        centroidLines.push(cline)
-    })
+            let cline = turf.greatCircle(
+                getPos(originPoint),
+                getPos(destPoint),
+                {properties: props}
+            )
+
+            centroidLines.push(cline)
+        })
+    }
 
     // Draw little circles on selected zones
     // This should really be another layer but I'm feeling lazy
