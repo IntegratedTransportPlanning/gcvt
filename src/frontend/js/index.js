@@ -958,7 +958,7 @@ const menuView = state => {
                 ),
             ),
 
-            (state.showDesc || state.showLinkHelp || state.showMatHelp) && m('div', {style: 'position: absolute; top: 0'},
+            (state.showDesc || state.showLinkHelp || state.showMatHelp) && m('div', {style: 'position: absolute; top: 0; font-size: small;'},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
                     [
                         state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || "")),
