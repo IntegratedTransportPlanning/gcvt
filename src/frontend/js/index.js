@@ -649,12 +649,11 @@ const { update, states, actions } =
 
     map.on('mousemove', 'zones', event => {
         update(state => {
-            const percent = false
             const layer = state.layers.od_matrices
             const {NAME, fid} = event.features[0].properties
             const value =
-                numberToHuman(layer.values[fid - 1], percent) +
-                (percent ? "" : " ") +
+                numberToHuman(layer.values[fid - 1], state.compare && state.percent) +
+                (state.compare && state.percent ? "" : " ") +
                 layer.unit
 
             return merge(state, {
