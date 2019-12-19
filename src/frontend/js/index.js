@@ -1127,8 +1127,8 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
             const getPos = x => x.geometry.coordinates
 
             let props = {
-                opacity: weights[origIndex][index],
-                weight: 2.5 * weights[origIndex][index],
+                opacity: Math.min(5 * weights[origIndex][index],1),
+                weight: 5 * weights[origIndex][index],
             }
             if (props.weight > 10) props.weight = 10
 
