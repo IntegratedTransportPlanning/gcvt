@@ -485,7 +485,7 @@ const app = {
                     })
                 } else if (percent) {
                     values = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
-                    bounds = [.5, 1.5]
+                    bounds = [.75, 1.25]
                 } else {
                     // TODO: We should probably not be defining default quantile assumptions on both server and client.
                     const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
