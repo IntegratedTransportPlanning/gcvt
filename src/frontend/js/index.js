@@ -951,6 +951,8 @@ const menuView = state => {
                             meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
                         ),
 
+                        state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
+
                         state.selectedZones.length !== 0 && [
                             m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', arrayToHumanList(state.selectedZones.map(id => zoneToHuman(id,state))), ' (deselect? ',
                                 m('input', {
