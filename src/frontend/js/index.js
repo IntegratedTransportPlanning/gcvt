@@ -104,6 +104,7 @@ const DEFAULTS = {
     showLinkHelp: false,
     showClines: true,
     showChart: false,
+    desiredLTypes: [],
     selectedZones: [],
     zoneNames: [],
     mapUI: {
@@ -132,7 +133,7 @@ function stateFromSearch(search) {
     }
 
     // Arrays in the querty string
-    for (let k of ["selectedZones"]) {
+    for (let k of ["selectedZones","desiredLTypes"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
         }
@@ -360,6 +361,10 @@ const app = {
                 update({percent})
                 actions.fetchAllLayers()
             },
+            setLTypes: LTypes => {
+                update({desiredLTypes: LTypes})
+                actions.fetchLayerData("links")
+            },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
                     await Promise.all([
@@ -530,7 +535,7 @@ const app = {
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
             const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
-            const arrays_in_query = ["selectedZones"]
+            const arrays_in_query = ["selectedZones", "desiredLTypes"]
 
             const updateQS = () => {
                 const queryItems = [
@@ -626,6 +631,7 @@ const { update, states, actions } =
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
+                    if (!R.includes(state.desiredLTypes,state.LTypes[id])) return;
                     let str = ""
                     let value = state.layers.links.values[id]
                     if (value === null)
@@ -687,6 +693,7 @@ const { update, states, actions } =
                     }
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
+                    if (!R.includes(state.desiredLTypes,state.LTypes[id])) return;
                     let value = state.layers.links.values[id]
                     let str
                     if (value === null)
@@ -919,6 +926,13 @@ const menuView = state => {
                             m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
                             meta2options(state.meta.links, state.layers.links.variable)
                         ),
+                        state.layers.links.variable && m('select', {
+                            name: 'link_type',
+                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [parseInt(e.target.value)]),
+                        },
+                            m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
+                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k-1]),[1,2,3,4])
+                        ),
 
                         m('label', {for: 'matrix_variable'}, "Zones (help? ",
                             m('input', {name: 'showMatHelp', type:"checkbox", checked:state.showMatHelp, onchange: e => update({showMatHelp: e.target.checked})}),
@@ -1063,6 +1077,16 @@ function setLinkColours(nums, colour,weights) {
     //     0, 0,
     //     /* fallback */ .8
     // ])
+
+    if (!R.equals(states().desiredLTypes, [])) {
+        const opacities = states().LTypes.map(x => {
+            return R.includes(x,states().desiredLTypes) ? 1 : 0
+        })
+        map.setPaintProperty("links", "line-opacity", atId(opacities))
+    } else {
+        map.setPaintProperty("links", "line-opacity", 1)
+    }
+
     map.setPaintProperty("links", "line-width", atId(weights))
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
