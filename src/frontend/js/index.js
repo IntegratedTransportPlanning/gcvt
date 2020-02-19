@@ -459,7 +459,8 @@ const app = {
                 const percent = compare && state.percent
                 let bounds, values
 
-                const dir = meta[domain][variable]["good"]
+                const dir = state.compare ? meta[domain][variable]["good"] :
+                    meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
