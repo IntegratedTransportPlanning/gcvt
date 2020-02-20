@@ -1055,7 +1055,7 @@ function setColours(nums, colour) {
 function setLinkColours(nums, colour,weights) {
     const colours = nums.map(colour)
 
-    let bounds = [d3.quantile(sort(weights),0.1),d3.quantile(sort(weights),0.9)]
+    let bounds = [d3.quantile(sort(weights),0.005),d3.quantile(sort(weights),0.995)]
 
     const COMPARE_MODE = states().compare // This is not kosher
 
@@ -1065,12 +1065,13 @@ function setLinkColours(nums, colour,weights) {
     }
 
     // TODO: make this optional
+    const magic_multiplier = 0.1 // Multiplier to make tuning thickness of all lines together easier
     weights = weights ? normalise(weights,bounds,"bigger").map(x=>
-        Math.max( // Set minimum width to 0.1
-            0.1,
+        Math.max( // Set minimum width
+            0.1*magic_multiplier,
             nerf( // Squash outliers into [0,1]
                 COMPARE_MODE ? Math.abs(x-0.5) : x // if comparison, x=0.5 is boring, want to see x=0,1; otherwise x=0 is dull, want to see x=1
-            )*3 // Max width of 3
+            )*3*magic_multiplier
         )
     ) : nums.map(x=>1.5) // if weights isn't given, default to 1.5 for everything
 
@@ -1090,7 +1091,14 @@ function setLinkColours(nums, colour,weights) {
         map.setPaintProperty("links", "line-opacity", 1)
     }
 
-    map.setPaintProperty("links", "line-width", atId(weights))
+    // Adapted from https://github.com/mapbox/mapbox-gl-js/issues/5861#issuecomment-352033339
+    map.setPaintProperty("links", "line-width", [
+        'interpolate',
+        ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
+        ['zoom'],
+        1, ["*", atId(weights), ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
+        14, ["*", atId(weights), ["^", 2, 8]]
+    ])
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
     map.setPaintProperty('links','line-offset', ['interpolate',
