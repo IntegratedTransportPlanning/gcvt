@@ -632,7 +632,7 @@ const { update, states, actions } =
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    if (!R.includes(state.desiredLTypes,state.LTypes[id])) return;
+                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes)) return;
                     let str = ""
                     let value = state.layers.links.values[id]
                     if (value === null)
@@ -694,7 +694,7 @@ const { update, states, actions } =
                     }
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
-                    if (!R.includes(state.desiredLTypes,state.LTypes[id])) return;
+                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes)) return;
                     let value = state.layers.links.values[id]
                     let str
                     if (value === null)
