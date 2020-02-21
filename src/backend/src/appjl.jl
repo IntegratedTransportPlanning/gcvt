@@ -108,7 +108,7 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     return collect(flatten(result))
 end
 
-@memoize function var_stats(domain,variable,quantiles=(0,1))
+@memoize function var_stats(domain,variable,quantiles=(0,1),percent=false)
     # dims = 2 sums rows; dims = 1 sums cols
     vars = []
     if domain == "od_matrices"
@@ -116,8 +116,15 @@ end
     elseif domain == "links"
         vars = [get(v,Symbol(variable),[]) for (k,v) in links]
     end
+
+    diff = percent ? 
+        (l,r) -> begin # Percentage difference
+            eps = mean(sum(vars[l], dims = 2)) / 10000
+            result = (sum(vars[l], dims = 2) .+ eps) ./ (sum(vars[r], dims = 2) .+ eps)
+        end :
+        (l,r) -> vars[l] .- vars[r] # Absolute difference
     # Sample arrays because it's slow
-    vcat([rand(vars[a].-vars[b],10000) for (a,b) in product(1:length(mats),1:length(mats))]...) |>
+    vcat([rand(diff(a,b),10000) for (a,b) in product(1:length(mats),1:length(mats))]...) |>
         flatten |>
         x -> quantile(x,quantiles)
 end
@@ -138,12 +145,14 @@ println("Warming up the cache: links")
 @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["links"]["columns"]))
     # get these quantiles from colourMap in index.js
     var_stats("links",variable,(0.1,0.9))
+    var_stats("links",variable,(0.05,0.95),true)
 end
 
 println("Warming up the cache: matrices")
 @showprogress for variable in keys(filter((k,v) -> get(v,"use",true), metadata["od_matrices"]["columns"]))
     # get these quantiles from colourMap in index.js
     var_stats("od_matrices",variable,(0.0001,0.9999))
+    var_stats("od_matrices",variable,(0.05,0.95),true)
 end
 
 route("/scenarios") do
@@ -174,7 +183,7 @@ route("/stats") do
     d = merge(defaults, getpayload())
     quantiles = parse.(Float64,split(d[:quantiles],","))
     if d[:domain] in ["od_matrices", "links"]
-        d[:comparewith] != "none" && return var_stats(d[:domain],d[:variable],Tuple(quantiles)) |> json
+        d[:comparewith] != "none" && return var_stats(d[:domain],d[:variable],Tuple(quantiles),d[:percent]=="true") |> json
         # TODO: If metadata holds the quantiles return them here below
         return var_stats_1d(d[:domain],d[:variable],Tuple(quantiles)) |> json
     else

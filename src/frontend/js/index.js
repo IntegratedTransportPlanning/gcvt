@@ -489,23 +489,35 @@ const app = {
                             }
                         }
                     })
-                } else if (percent) {
-                    values = await getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
-                    bounds = [.75, 1.25]
                 } else {
                     // TODO: We should probably not be defining default quantile assumptions on both server and client.
-                    const qs = domain == "od_matrices" ? [0.0001,0.9999] : [0.1,0.9]
+                    const qs = domain == "od_matrices" ? 
+                        percent ?
+                            [0.05,0.95] :
+                            [0.0001,0.9999] :
+                        percent ?
+                            [0.05,0.95] :
+                            [0.1,0.9]
 
                     // Quantiles should be overridden by metadata
                     ;[bounds, values] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
-                        getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                        getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent),
                         getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
                     ])
+                    console.log(bounds)
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
-                        const maxb = Math.max(...(bounds.map(Math.abs)))
-                        bounds = [-maxb,maxb]
+                        // For percent diffs, we want 1 to always be the midpoint.
+                        // TODO: consider non-linear scale for percent with 0 hard-coded as lower bound
+                        const maxb = percent ? 
+                            R.pipe(R.map(                   // For each element in the list
+                                R.pipe(R.add(-1),Math.abs)  // Take off 1 and find the absolute
+                            ), R.reduce(R.max, -Infinity),  // Find the maximum value in the list
+                            )(bounds) :
+                            Math.max(...(bounds.map(Math.abs)))
+                        bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
+                        console.log(bounds)
                     }
                 }
 
