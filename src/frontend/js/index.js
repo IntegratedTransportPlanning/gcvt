@@ -463,6 +463,8 @@ const app = {
                     meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
+                const basevalues = await getData("data?domain="+domain+"&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=none")
+
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     values = await getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones) // Compare currently unused
 
@@ -522,6 +524,7 @@ const app = {
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer({
                     values,
+                    basevalues,
                     bounds,
                     dir,
                     // In an array otherwise it gets executed by the patch func
@@ -977,6 +980,33 @@ const menuView = state => {
                                 m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => actions.toggleCentroids(e.target.checked)}),
                             ),
                         ],
+
+                        // Summary statistics for zones
+                        // TODO: 
+                        //          - fix bug where if page is entered with zones selected, this does not show
+                        //          - show differences if compare is selected
+                        state.layers.od_matrices.variable !== "" && state.layers.od_matrices.basevalues && [
+                            m('br'), m('p',
+                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + R.pipe(R.mean,numberToHuman)(
+                                    state.selectedZones.length > 0 ?
+                                    R.pipe(R.pickAll,R.values)(
+                                        state.selectedZones, state.layers.od_matrices.basevalues
+                                    ) : 
+                                    state.layers.od_matrices.basevalues
+                                ).replace(/^\+/,"") +
+                                    " " + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, false)
+                            ), state.selectedZones.length !== 1 && m('p',
+                                "Total value: " + R.pipe(R.sum,numberToHuman)(
+                                    state.selectedZones.length > 0 ?
+                                    R.pipe(R.pickAll,R.values)(
+                                        state.selectedZones, state.layers.od_matrices.basevalues
+                                    ) : 
+                                    state.layers.od_matrices.basevalues
+                                ).replace(/^\+/,"") +
+                                    " " + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, false)
+                            )
+                        ],
+
                     ],
                 ),
             ),
