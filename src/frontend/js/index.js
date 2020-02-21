@@ -1064,26 +1064,56 @@ function setColours(nums, colour) {
 
 function setLinkColours(nums, colour,weights) {
     const colours = nums.map(colour)
+    const state = states() // This is not kosher
 
-    let bounds = [d3.quantile(sort(weights),0.005),d3.quantile(sort(weights),0.995)]
-
-    const COMPARE_MODE = states().compare // This is not kosher
-
-    if (COMPARE_MODE) {
-        const b = Math.max(...bounds.map(x=>Math.abs(x)))
-        bounds = [-b,b]
-    }
-
-    // TODO: make this optional
     const magic_multiplier = 0.1 // Multiplier to make tuning thickness of all lines together easier
-    weights = weights ? normalise(weights,bounds,"bigger").map(x=>
-        Math.max( // Set minimum width
-            0.1*magic_multiplier,
-            nerf( // Squash outliers into [0,1]
-                COMPARE_MODE ? Math.abs(x-0.5) : x // if comparison, x=0.5 is boring, want to see x=0,1; otherwise x=0 is dull, want to see x=1
-            )*3*magic_multiplier
-        )
-    ) : nums.map(x=>1.5) // if weights isn't given, default to 1.5 for everything
+    if (!state.percent && state.meta.links[state.layers.links.variable].thickness !== "const") { // TODO: fix this so it looks good enough to use for percentages (10x decrease should be about as obvious as 10x increase)
+        let [q1, q2] = state.compare ? 
+            state.percent ? 
+                [0.15, 0.85] :
+                [0.01, 0.99] :
+            [0.001, 0.999]
+        let bounds = [d3.quantile(sort(weights),q1),d3.quantile(sort(weights),q2)]
+
+        const COMPARE_MODE = state.compare
+        const percent = state.percent
+
+        if (COMPARE_MODE) {
+            const maxb = percent ? 
+                R.pipe(R.map(                   // For each element in the list
+                    R.pipe(R.add(-1),Math.abs)  // Take off 1 and find the absolute
+                ), R.reduce(R.max, -Infinity),  // Find the maximum value in the list
+                )(bounds) :
+                Math.max(...(bounds.map(Math.abs)))
+            bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
+        }
+
+        // TODO: make this optional
+        weights = weights ? normalise(weights,bounds,"bigger").map(x=>
+            Math.max( // Set minimum width
+                0.1*magic_multiplier,
+                nerf( // Squash outliers into [0,1]
+                    COMPARE_MODE ? Math.abs(x-0.5) : x // if comparison, x=0.5 is boring, want to see x=0,1; otherwise x=0 is dull, want to see x=1
+                )*5*magic_multiplier
+            )
+        ) : nums.map(x=>1.5) // if weights isn't given, default to 1.5 for everything
+        // Adapted from https://github.com/mapbox/mapbox-gl-js/issues/5861#issuecomment-352033339
+        map.setPaintProperty("links", "line-width", [
+            'interpolate',
+            ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
+            ['zoom'],
+            1, ["*", atId(weights), ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
+            14, ["*", atId(weights), ["^", 2, 8]]
+        ])
+    } else {
+        map.setPaintProperty("links", "line-width", [
+            'interpolate',
+            ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
+            ['zoom'],
+            1, ["*", 1*magic_multiplier, ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
+            14, ["*", 1*magic_multiplier, ["^", 2, 8]]
+        ])
+    }
 
     // This doesn't work for some reason.
     // map.setPaintProperty("links", "line-opacity", [
@@ -1092,23 +1122,15 @@ function setLinkColours(nums, colour,weights) {
     //     /* fallback */ .8
     // ])
 
-    if (!R.equals(states().desiredLTypes, [])) {
-        const opacities = states().LTypes.map(x => {
-            return R.includes(x,states().desiredLTypes) ? 1 : 0
+    if (!R.equals(state.desiredLTypes, [])) {
+        const opacities = state.LTypes.map(x => {
+            return R.includes(x,state.desiredLTypes) ? 1 : 0
         })
         map.setPaintProperty("links", "line-opacity", atId(opacities))
     } else {
         map.setPaintProperty("links", "line-opacity", 1)
     }
 
-    // Adapted from https://github.com/mapbox/mapbox-gl-js/issues/5861#issuecomment-352033339
-    map.setPaintProperty("links", "line-width", [
-        'interpolate',
-        ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
-        ['zoom'],
-        1, ["*", atId(weights), ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
-        14, ["*", atId(weights), ["^", 2, 8]]
-    ])
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
     map.setPaintProperty('links','line-offset', ['interpolate',
