@@ -505,7 +505,6 @@ const app = {
                         getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent),
                         getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
                     ])
-                    console.log(bounds)
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
                         // For percent diffs, we want 1 to always be the midpoint.
@@ -517,7 +516,6 @@ const app = {
                             )(bounds) :
                             Math.max(...(bounds.map(Math.abs)))
                         bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
-                        console.log(bounds)
                     }
                 }
 
