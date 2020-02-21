@@ -463,6 +463,8 @@ const app = {
                     meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
+                let palette_override
+
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     values = await getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones) // Compare currently unused
 
@@ -515,15 +517,35 @@ const app = {
                             ), R.reduce(R.max, -Infinity),  // Find the maximum value in the list
                             )(bounds) :
                             Math.max(...(bounds.map(Math.abs)))
-                        bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
+                        const proposed_bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
+
+                        // Override palette if bounds are all on the same side of the midpoint
+                        // NB: this never occurs in practice 
+                        //      - obviously (in hindsight...) the bounds are going to be almost symmetric 
+                        //      as we allow selected and base scenario to be swapped
+                        //  I think the only option with this is to use different bounds for each scenario pair
+
+                        const desired_midpoint = percent ? 1 : 0
+                        if (R.all(R.lt(desired_midpoint))(proposed_bounds)) {
+                            palette_override = dir == "bigger" ? // If the good direction is bigger,
+                                continuousPalette("PRGn") :      // We're all less than the midpoint so we want bad colours
+                                continuousPalette("RdBu")        // otherwise we want good colours
+                        } else if (R.all(R.gt(desired_midpoint))(proposed_bounds)) {
+                            palette_override = dir == "smaller" ?
+                                continuousPalette("PRGn") :
+                                continuousPalette("RdBu")
+                        } else {
+                            bounds = proposed_bounds
+                        }
                     }
                 }
 
+                // Palette can be overridden for comparisons if the bounds are too extreme
                 const palette = d3.scaleSequential(
                     dir == "smaller" ? R.reverse(bounds) : bounds,
-                    getPalette(meta[domain][variable].palette, compare)
+                    palette_override === undefined ? getPalette(meta[domain][variable].palette, compare) : palette_override
                 )
-
+                console.log(palette)
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer({
                     values,
