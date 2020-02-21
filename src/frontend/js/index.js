@@ -509,13 +509,8 @@ const app = {
                         // For abs diffs, we want 0 to always be the midpoint.
                         // For percent diffs, we want 1 to always be the midpoint.
                         // TODO: consider non-linear scale for percent with 0 hard-coded as lower bound
-                        const maxb = percent ? 
-                            R.pipe(R.map(                   // For each element in the list
-                                R.pipe(R.add(-1),Math.abs)  // Take off 1 and find the absolute
-                            ), R.reduce(R.max, -Infinity),  // Find the maximum value in the list
-                            )(bounds) :
-                            Math.max(...(bounds.map(Math.abs)))
-                        bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
+                        const maxb = Math.max(...(bounds.map(Math.abs)))
+                        bounds = [-maxb,maxb]
                     }
                 }
 
@@ -1079,13 +1074,8 @@ function setLinkColours(nums, colour,weights) {
         const percent = state.percent
 
         if (COMPARE_MODE) {
-            const maxb = percent ? 
-                R.pipe(R.map(                   // For each element in the list
-                    R.pipe(R.add(-1),Math.abs)  // Take off 1 and find the absolute
-                ), R.reduce(R.max, -Infinity),  // Find the maximum value in the list
-                )(bounds) :
-                Math.max(...(bounds.map(Math.abs)))
-            bounds = R.map(R.ifElse(x=>percent, R.inc, R.identity), [-maxb,maxb])
+            const maxb = Math.max(...(bounds.map(Math.abs)))
+            bounds = [-maxb,maxb]
         }
 
         // TODO: make this optional

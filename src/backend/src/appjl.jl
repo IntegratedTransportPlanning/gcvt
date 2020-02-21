@@ -100,7 +100,7 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     if percent
         # Avoid NaN from dividing by zero.
         eps = mean(sum(main, dims = 2)) / 10000
-        result = (sum(main, dims = 2) .+ eps) ./ (sum(comparator, dims = 2) .+ eps)
+        result = (sum(main, dims = 2) .+ eps) ./ (sum(comparator, dims = 2) .+ eps) .- 1
     else
         result = sum(main .- comparator, dims = 2)
     end
@@ -120,7 +120,7 @@ end
     diff = percent ? 
         (l,r) -> begin # Percentage difference
             eps = mean(sum(vars[l], dims = 2)) / 10000
-            result = (sum(vars[l], dims = 2) .+ eps) ./ (sum(vars[r], dims = 2) .+ eps)
+            result = (sum(vars[l], dims = 2) .+ eps) ./ (sum(vars[r], dims = 2) .+ eps) .- 1
         end :
         (l,r) -> vars[l] .- vars[r] # Absolute difference
     # Sample arrays because it's slow
