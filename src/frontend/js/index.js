@@ -75,9 +75,9 @@ const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
 // INITIAL STATE
 
 const DEFAULTS = {
-    lng: 33,
-    lat: 48,
-    zoom: 4,
+    lng: 29.6,
+    lat: 50.57,
+    zoom: 4.21,
     meta: {
         links: {},
         od_matrices: {},
@@ -85,23 +85,23 @@ const DEFAULTS = {
     },
     layers: {
         links: {
-            variable: "GHG_perKm",
+            variable: "V_total_pax",
         },
         od_matrices: {
-            variable: "Total_GHG",
+            variable: "",
         },
     },
     percent: true,
-    compare: true,
-    scenario: "GreenMax",
+    compare: false,
+    scenario: "TentRail",
     compareWith: "DoNothing",
-    scenarioYear: "2025",
+    scenarioYear: "2030",
     compareYear: "auto",
     showctrl: true,
     mapReady: false,
-    showDesc: false,
-    showMatHelp: false,
-    showLinkHelp: false,
+    showDesc: true,
+    showMatHelp: true,
+    showLinkHelp: true,
     showClines: true,
     showChart: false,
     desiredLTypes: [],
@@ -988,7 +988,7 @@ const menuView = state => {
             (state.showDesc || state.showLinkHelp || state.showMatHelp) && m('div', {style: 'position: absolute; top: 0; font-size: small;'},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
                     [
-                        state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || "")),
+                        state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
                         state.showLinkHelp && state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
                         state.showMatHelp && state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
                     ]
