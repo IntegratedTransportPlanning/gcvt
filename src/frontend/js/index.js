@@ -723,7 +723,8 @@ const { update, states, actions } =
 
 function numberToHuman(number,percent=false){
     number = percent ? number * 100 : number
-    return parseFloat(number.toPrecision(3)).toLocaleString()
+    const strnum = parseFloat(number.toPrecision(3)).toLocaleString()
+    return ((number >= 0 && states().compare) ? "+" : "") + strnum
 }
 
 /*
