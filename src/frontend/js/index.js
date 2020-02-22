@@ -652,12 +652,18 @@ const { update, states, actions } =
                         str = numberToHuman(value, state.compare && state.percent) +
                             (state.compare && state.percent ? "" : " ") +
                             getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
-                    return new mapboxgl.Popup({closeButton: false})
+                    const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&domain=links&variable=${state.layers.links.variable}&rows=${id+1}`
+                    const maxWidth = 400
+                    //TODO: consider adding link to open chart in new tab
+                    //m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
+                    return new mapboxgl.Popup({closeButton: false, maxWidth: maxWidth +"px"})
                         .setLngLat(event.lngLat)
                         .setHTML(
                             `ID: ${id}<br>
                             Link type: ${ltype}<br>
-                            ${str}`
+                            ${str}
+                            <iframe frameBorder=0 width="100%" height="100%" src=${chartURL + "&width=" + Math.round(maxWidth * 7/9) + "&height=160"}>
+                            `
                         )
                         .addTo(map)
                 },

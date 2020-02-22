@@ -56,6 +56,8 @@ const NUM_ZONES = zone_centroids |> length
 # This should probably be reloaded periodically so server doesn't need to be restarted?
 links, mats, metadata = load_scenarios(packdir)
 
+const NUM_LINKS = (links |> first)[2] |> size |> first
+
 # Get list of scenarios (scenario name, id, years active)
 list_scenarios() = metadata["scenarios"]
 
@@ -83,7 +85,15 @@ function mat_data(scenario, year, variable)
 end
 
 function link_data(scenario, year, variable)
-    links[(scenario, year)][Symbol(variable)]
+    try
+        links[(scenario, year)][Symbol(variable)]
+    catch e
+        if e isa KeyError
+            return ones(Missing,NUM_LINKS,NUM_LINKS)
+        else 
+            throw(e)
+        end
+    end
 end
 
 # Get colour to draw each shape for (scenario, year, variable, comparison scenario, comparison year) -> (colours)
@@ -317,7 +327,7 @@ end
 # Probably embed in an iframe
 route("/charts") do 
     defaults = Dict(
-        :domain => "od_matrices", # Unused
+        :domain => "od_matrices",
         :scenarios => "GreenMax,DoNothing", 
         :variable => "Total_GHG",
         :rows => "all", # Unused
@@ -328,7 +338,8 @@ route("/charts") do
     d[:rows] = d[:rows] == "all" ? Colon() : parse.(Int,split(d[:rows],","))
     years = 2020:5:2030
     df = DataFrame(year=String[],val=[],scenario=String[])
-    scenyear2dict(scenario,year) = Dict(:year => string(year), :scenario => get(metadata["scenarios"][scenario],"name",scenario), :val=>mat_data(scenario,year,d[:variable])[d[:rows],:]|>sum)
+    datafnc = d[:domain] == "links" ? link_data : mat_data
+    scenyear2dict(scenario,year) = Dict(:year => string(year), :scenario => get(metadata["scenarios"][scenario],"name",scenario), :val=>datafnc(scenario,year,d[:variable])[d[:rows],:]|>sum)
     for y in years
         for scenario in split(d[:scenarios],",")
             push!(df,scenyear2dict(scenario,y))
@@ -349,7 +360,7 @@ route("/charts") do
             legend={title=nothing},
         },
         x={:year,title="Year",type="temporal"},
-        y={:val,title=get(metadata["od_matrices"]["columns"][d[:variable]],"unit",d[:variable]),type="quantitative"},
+        y={:val,title=get(metadata[d[:domain]]["columns"][d[:variable]],"unit",d[:variable]),type="quantitative"},
     )
     vegalite_to_html(vl;width=width,height=height)
 end
