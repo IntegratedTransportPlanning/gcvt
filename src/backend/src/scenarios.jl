@@ -42,6 +42,7 @@ function get_metadata(links, packdir)
     default_meta = Dict(
         "good" => "smaller",
         "thickness" => "variable",
+        "statistics" => "hide",
     )
 
     for (k,v) in metadata["links"]["columns"]

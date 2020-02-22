@@ -985,7 +985,7 @@ const menuView = state => {
                         // TODO: 
                         //          - fix bug where if page is entered with zones selected, this does not show
                         //          - show differences if compare is selected
-                        state.layers.od_matrices.variable !== "" && state.layers.od_matrices.basevalues && [
+                        state.layers.od_matrices.variable !== "" && state.meta.od_matrices[state.layers.od_matrices.variable] && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show" && state.layers.od_matrices.basevalues && [
                             m('br'), m('p',
                                 (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + R.pipe(R.mean,numberToHuman)(
                                     state.selectedZones.length > 0 ?
