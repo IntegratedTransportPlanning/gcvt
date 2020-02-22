@@ -11,6 +11,10 @@ import {legend} from "./d3-color-legend"
 
 import {m, render} from 'mithril'
 
+import {Slider} from "polythene-mithril"
+
+import "polythene-css"
+
 import * as UI from 'construct-ui'
 
 import * as turf from "@turf/turf"
@@ -860,13 +864,14 @@ const menuView = state => {
                             m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
                             state.meta.scenarios[state.scenario] &&
                             state.meta.scenarios[state.scenario].at.length > 1 &&
-                            m('input', {
+                            m(Slider, {
                                 name: 'year',
-                                type:"range",
                                 ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
                                 value: state.scenarioYear,
-                                onchange: e =>
-                                    actions.updateScenario(state.scenario, e.target.value)
+                                ticks: true,
+                                pin: true,
+                                onchange: ({value}) =>
+                                    actions.updateScenario(state.scenario, value)
                             }),
                         ],
 
@@ -1059,8 +1064,9 @@ function arrayToHumanList(array){
 function getScenMinMaxStep(scenario){
     const min = scenario ? Math.min(...scenario.at) : 2020
     const max = scenario ? Math.max(...scenario.at) : 2030
+    const stepSize = scenario ? (max - min) / (scenario.at.length - 1) : 5
     const step = scenario ? (max - min) / (scenario.at.length - 1) : 5
-    return {min, max, step}
+    return {min, max, step, stepSize}
 }
 
 states.map(menuView)

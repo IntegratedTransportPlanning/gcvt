@@ -21,6 +21,8 @@
     "mithril": "^2.0.4",
     "mithril-n": "^1.0.1",
     "parcel": "^1.12.4",
+    "polythene-css": "^1.7.2",
+    "polythene-mithril": "^1.7.2",
     "ramda": "^0.26.1",
     "typescript": "^3.7.2"
   }
