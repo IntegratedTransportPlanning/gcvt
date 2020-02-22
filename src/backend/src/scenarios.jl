@@ -43,6 +43,7 @@ function get_metadata(links, packdir)
         "good" => "smaller",
         "thickness" => "variable",
         "statistics" => "hide",
+        "force_bounds" => [],
     )
 
     for (k,v) in metadata["links"]["columns"]
