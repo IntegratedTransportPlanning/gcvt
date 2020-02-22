@@ -457,16 +457,17 @@ const app = {
                 const {compare, compareYear, scenario, scenarioYear: year, meta} = state
                 const compareWith = compare ? state.compareWith : "none"
                 const percent = compare && state.percent
-                let bounds, values
+                let bounds, values, basevalues
 
                 const dir = state.compare ? meta[domain][variable]["good"] :
                     meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
-                const basevalues = await getData("data?domain="+domain+"&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=none")
-
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
-                    values = await getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones) // Compare currently unused
+                    ;[values, basevalues] = await Promise.all([
+                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
+                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                    ])
 
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
@@ -483,6 +484,7 @@ const app = {
                         layers: {
                             [domain]: {
                                 values,
+                                basevalues,
                                 bounds,
                                 dir,
                                 // In an array otherwise it gets executed by the patch func
@@ -502,10 +504,11 @@ const app = {
                             [0.1,0.9]
 
                     // Quantiles should be overridden by metadata
-                    ;[bounds, values] = await Promise.all([
+                    ;[bounds, values, basevalues] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
                         getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent),
                         getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
@@ -522,15 +525,14 @@ const app = {
                 )
 
                 // Race warning: This can race. Don't worry about it for now.
-                return updateLayer({
+                return updateLayer(R.merge({
                     values,
-                    basevalues,
                     bounds,
                     dir,
                     // In an array otherwise it gets executed by the patch func
                     palette: [palette],
                     unit,
-                })
+                }, basevalues ? {basevalues} : {}))
             },
         }
     },
