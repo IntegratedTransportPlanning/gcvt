@@ -160,6 +160,17 @@ function stateFromSearch(search) {
     return qsObj
 }
 
+function zones2summary(summariser, state) {
+    return R.pipe(summariser,x=>numberToHuman(x, state))(
+        state.selectedZones.length > 0 ?
+        R.pipe(R.pickAll,R.values)(
+            R.map(R.add(-1),state.selectedZones), state.layers.od_matrices.basevalues
+        ) : 
+        state.layers.od_matrices.basevalues
+    ) +
+        (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
+}
+
 const initial = (() => {
     const qsObj = stateFromSearch(window.location.search)
     return merge(DEFAULTS,qsObj)
@@ -995,23 +1006,9 @@ const menuView = state => {
                         //          - show differences if compare is selected
                         state.layers.od_matrices.variable !== "" && state.meta.od_matrices[state.layers.od_matrices.variable] && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show" && state.layers.od_matrices.basevalues && [
                             m('br'), m('p',
-                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + R.pipe(R.mean,x=>numberToHuman(x,state))(
-                                    state.selectedZones.length > 0 ?
-                                    R.pipe(R.pickAll,R.values)(
-                                        state.selectedZones, state.layers.od_matrices.basevalues
-                                    ) : 
-                                    state.layers.od_matrices.basevalues
-                                ) +
-                                    (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
+                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
                             ), state.selectedZones.length !== 1 && m('p',
-                                "Total value: " + R.pipe(R.sum,x=>numberToHuman(x,state))(
-                                    state.selectedZones.length > 0 ?
-                                    R.pipe(R.pickAll,R.values)(
-                                        state.selectedZones, state.layers.od_matrices.basevalues
-                                    ) : 
-                                    state.layers.od_matrices.basevalues
-                                ) +
-                                    (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
+                                "Total value: " + zones2summary(R.sum,state)
                             )
                         ],
 
