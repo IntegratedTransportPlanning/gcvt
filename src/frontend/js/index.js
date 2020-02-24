@@ -281,7 +281,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         actions.getCentres()
         await actions.getMeta()
         update({mapReady: true})
-        actions.fetchAllLayers()
+        actions.fetchAllLayers(states())
     }
 
     map.on('load', loadLayers)
@@ -313,19 +313,19 @@ const app = {
             changePosition: (lng, lat, zoom) => {
                 update({lng, lat, zoom})
             },
-            updateScenario: (scenario, scenarioYear) => {
-                update(state => {
+            updateScenario: (scenario, scenarioYear, state) => {
+                state = merge(state, update(state => {
                     scenarioYear = Number(scenarioYear)
                     const years = state.meta.scenarios[scenario]["at"] || [2030]
                     if (!years.includes(scenarioYear)){
                         scenarioYear = years[0]
                     }
                     return merge(state, {scenario, scenarioYear})
-                })
-                actions.fetchAllLayers()
+                }))
+                actions.fetchAllLayers(state)
             },
-            updateBaseScenario: ({scenario, year}) => {
-                update(state => {
+            updateBaseScenario: ({scenario, year}, state) => {
+                state = merge(state, update(state => {
                     scenario = R.defaultTo(state.compareWith, scenario)
                     year = R.defaultTo(state.compareYear, year)
 
@@ -342,28 +342,28 @@ const app = {
                         compareYear: year,
                         compareWith: scenario,
                     })
-                })
-                actions.fetchAllLayers()
+                }))
+                actions.fetchAllLayers(state)
             },
-            changeLayerVariable: (domain, variable) => {
-                update({layers: { [domain]: { variable }}})
-                actions.fetchLayerData(domain, states())
+            changeLayerVariable: (domain, variable, state) => {
+                state = merge(state, update({layers: { [domain]: { variable }}}))
+                actions.fetchLayerData(domain, state)
             },
-            setCompare: compare => {
-                update({
+            setCompare: (compare, state) => {
+                state = merge(state, update({
                     compare,
                     centroidLineWeights: null,
                     selectedZones: [],
-                })
-                actions.fetchAllLayers()
+                }))
+                actions.fetchAllLayers(state)
             },
-            setPercent: percent => {
-                update({percent})
-                actions.fetchAllLayers()
+            setPercent: (percent, state) => {
+                state = merge(state, update({percent}))
+                actions.fetchAllLayers(state)
             },
-            setLTypes: LTypes => {
-                update({desiredLTypes: LTypes})
-                actions.fetchLayerData("links", states())
+            setLTypes: (LTypes, state) => {
+                state = merge(state, update({desiredLTypes: LTypes}))
+                actions.fetchLayerData("links", state)
             },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
@@ -393,25 +393,33 @@ const app = {
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
             }),
-            fetchAllLayers: () => {
-                actions.fetchLayerData("links", states())
-                actions.fetchLayerData("od_matrices", states())
+            fetchAllLayers: ({
+                    compare, compareYear, scenario, scenarioYear, meta, selectedZones, compareWith, percent, layers
+            }) => {
+                actions.fetchLayerData("links", {
+                    compare, compareYear, scenario, scenarioYear, meta, selectedZones, compareWith, percent, layers
+                })
+                actions.fetchLayerData("od_matrices", {
+                    compare, compareYear, scenario, scenarioYear, meta, selectedZones, compareWith, percent, layers
+                })
             },
             toggleCentroids: showness => {
                 update({showClines: showness})
             },
-            clickZone: (event, selectedZones) => {
+            clickZone: (event, state) => {
                 const fid = event.features[0].properties.fid
                 const ctrlPressed = event.originalEvent.ctrlKey
+
+                let {selectedZones} = state
 
                 if (selectedZones.includes(fid)) {
                     selectedZones = ctrlPressed ? selectedZones.filter(x => x !== fid) : []
                 } else {
-                    selectedZones = ctrlPressed ? [...state.selectedZones, fid]: [fid]
+                    selectedZones = ctrlPressed ? [...selectedZones, fid]: [fid]
                 }
 
                 let oldcompare
-                update(
+                state = merge(state, update(
                 {
                     selectedZones,
                     compare: old => {
@@ -420,16 +428,16 @@ const app = {
                     },
                     // Clear existing centroids
                     centroidLineWeights: null,
-                })
+                }))
                 if (oldcompare) {
-                    actions.fetchAllLayers()
+                    actions.fetchAllLayers(state)
                 } else {
-                    actions.fetchLayerData("od_matrices", states())
+                    actions.fetchLayerData("od_matrices", state)
                 }
             },
             fetchLayerData: async (domain, {
                 compare, compareYear, scenario, scenarioYear: year, meta, selectedZones, compareWith, percent, layers // Unpack state object so we know what is used
-            })   => {
+            }) => {
 
                 const updateLayer = patch =>
                     update({
@@ -592,7 +600,7 @@ const app = {
 
             for (let layer of Object.keys(state.layers)) {
                 if (state.layers[layer] !== previousState.layers[layer]) {
-                    paint(layer, state.layers[layer])
+                    paint(layer, state.layers[layer], state)
                 }
             }
 
@@ -628,7 +636,7 @@ const { update, states, actions } =
     map.on("zoomend", positionUpdate)
 
     map.on('click', 'zones', event => (
-        (event, state) => actions.clickZone(event,state.selectedZones)
+        (event, state) => actions.clickZone(event,state)
     )(event,states())) // As below - need a tidier way of getting global state into this function
 
     map.on('click', 'links', async event => ((event, state) => {
@@ -849,7 +857,7 @@ const menuView = state => {
                         " )"),
                         m('select', {
                             name: 'scenario',
-                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
+                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state)
                         },
                             meta2options(state.meta.scenarios, state.scenario)
                         ),
@@ -864,7 +872,7 @@ const menuView = state => {
                                 ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
                                 value: state.scenarioYear,
                                 onchange: e =>
-                                    actions.updateScenario(state.scenario, e.target.value)
+                                    actions.updateScenario(state.scenario, e.target.value, state)
                             }),
                         ],
 
@@ -873,7 +881,7 @@ const menuView = state => {
                                 name: 'compare',
                                 type:"checkbox",
                                 checked: state.compare,
-                                onchange: e => actions.setCompare(e.target.checked),
+                                onchange: e => actions.setCompare(e.target.checked, state),
                             }),
                         ),
 
@@ -883,7 +891,7 @@ const menuView = state => {
                             m('select', {
                                 name: 'scenario',
                                 onchange: e =>
-                                    actions.updateBaseScenario({scenario: e.target.value})
+                                    actions.updateBaseScenario({scenario: e.target.value}, state)
                             },
                                 meta2options(state.meta.scenarios, state.compareWith)
                             ),
@@ -898,11 +906,11 @@ const menuView = state => {
                                         if (!e.target.checked) {
                                             actions.updateBaseScenario({
                                                 year: "auto",
-                                            })
+                                            }, state)
                                         } else {
                                             actions.updateBaseScenario({
                                                 year: state.scenarioYear,
-                                            })
+                                            }, state)
                                         }
                                     }}),
                             " )"),
@@ -918,7 +926,7 @@ const menuView = state => {
                                     value: state.compareYear,
                                     onchange: e => actions.updateBaseScenario({
                                         year: e.target.value,
-                                    })
+                                    }, state)
                                 }),
                             ],
                         ],
@@ -928,7 +936,7 @@ const menuView = state => {
                                 name: 'percent',
                                 type:"checkbox",
                                 checked: state.percent,
-                                onchange: e => actions.setPercent(e.target.checked),
+                                onchange: e => actions.setPercent(e.target.checked, state),
                             }),
                         ),
 
@@ -938,14 +946,14 @@ const menuView = state => {
                         " )"),
                         m('select', {
                             name: 'link_variable',
-                            onchange: e => actions.changeLayerVariable("links", e.target.value),
+                            onchange: e => actions.changeLayerVariable("links", e.target.value, state),
                         },
                             m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
                             meta2options(state.meta.links, state.layers.links.variable)
                         ),
                         state.layers.links.variable && m('select', {
                             name: 'link_type',
-                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [parseInt(e.target.value)]),
+                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [parseInt(e.target.value)], state),
                         },
                             m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
                             R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k-1]),[1,2,3,4])
@@ -961,7 +969,7 @@ const menuView = state => {
                         ),
                         m('select', {
                             name: 'matrix_variable',
-                            onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
+                            onchange: e => actions.changeLayerVariable("od_matrices", e.target.value, state),
                         },
                             m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
                             meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
@@ -1256,7 +1264,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.setLayoutProperty("centroidLines", "visibility", "visible")
 }
 
-function paint(domain, {variable, values, bounds, dir, palette}) {
+function paint(domain, {variable, values, bounds, dir, palette}, {compare, percent, meta, layers, desiredLTypes, LTypes}) {
     const mapLayers = {
         "od_matrices": "zones",
         "links": "links",
@@ -1267,7 +1275,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         if (domain == "od_matrices"){
             setColours(values, palette[0])
         } else {
-            setLinkColours(values, palette[0],values, states())
+            setLinkColours(values, palette[0],values, {compare, percent, meta, layers, desiredLTypes, LTypes})
         }
         map.setLayoutProperty(mapLayers[domain], "visibility", "visible")
     }
