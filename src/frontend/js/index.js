@@ -649,7 +649,7 @@ const { update, states, actions } =
                     if (value === null)
                         str = "No data"
                     else
-                        str = numberToHuman(value, state.compare && state.percent) +
+                        str = numberToHuman(value, state) +
                             (state.compare && state.percent ? "" : " ") +
                             getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
                     const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&domain=links&variable=${state.layers.links.variable}&rows=${id+1}`
@@ -676,7 +676,7 @@ const { update, states, actions } =
             const layer = state.layers.od_matrices
             const {NAME, fid} = event.features[0].properties
             const value =
-                numberToHuman(layer.values[fid - 1], state.compare && state.percent) +
+                numberToHuman(layer.values[fid - 1], state) +
                 (state.compare && state.percent ? "" : " ") +
                 layer.unit
 
@@ -717,7 +717,7 @@ const { update, states, actions } =
                     if (value === null)
                         str = "No data"
                     else
-                        str = numberToHuman(value, state.compare && state.percent) +
+                        str = numberToHuman(value, state) +
                             (state.compare && state.percent ? "" : " ") +
                             state.layers.links.unit
                     return new mapboxgl.Popup({closeButton: false})
@@ -733,10 +733,10 @@ const { update, states, actions } =
     })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
 }
 
-function numberToHuman(number,percent=false){
-    number = percent ? number * 100 : number
+function numberToHuman(number,{percent, compare}){
+    number = percent && compare ? number * 100 : number
     const strnum = parseFloat(number.toPrecision(3)).toLocaleString()
-    return ((number >= 0 && states().compare) ? "+" : "") + strnum
+    return ((number >= 0 && compare) ? "+" : "") + strnum
 }
 
 /*
@@ -992,27 +992,26 @@ const menuView = state => {
 
                         // Summary statistics for zones
                         // TODO: 
-                        //          - fix bug where if page is entered with zones selected, this does not show
                         //          - show differences if compare is selected
                         state.layers.od_matrices.variable !== "" && state.meta.od_matrices[state.layers.od_matrices.variable] && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show" && state.layers.od_matrices.basevalues && [
                             m('br'), m('p',
-                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + R.pipe(R.mean,numberToHuman)(
+                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + R.pipe(R.mean,x=>numberToHuman(x,state))(
                                     state.selectedZones.length > 0 ?
                                     R.pipe(R.pickAll,R.values)(
                                         state.selectedZones, state.layers.od_matrices.basevalues
                                     ) : 
                                     state.layers.od_matrices.basevalues
-                                ).replace(/^\+/,"") +
-                                    " " + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, false)
+                                ) +
+                                    (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
                             ), state.selectedZones.length !== 1 && m('p',
-                                "Total value: " + R.pipe(R.sum,numberToHuman)(
+                                "Total value: " + R.pipe(R.sum,x=>numberToHuman(x,state))(
                                     state.selectedZones.length > 0 ?
                                     R.pipe(R.pickAll,R.values)(
                                         state.selectedZones, state.layers.od_matrices.basevalues
                                     ) : 
                                     state.layers.od_matrices.basevalues
-                                ).replace(/^\+/,"") +
-                                    " " + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, false)
+                                ) +
+                                    (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
                             )
                         ],
 
