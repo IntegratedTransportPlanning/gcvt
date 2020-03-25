@@ -292,7 +292,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         actions.getCentres()
         await actions.getMeta()
         update({mapReady: true})
-        actions.fetchAllLayers()
+        actions.fetchAllLayers(states())
     }
 
     map.on('load', loadLayers)
@@ -324,19 +324,19 @@ const app = {
             changePosition: (lng, lat, zoom) => {
                 update({lng, lat, zoom})
             },
-            updateScenario: (scenario, scenarioYear) => {
-                update(state => {
+            updateScenario: (scenario, scenarioYear, state) => {
+                state = merge(state, update(state => {
                     scenarioYear = Number(scenarioYear)
                     const years = state.meta.scenarios[scenario]["at"] || [2030]
                     if (!years.includes(scenarioYear)){
                         scenarioYear = years[0]
                     }
                     return merge(state, {scenario, scenarioYear})
-                })
-                actions.fetchAllLayers()
+                }))
+                actions.fetchAllLayers(state)
             },
-            updateBaseScenario: ({scenario, year}) => {
-                update(state => {
+            updateBaseScenario: ({scenario, year}, state) => {
+                state = merge(state, update(state => {
                     scenario = R.defaultTo(state.compareWith, scenario)
                     year = R.defaultTo(state.compareYear, year)
 
@@ -353,28 +353,28 @@ const app = {
                         compareYear: year,
                         compareWith: scenario,
                     })
-                })
-                actions.fetchAllLayers()
+                }))
+                actions.fetchAllLayers(state)
             },
-            changeLayerVariable: (domain, variable) => {
-                update({layers: { [domain]: { variable }}})
-                actions.fetchLayerData(domain)
+            changeLayerVariable: (domain, variable, state) => {
+                state = merge(state, update({layers: { [domain]: { variable }}}))
+                actions.fetchLayerData(domain, state)
             },
-            setCompare: compare => {
-                update({
+            setCompare: (compare, state) => {
+                state = merge(state, update({
                     compare,
                     centroidLineWeights: null,
                     selectedZones: [],
-                })
-                actions.fetchAllLayers()
+                }))
+                actions.fetchAllLayers(state)
             },
-            setPercent: percent => {
-                update({percent})
-                actions.fetchAllLayers()
+            setPercent: (percent, state) => {
+                state = merge(state, update({percent}))
+                actions.fetchAllLayers(state)
             },
-            setLTypes: LTypes => {
-                update({desiredLTypes: LTypes})
-                actions.fetchLayerData("links")
+            setLTypes: (LTypes, state) => {
+                state = merge(state, update({desiredLTypes: LTypes}))
+                actions.fetchLayerData("links", state)
             },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
@@ -404,28 +404,33 @@ const app = {
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
             }),
-            fetchAllLayers: () => {
-                actions.fetchLayerData("links")
-                actions.fetchLayerData("od_matrices")
+            fetchAllLayers: ({
+                    compare, compareYear, scenario, scenarioYear, meta, selectedZones, compareWith, percent, layers
+            }) => {
+                actions.fetchLayerData("links", {
+                    compare, compareYear, scenario, scenarioYear, meta, selectedZones, compareWith, percent, layers
+                })
+                actions.fetchLayerData("od_matrices", {
+                    compare, compareYear, scenario, scenarioYear, meta, selectedZones, compareWith, percent, layers
+                })
             },
             toggleCentroids: showness => {
                 update({showClines: showness})
             },
-            clickZone: event => {
-                const state = states()
+            clickZone: (event, state) => {
                 const fid = event.features[0].properties.fid
                 const ctrlPressed = event.originalEvent.ctrlKey
 
-                let selectedZones = state.selectedZones.slice()
+                let {selectedZones} = state
 
                 if (selectedZones.includes(fid)) {
                     selectedZones = ctrlPressed ? selectedZones.filter(x => x !== fid) : []
                 } else {
-                    selectedZones = ctrlPressed ? [...state.selectedZones, fid]: [fid]
+                    selectedZones = ctrlPressed ? [...selectedZones, fid]: [fid]
                 }
 
                 let oldcompare
-                update(
+                state = merge(state, update(
                 {
                     selectedZones,
                     compare: old => {
@@ -434,16 +439,16 @@ const app = {
                     },
                     // Clear existing centroids
                     centroidLineWeights: null,
-                })
+                }))
                 if (oldcompare) {
-                    actions.fetchAllLayers()
+                    actions.fetchAllLayers(state)
                 } else {
-                    actions.fetchLayerData("od_matrices")
+                    actions.fetchLayerData("od_matrices", state)
                 }
             },
-            fetchLayerData: async domain => {
-
-                const state = states()
+            fetchLayerData: async (domain, {
+                compare, compareYear, scenario, scenarioYear: year, meta, selectedZones, compareWith, percent, layers // Unpack state object so we know what is used
+            }) => {
 
                 const updateLayer = patch =>
                     update({
@@ -452,7 +457,7 @@ const app = {
                         }
                     })
 
-                const variable = state.layers[domain].variable
+                const variable = layers[domain].variable
 
                 if (!variable) {
                     return updateLayer({
@@ -465,18 +470,17 @@ const app = {
                 }
 
                 // Else fetch data
-                const {compare, compareYear, scenario, scenarioYear: year, meta} = state
-                const compareWith = compare ? state.compareWith : "none"
-                const percent = compare && state.percent
+                compareWith = compare ? compareWith : "none"
+                percent = compare && percent
                 let bounds, values, basevalues
 
-                const dir = state.compare ? meta[domain][variable]["good"] :
+                const dir = compare ? meta[domain][variable]["good"] :
                     meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
-                if (domain === "od_matrices" && state.selectedZones.length !== 0) {
+                if (domain === "od_matrices" && selectedZones.length !== 0) {
                     ;[values, basevalues] = await Promise.all([
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
+                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + selectedZones), // Compare currently unused
                         getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
 
@@ -484,7 +488,7 @@ const app = {
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
 
-                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
+                    const centroidLineWeights = await Promise.all(selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
                     const palette = d3.scaleSequential(
                         dir == "smaller" ? R.reverse(bounds) : bounds,
@@ -518,7 +522,7 @@ const app = {
                     // Quantiles should be overridden by metadata
                     ;[bounds, values, basevalues] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
-                        (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
+                        (compare || R.equals(meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : meta[domain][variable].force_bounds,
                         getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
                         domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
@@ -607,7 +611,7 @@ const app = {
 
             for (let layer of Object.keys(state.layers)) {
                 if (state.layers[layer] !== previousState.layers[layer]) {
-                    paint(layer, state.layers[layer])
+                    paint(layer, state.layers[layer], state)
                 }
             }
 
@@ -642,7 +646,9 @@ const { update, states, actions } =
     map.on("moveend", positionUpdate)
     map.on("zoomend", positionUpdate)
 
-    map.on('click', 'zones', actions.clickZone)
+    map.on('click', 'zones', event => (
+        (event, state) => actions.clickZone(event,state)
+    )(event,states())) // As below - need a tidier way of getting global state into this function
 
     map.on('click', 'links', async event => ((event, state) => {
         update({
@@ -862,7 +868,7 @@ const menuView = state => {
                         " )"),
                         m('select', {
                             name: 'scenario',
-                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
+                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear, state)
                         },
                             meta2options(state.meta.scenarios, state.scenario)
                         ),
@@ -877,7 +883,7 @@ const menuView = state => {
                                 ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
                                 value: state.scenarioYear,
                                 onchange: e =>
-                                    actions.updateScenario(state.scenario, e.target.value)
+                                    actions.updateScenario(state.scenario, e.target.value, state)
                             }),
                         ],
 
@@ -886,7 +892,7 @@ const menuView = state => {
                                 name: 'compare',
                                 type:"checkbox",
                                 checked: state.compare,
-                                onchange: e => actions.setCompare(e.target.checked),
+                                onchange: e => actions.setCompare(e.target.checked, state),
                             }),
                         ),
 
@@ -896,7 +902,7 @@ const menuView = state => {
                             m('select', {
                                 name: 'scenario',
                                 onchange: e =>
-                                    actions.updateBaseScenario({scenario: e.target.value})
+                                    actions.updateBaseScenario({scenario: e.target.value}, state)
                             },
                                 meta2options(state.meta.scenarios, state.compareWith)
                             ),
@@ -911,11 +917,11 @@ const menuView = state => {
                                         if (!e.target.checked) {
                                             actions.updateBaseScenario({
                                                 year: "auto",
-                                            })
+                                            }, state)
                                         } else {
                                             actions.updateBaseScenario({
                                                 year: state.scenarioYear,
-                                            })
+                                            }, state)
                                         }
                                     }}),
                             " )"),
@@ -931,7 +937,7 @@ const menuView = state => {
                                     value: state.compareYear,
                                     onchange: e => actions.updateBaseScenario({
                                         year: e.target.value,
-                                    })
+                                    }, state)
                                 }),
                             ],
                         ],
@@ -941,7 +947,7 @@ const menuView = state => {
                                 name: 'percent',
                                 type:"checkbox",
                                 checked: state.percent,
-                                onchange: e => actions.setPercent(e.target.checked),
+                                onchange: e => actions.setPercent(e.target.checked, state),
                             }),
                         ),
 
@@ -951,14 +957,14 @@ const menuView = state => {
                         " )"),
                         m('select', {
                             name: 'link_variable',
-                            onchange: e => actions.changeLayerVariable("links", e.target.value),
+                            onchange: e => actions.changeLayerVariable("links", e.target.value, state),
                         },
                             m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
                             meta2options(state.meta.links, state.layers.links.variable)
                         ),
                         state.layers.links.variable && m('select', {
                             name: 'link_type',
-                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [parseInt(e.target.value)]),
+                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [parseInt(e.target.value)], state),
                         },
                             m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
                             R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k-1]),[1,2,3,4])
@@ -974,7 +980,7 @@ const menuView = state => {
                         ),
                         m('select', {
                             name: 'matrix_variable',
-                            onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
+                            onchange: e => actions.changeLayerVariable("od_matrices", e.target.value, state),
                         },
                             m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
                             meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
@@ -993,7 +999,7 @@ const menuView = state => {
                                             selectedZones: [],
                                             centroidLineWeights: null,
                                         })
-                                        actions.fetchLayerData("od_matrices")
+                                        actions.fetchLayerData("od_matrices", state)
                                     }}),
                             ')'),
                             m('label', {for: 'show_clines'}, 'Flow lines: ',
@@ -1093,21 +1099,18 @@ function setColours(nums, colour) {
         ['to-color', atFid(colours)])
 }
 
-function setLinkColours(nums, colour,weights) {
+function setLinkColours(nums, colour, weights, {compare, percent, meta, layers, desiredLTypes, LTypes}) {
     const colours = nums.map(colour)
-    const state = states() // This is not kosher
-
     const magic_multiplier = 0.1 // Multiplier to make tuning thickness of all lines together easier
-    if (!state.percent && state.meta.links[state.layers.links.variable].thickness !== "const") { // TODO: fix this so it looks good enough to use for percentages (10x decrease should be about as obvious as 10x increase)
-        let [q1, q2] = state.compare ? 
-            state.percent ? 
+    if (!percent && meta.links[layers.links.variable].thickness !== "const") { // TODO: fix this so it looks good enough to use for percentages (10x decrease should be about as obvious as 10x increase)
+        let [q1, q2] = compare ? 
+            percent ? 
                 [0.15, 0.85] :
                 [0.01, 0.99] :
             [0.001, 0.999]
         let bounds = [d3.quantile(sort(weights),q1),d3.quantile(sort(weights),q2)]
 
-        const COMPARE_MODE = state.compare
-        const percent = state.percent
+        const COMPARE_MODE = compare
 
         if (COMPARE_MODE) {
             const maxb = Math.max(...(bounds.map(Math.abs)))
@@ -1148,9 +1151,9 @@ function setLinkColours(nums, colour,weights) {
     //     /* fallback */ .8
     // ])
 
-    if (!R.equals(state.desiredLTypes, [])) {
-        const opacities = state.LTypes.map(x => {
-            return R.includes(x,state.desiredLTypes) ? 1 : 0
+    if (!R.equals(desiredLTypes, [])) {
+        const opacities = LTypes.map(x => {
+            return R.includes(x,desiredLTypes) ? 1 : 0
         })
         map.setPaintProperty("links", "line-opacity", atId(opacities))
     } else {
@@ -1258,7 +1261,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.setLayoutProperty("centroidLines", "visibility", "visible")
 }
 
-function paint(domain, {variable, values, bounds, dir, palette}) {
+function paint(domain, {variable, values, bounds, dir, palette}, {compare, percent, meta, layers, desiredLTypes, LTypes}) {
     const mapLayers = {
         "od_matrices": "zones",
         "links": "links",
@@ -1269,7 +1272,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         if (domain == "od_matrices"){
             setColours(values, palette[0])
         } else {
-            setLinkColours(values, palette[0],values)
+            setLinkColours(values, palette[0],values, {compare, percent, meta, layers, desiredLTypes, LTypes})
         }
         map.setLayoutProperty(mapLayers[domain], "visibility", "visible")
     }
@@ -1290,12 +1293,10 @@ function getPalette(preferred, compare) {
     }
 }
 
-async function getDataFromId(id,domain="links"){
-    const state = states()
-    const variable = state.layers[domain].variable
-    log("state is ", state)
-    const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
-    const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
+async function getDataFromId(id, domain="links", {layers, scenarioYear, scenario} = states()){
+    const variable = layers[domain].variable
+    const percData = await getData("data?domain=" + domain + "&year="+ scenarioYear + "&variable=" + variable + "&scenario=" + scenario + "&percent=true")
+    const absData = await getData("data?domain=" + domain + "&year=" + scenarioYear + "&variable=" + variable + "&scenario=" + scenario + "&percent=false")
     return {absVal: absData[id], percVal: percData[id]}
 }
 
