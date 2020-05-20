@@ -147,18 +147,19 @@ write_sf(geom, path(pack_dir, "processed", "links.geojson"), delete_dsn = T, fid
 # RData.jl can read lists with nested tibbles and matrices, but not tibbles with nested tibbles and matrices.
 saveRDS(as.list(scenarios), path(pack_dir, "processed", "julia_compat_scenarios.Rds"))
 
-# Unnest the scenarios data so that it can be saved more sanely
-filter(scenarios, type == "links") %>%
-  select(-type) %>%
-  unnest(dataDF) %>%
-  saveRDS(path(pack_dir, "processed", "link_scenarios.Rds"))
-
-# Unnest matrices.
-filter(scenarios, type == "od_matrices") %>%
-  select(-type) %>%
-  rename(matrices = dataDF) %>%
-  as.list %>%
-  saveRDS(path(pack_dir, "processed", "od_matrices_scenarios.Rds"))
+## Other ways of saving the data for julia, but we don't use either of them any more.
+# # Unnest the scenarios data so that it can be saved more sanely
+# filter(scenarios, type == "links") %>%
+#   select(-type) %>%
+#   unnest(dataDF) %>%
+#   saveRDS(path(pack_dir, "processed", "link_scenarios.Rds"))
+#
+# # Unnest matrices.
+# filter(scenarios, type == "od_matrices") %>%
+#   select(-type) %>%
+#   rename(matrices = dataDF) %>%
+#   as.list %>%
+#   saveRDS(path(pack_dir, "processed", "od_matrices_scenarios.Rds"))
 
 ## Diff with the on disk data
 # current_scenarios = readRDS("data/sensitive/GCVT_Scenario_Pack/processed/scenarios.Rds")
