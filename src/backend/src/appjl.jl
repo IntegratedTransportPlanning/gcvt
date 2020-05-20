@@ -116,7 +116,6 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
 end
 
 @memoize function var_stats(domain,variable,quantiles=(0,1),percent=false)
-    # dims = 2 sums rows; dims = 1 sums cols
     vars = []
     if domain == "od_matrices"
         vars = [scen[variable] for scen in values(mats)]
@@ -124,16 +123,23 @@ end
         vars = [df[Symbol(variable)] for df in values(links)]
     end
 
-    diff = percent ? 
-        (l,r) -> begin # Percentage difference
-            eps = mean(sum(vars[l], dims = 2)) / 10000
-            result = (sum(vars[l], dims = 2) .+ eps) ./ (sum(vars[r], dims = 2) .+ eps) .- 1
-        end :
-        (l,r) -> vars[l] .- vars[r] # Absolute difference
-    # Sample arrays because it's slow
-    vcat([rand(diff(a,b),10000) for (a,b) in product(1:length(mats),1:length(mats))]...) |>
-        flatten |>
-        x -> quantile(x,quantiles)
+    # Choose what type of diff to calculate.
+    function percent_diff(l, r)
+        # dims = 2 sums rows; dims = 1 sums cols
+        eps = mean(sum(vars[l], dims = 2)) / 10000
+        result = (sum(vars[l], dims = 2) .+ eps) ./ (sum(vars[r], dims = 2) .+ eps) .- 1
+    end
+    function absolute_diff(l, r)
+        vars[l] .- vars[r]
+    end
+    diff = percent ? percent_diff : absolute_diff
+
+    # Sample the differences between the values of this variable for each pair
+    # of scenarios.
+    pairs = product(1:length(vars), 1:length(vars))
+    diffs = [rand(diff(a, b), 10000) for (a, b) in pairs]
+
+    return quantile(flatten(vcat(diffs...)), quantiles)
 end
 
 @memoize function var_stats_1d(domain,variable,quantiles=(0,1))
