@@ -8,7 +8,7 @@ library(reshape2)
 BASE_DIR = "./"
 # Where to read and write everything. Eg:
 # BASE_DIR = "/home/mark/gcvt-metadata/"
-source(paste(BASE_DIR, "src/metadata.R", sep = ""))
+source(paste(BASE_DIR, "src/data-preparation/metadata.R", sep = ""))
 
 # Return DF(name, year, type, dataDF)
 read_scenarios = function(pack_dir) {
@@ -17,7 +17,7 @@ read_scenarios = function(pack_dir) {
     for (tpath in dir_ls(spath)) {
       for (ypath in dir_ls(tpath)) {
         scenarios[nrow(scenarios) + 1,] = list(
-          basename(spath), basename(ypath) %>% path_ext_remove(), basename(tpath), list(read_csv(ypath)))
+          basename(spath), basename(ypath) %>% path_ext_remove() %>% as.integer(), basename(tpath), list(read_csv(ypath)))
       }
     }
   }
