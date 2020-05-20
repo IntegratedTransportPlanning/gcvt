@@ -31,8 +31,9 @@ Genie.config.session_auto_start = false
 # Default headers are supposed to go here, but they don't seem to work.
 #= Genie.config.cors_headers["Access-Control-Allow-Origin"] = "*" =#
 
+# Test route
 route("/") do
-    json("Hi there!")
+    json(Dict("Answer" => 42))
 end
 
 
