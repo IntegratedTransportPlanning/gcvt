@@ -25,5 +25,5 @@ pack:
 	Rscript ./src/data-preparation/process_pack_dir.R
 
 setupR:
-	echo "You need to source packrat/init.R and that will take ages."
-	echo "Then remove the comment in .Rprofile so that Rscript will use packrat"
+	# "You need to source packrat/init.R and run packrat::restore() in R and that will take ages."
+	# "Then remove the comment in .Rprofile so that Rscript will use packrat"
