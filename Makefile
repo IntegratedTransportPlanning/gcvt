@@ -25,5 +25,14 @@ pack:
 	Rscript ./src/data-preparation/process_pack_dir.R
 
 setupR:
-	# "You need to source packrat/init.R and run packrat::restore() in R and that will take ages."
-	# "Then remove the comment in .Rprofile so that Rscript will use packrat"
+	# You need to source packrat/init.R and run packrat::restore() in R and
+	# that will take ages as packrat builds approximately all of CRAN from
+	# source.
+	#
+	#     R
+	#     source("packrat/init.R")
+	#     packrat::restore()
+	#
+	# Then remove the comment in .Rprofile so that Rscript will use the
+	# libraries that have just been built. Try not to commit the change to
+	# .Rprofile.
