@@ -119,9 +119,9 @@ end
     # dims = 2 sums rows; dims = 1 sums cols
     vars = []
     if domain == "od_matrices"
-        vars = [get(v,variable,[]) for (k,v) in mats]
+        vars = [scen[variable] for scen in values(mats)]
     elseif domain == "links"
-        vars = [get(v,Symbol(variable),[]) for (k,v) in links]
+        vars = [df[Symbol(variable)] for df in values(links)]
     end
 
     diff = percent ? 
