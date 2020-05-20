@@ -13,13 +13,11 @@ using Memoize: @memoize
 using ProgressMeter: @showprogress
 
 using Base.Iterators: flatten, product
+using Statistics
 
 import HTTP
-
 import GeoJSON
-
 import Turf
-
 import VegaLite
 
 VegaLite.actionlinks(false) # Global setting - disable action button on all plots
@@ -28,8 +26,6 @@ VegaLite.actionlinks(false) # Global setting - disable action button on all plot
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
     Genie.Renderer.json(data; status = status, headers = Dict("Access-Control-Allow-Origin" => "*"))
-
-using Statistics
 
 Genie.config.session_auto_start = false
 # Default headers are supposed to go here, but they don't seem to work.
