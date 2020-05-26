@@ -236,7 +236,7 @@ route("/data") do
         end
     elseif d[:domain] == "links"
         if d[:comparewith] == "none"
-            sum(link_data(scenario, year, variable), dims = 2) |> Iterators.flatten |> collect |> json
+            link_data(scenario, year, variable) |> json
         else
             link_comp(scenario, year, variable, comparewith, compareyear, percent=percent) |> json
         end
