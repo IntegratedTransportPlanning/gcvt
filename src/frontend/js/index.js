@@ -1017,12 +1017,17 @@ const menuView = state => {
                         ],
 
                         // Summary statistics for zones
-                        // TODO: 
-                        //          - show differences if compare is selected
-                        state.layers.od_matrices.variable !== "" && state.meta.od_matrices[state.layers.od_matrices.variable] && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show" && state.layers.od_matrices.basevalues && [
-                            m('br'), m('p',
+                        state.layers.od_matrices.variable !== ""
+                        && state.meta.od_matrices[state.layers.od_matrices.variable]
+                        && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show"
+                        && state.layers.od_matrices.basevalues
+                        && [
+                            m('p',
                                 (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
-                            ), state.selectedZones.length !== 1 && m('p',
+                            ),
+                            !(state.compare && state.percent)
+                            && state.selectedZones.length !== 1
+                            && m('p',
                                 "Total value: " + zones2summary(R.sum,state)
                             )
                         ],
