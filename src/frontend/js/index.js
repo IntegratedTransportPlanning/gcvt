@@ -93,7 +93,7 @@ const DEFAULTS = {
     },
     percent: true,
     compare: false,
-    scenario: "TentRail",
+    scenario: "RailLogistics",
     compareWith: "DoNothing",
     scenarioYear: "2030",
     compareYear: "auto",

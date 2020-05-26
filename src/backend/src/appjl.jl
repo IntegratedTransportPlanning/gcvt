@@ -75,7 +75,7 @@ function mat_data(scenario, year, variable)
     catch e
         if e isa KeyError
             return ones(Missing,NUM_ZONES,NUM_ZONES)
-        else 
+        else
             throw(e)
         end
     end
@@ -87,7 +87,7 @@ function link_data(scenario, year, variable)
     catch e
         if e isa KeyError
             return ones(Missing,NUM_LINKS,NUM_LINKS)
-        else 
+        else
             throw(e)
         end
     end
@@ -183,9 +183,9 @@ route("/stats") do
     # Was removed this in ac81797 but is 'needed' below
     defaults = Dict(
         :domain => "od_matrices",
-        :scenario => "GreenMax",
+        :scenario => "Rail",
         :year => "2030",
-        :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
+        :comparewith => "DoMin",
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
@@ -209,9 +209,9 @@ end
 route("/data") do
     defaults = Dict(
         :domain => "od_matrices",
-        :scenario => "GreenMax",
+        :scenario => "Rail",
         :year => "2030",
-        :comparewith => "DoNothing", # Consider making comparison optional: show absolute level
+        :comparewith => "DoMin", # Consider making comparison optional: show absolute level
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
@@ -321,19 +321,19 @@ function vegalite_to_html(vl;title="Greener Connectivity Plot",width=200,height=
     """
 end
 
-# Todo: 
+# Todo:
 # resolve scenario etc to pretty name
 # don't hardcode years - use metadata
 # display units
 # sensible ticks for years
 #
 # Usage:
-# E.g. http://localhost:2016/api/charts?scenarios=GreenMax,Fleet,DoNothing&width=300&height=300
+# E.g. http://localhost:2016/api/charts?scenarios=Rail,Fleet,DoNothing&width=300&height=300
 # Probably embed in an iframe
-route("/charts") do 
+route("/charts") do
     defaults = Dict(
         :domain => "od_matrices",
-        :scenarios => "GreenMax,DoNothing", 
+        :scenarios => "Rail,DoMin",
         :variable => "Total_GHG",
         :rows => "all", # Unused
         :width => "200",
