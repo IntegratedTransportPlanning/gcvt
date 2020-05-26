@@ -150,7 +150,7 @@ end
     elseif domain == "links"
         vars = [get(v,Symbol(variable),[]) for (k,v) in links]
     end
-    vcat(vars...) |> Iterators.flatten |> x -> quantile(x,quantiles)
+    vcat(vars...) |> flatten |> x -> quantile(x,quantiles)
 end
 
 "Given a pair of variable_name => meta, return true if it should be used"
@@ -230,7 +230,7 @@ route("/data") do
             return sum([mat_data(scenario, year, variable)[row,:] for row in rows]) |> json
         end
         if d[:comparewith] == "none"
-            sum(mat_data(scenario, year, variable), dims = 2) |> Iterators.flatten |> collect |> json
+            reshape(sum(mat_data(scenario, year, variable), dims = 2), :) |> json
         else
             mat_comp(scenario, year, variable, comparewith, compareyear, percent=percent) |> json
         end
