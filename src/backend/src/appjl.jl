@@ -83,7 +83,7 @@ end
 
 function link_data(scenario, year, variable)
     try
-        links[(scenario, year)][Symbol(variable)]
+        links[(scenario, year)][!, Symbol(variable)]
     catch e
         if e isa KeyError
             return ones(Missing,NUM_LINKS,NUM_LINKS)
@@ -120,7 +120,7 @@ end
     if domain == "od_matrices"
         vars = [scen[variable] for scen in values(mats)]
     elseif domain == "links"
-        vars = [df[Symbol(variable)] for df in values(links)]
+        vars = [df[!, Symbol(variable)] for df in values(links)]
     end
 
     # Choose what type of diff to calculate.
