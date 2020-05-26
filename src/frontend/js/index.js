@@ -871,14 +871,29 @@ const menuView = state => {
                             m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
                             state.meta.scenarios[state.scenario] &&
                             state.meta.scenarios[state.scenario].at.length > 1 &&
-                            m('input', {
+                            m('select', {
                                 name: 'year',
-                                type:"range",
-                                ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
-                                value: state.scenarioYear,
-                                onchange: e =>
-                                    actions.updateScenario(state.scenario, e.target.value)
-                            }),
+                                onchange: e => actions.updateScenario(state.scenario, e.target.value)
+                            },
+                                sort(state.meta.scenarios[state.scenario].at).map(
+                                    year =>
+                                        m('option', {value: year, selected: year === state.scenarioYear}, year)
+                                ),
+                            ),
+                            // m(UI.InputSelect, {
+                            //     items: state.meta.scenarios[state.scenario].at.sort(),
+                            //     itemRender: year => m(UI.ListItem, { label: year, selected: year == state.scenarioYear }),
+                            //     onSelect: year => actions.updateScenario(state.scenario, year),
+                            // }),
+                            // m('input', {
+                            //     name: 'year',
+                            //     type:"range",
+                            //     ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
+                            //     // ...state.meta.scenarios[state.scenario].at.sort(),
+                            //     value: state.scenarioYear,
+                            //     onchange: e =>
+                            //         actions.updateScenario(state.scenario, e.target.value)
+                            // }),
                         ],
 
                         m('label', {for: 'compare'}, 'Compare with base: ',
