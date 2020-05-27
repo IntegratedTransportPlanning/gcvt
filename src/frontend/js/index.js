@@ -61,13 +61,13 @@ const divergingPalette = _ => d3.interpolateRdYlGn
 const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateViridis
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
-// These were guessed by comparing TEN-T Rail only with TEN-T road and rail
-const LTYPE_LOOKUP = [
-    "Inland waterway",
-    "Maritime",
-    "Rail",
-    "Road",
-]
+// This is a cludge: we should get this data from the metat.yaml somehow.
+const LTYPE_LOOKUP = {
+    "IWW": "Inland waterway",
+    "Maritime": "Maritime",
+    "Rail": "Rail",
+    "Road": "Road",
+}
 
 // e.g. [1,2] == [2,1]
 const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
@@ -653,7 +653,7 @@ const { update, states, actions } =
                     }
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
-                    let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
+                    let ltype = LTYPE_LOOKUP[state.LTypes[id]]
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes)) return;
                     let str = ""
                     let value = state.layers.links.values[id]
@@ -721,7 +721,7 @@ const { update, states, actions } =
                         oldpopup.remove()
                     }
                     let id = event.features[0].id
-                    let ltype = LTYPE_LOOKUP[state.LTypes[id] - 1]
+                    let ltype = LTYPE_LOOKUP[state.LTypes[id]]
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes)) return;
                     let value = state.layers.links.values[id]
                     let str
@@ -973,10 +973,10 @@ const menuView = state => {
                         ),
                         state.layers.links.variable && m('select', {
                             name: 'link_type',
-                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [parseInt(e.target.value)]),
+                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
                         },
                             m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
-                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k-1]),[1,2,3,4])
+                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k]), Object.keys(LTYPE_LOOKUP))
                         ),
 
                         m('label', {for: 'matrix_variable'}, "Zones (help? ",
