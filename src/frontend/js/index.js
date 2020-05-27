@@ -1153,6 +1153,12 @@ function setLinkColours(nums, colour,weights) {
             1, ["*", atId(weights), ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
             14, ["*", atId(weights), ["^", 2, 8]]
         ])
+        map.setPaintProperty('links','line-offset', ['interpolate',
+            ['exponential', 1.4],
+            ['zoom'],
+            5, ["*", atId(weights), ["^", 2, -6]],
+            14, ["*", atId(weights), ["^", 2, 8]]
+        ])
     } else {
         map.setPaintProperty("links", "line-width", [
             'interpolate',
@@ -1160,6 +1166,12 @@ function setLinkColours(nums, colour,weights) {
             ['zoom'],
             1, ["*", 1*magic_multiplier, ["^", 2, -6]],
             14, ["*", 1*magic_multiplier, ["^", 2, 8]]
+        ])
+        map.setPaintProperty('links','line-offset', ['interpolate',
+            ['exponential', 1.4],
+            ['zoom'],
+            5, ["*", .5 * magic_multiplier, ["^", 2, -6]],
+            14, ["*", magic_multiplier, ["^", 2, 8]]
         ])
     }
 
@@ -1181,12 +1193,6 @@ function setLinkColours(nums, colour,weights) {
 
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
-    map.setPaintProperty('links','line-offset', ['interpolate',
-        ['exponential', 1.4],
-        ['zoom'],
-        5, ["*", .5 * magic_multiplier, ["^", 2, -6]],
-        14, ["*", magic_multiplier, ["^", 2, 8]]
-    ])
 }
 
 
