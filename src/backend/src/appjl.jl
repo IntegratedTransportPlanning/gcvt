@@ -351,34 +351,50 @@ route("/charts") do
         :height => "200",
     )
     d = merge(defaults, getpayload())
-    d[:rows] = d[:rows] == "all" ? Colon() : parse.(Int,split(d[:rows],","))
-    years = 2020:5:2030
-    df = DataFrame(year=String[],val=[],scenario=String[])
+    d[:rows] = d[:rows] == "all" ? Colon() : parse.(Int, split(d[:rows], ","))
+
+    scenarios = split(d[:scenarios], ",")
+    # All years that any selected scenario has data for
+    years = sort(unique(vcat((metadata["scenarios"][s]["at"] for s in scenarios)...)))
+
     datafnc = d[:domain] == "links" ? link_data : mat_data
-    scenyear2dict(scenario,year) = Dict(:year => string(year), :scenario => get(metadata["scenarios"][scenario],"name",scenario), :val=>datafnc(scenario,year,d[:variable])[d[:rows],:]|>sum)
-    for y in years
-        for scenario in split(d[:scenarios],",")
-            push!(df,scenyear2dict(scenario,y))
+    df = DataFrame(year=String[], val=[], scenario=String[])
+    for year in years
+        for scenario in scenarios
+            value = sum(datafnc(scenario, year, d[:variable])[d[:rows], :])
+            scenario_name = get(metadata["scenarios"][scenario], "name", scenario)
+            push!(df, (year = string(year), val = value, scenario = scenario_name))
         end
     end
 
-    width=parse(Int,d[:width])
-    height=parse(Int,d[:height])
+    width = parse(Int, d[:width])
+    height = parse(Int, d[:height])
+    unit = get(metadata[d[:domain]]["columns"][d[:variable]], "unit", d[:variable])
     vl = df |> VegaLite.@vlplot(
-        width=width*0.5, # Awful heuristic - these control size of plot excluding legend, labels etc
-        height=height*0.5,
-        mark={
+        # Awful heuristic - these control size of plot excluding legend, labels etc
+        width = width * 0.5,
+        height = height * 0.5,
+
+        mark = {
             :line,
-            point={filled=false,fill=:white},
+            point = { filled = false,fill = :white },
         },
-        color={
+        color = {
             :scenario,
-            legend={title=nothing},
+            legend = {title = nothing},
         },
-        x={:year,title="Year",type="temporal"},
-        y={:val,title=get(metadata[d[:domain]]["columns"][d[:variable]],"unit",d[:variable]),type="quantitative"},
+        x = {
+            :year,
+            title = "Year",
+            type = "temporal"
+        },
+        y = {
+            :val,
+            title = unit,
+            type = "quantitative",
+        },
     )
-    vegalite_to_html(vl;width=width,height=height)
+    vegalite_to_html(vl; width=width, height=height)
 end
 
 Genie.AppServer.startup(parse(Int,get(ENV,"GENIE_PORT", "8000")),"0.0.0.0", async = false)
