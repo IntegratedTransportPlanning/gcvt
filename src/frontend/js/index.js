@@ -1123,17 +1123,13 @@ function setLinkColours(nums, colour,weights) {
     const colours = nums.map(colour)
     const state = states() // This is not kosher
 
-    const magic_multiplier = 0.1 // Multiplier to make tuning thickness of all lines together easier
-    if (!state.percent && state.meta.links[state.layers.links.variable].thickness !== "const") { // TODO: fix this so it looks good enough to use for percentages (10x decrease should be about as obvious as 10x increase)
-        let [q1, q2] = state.compare ? 
-            state.percent ? 
-                [0.15, 0.85] :
-                [0.01, 0.99] :
-            [0.001, 0.999]
-        let bounds = [d3.quantile(sort(weights),q1),d3.quantile(sort(weights),q2)]
+    const COMPARE_MODE = state.compare
+    const percent = state.percent && COMPARE_MODE
 
-        const COMPARE_MODE = state.compare
-        const percent = state.percent
+    const magic_multiplier = 0.1 // Multiplier to make tuning thickness of all lines together easier
+    if (!percent && state.meta.links[state.layers.links.variable].thickness !== "const") { // TODO: fix this so it looks good enough to use for percentages (10x decrease should be about as obvious as 10x increase)
+        let [q1, q2] = COMPARE_MODE ? [0.01, 0.99] : [0.001, 0.999]
+        let bounds = [d3.quantile(sort(weights),q1),d3.quantile(sort(weights),q2)]
 
         if (COMPARE_MODE) {
             const maxb = Math.max(...(bounds.map(Math.abs)))
