@@ -74,9 +74,10 @@ function mat_data(scenario, year, variable)
         mats[(scenario, year)][variable]
     catch e
         if e isa KeyError
-            return ones(Missing,NUM_ZONES,NUM_ZONES)
+            @warn e
+            return fill(missing, NUM_ZONES, NUM_ZONES)
         else
-            throw(e)
+            rethrow()
         end
     end
 end
@@ -86,9 +87,10 @@ function link_data(scenario, year, variable)
         links[(scenario, year)][!, Symbol(variable)]
     catch e
         if e isa KeyError
-            return ones(Missing,NUM_LINKS,NUM_LINKS)
+            @warn e
+            return fill(missing, NUM_LINKS)
         else
-            throw(e)
+            rethrow()
         end
     end
 end
