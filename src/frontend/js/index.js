@@ -1157,7 +1157,7 @@ function setLinkColours(nums, colour,weights) {
             ['exponential', 1.4],
             ['zoom'],
             5, ["*", atId(weights), ["^", 2, -6]],
-            14, ["*", atId(weights), ["^", 2, 7]]
+            14, ["*", .75, atId(weights), ["^", 2, 8]]
         ])
     } else {
         map.setPaintProperty("links", "line-width", [
@@ -1171,7 +1171,7 @@ function setLinkColours(nums, colour,weights) {
             ['exponential', 1.4],
             ['zoom'],
             5, ["*", .5 * magic_multiplier, ["^", 2, -6]],
-            14, ["*", magic_multiplier, ["^", 2, 7]]
+            14, ["*", .75 * magic_multiplier, ["^", 2, 8]]
         ])
     }
 
