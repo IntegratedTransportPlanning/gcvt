@@ -10,11 +10,11 @@ COPY . /julia-gcvt/
 
 WORKDIR julia-gcvt
 
-# Cache packages so subsequent runs are fairly speedy
-RUN julia setup.jl
-
 # Use pkg server for faster builds
 ENV JULIA_PKG_SERVER=pkg.julialang.org
+
+# Cache packages so subsequent runs are fairly speedy
+RUN julia setup.jl
 
 ARG GENIE_PORT=8000
 
