@@ -309,6 +309,10 @@ function vegalite_to_html(vl;title="Greener Connectivity Plot",width=200,height=
           <div id="gcvt-chart"></div>
         </body>
         <style media="screen">
+          body, #gcvt-chart {
+            padding: 0;
+            margin: 0;
+          }
           .vega-actions a {
             margin-right: 10px;
             font-family: sans-serif;
@@ -372,8 +376,8 @@ route("/charts") do
     unit = get(metadata[d[:domain]]["columns"][d[:variable]], "unit", d[:variable])
     vl = df |> VegaLite.@vlplot(
         # Awful heuristic - these control size of plot excluding legend, labels etc
-        width = width * 0.5,
-        height = height * 0.5,
+        width = width * .8,
+        height = height * .5,
 
         mark = {
             :line,
@@ -381,7 +385,10 @@ route("/charts") do
         },
         color = {
             :scenario,
-            legend = {title = nothing},
+            legend = {
+                title = nothing,
+                orient = width < 500 ? :bottom : :right,
+            },
         },
         x = {
             :year,
@@ -392,6 +399,10 @@ route("/charts") do
             :val,
             title = unit,
             type = "quantitative",
+            axis = {
+                formatType = "number",
+                format = ".3s",
+            },
         },
     )
     vegalite_to_html(vl; width=width, height=height)

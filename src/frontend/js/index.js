@@ -670,10 +670,9 @@ const { update, states, actions } =
                     return new mapboxgl.Popup({closeButton: false, maxWidth: maxWidth +"px"})
                         .setLngLat(event.lngLat)
                         .setHTML(
-                            `ID: ${id}<br>
-                            Link type: ${ltype}<br>
+                            `Link type: ${ltype}<br>
                             ${str}
-                            <iframe frameBorder=0 width="100%" height="100%" src=${chartURL + "&width=" + Math.round(maxWidth * 7/9) + "&height=160"}>
+                            <iframe frameBorder=0 width="100%" height="90%" src=${chartURL + "&width=" + Math.round(maxWidth * 7/9) + "&height=160"}>
                             `
                         )
                         .addTo(map)
@@ -1051,7 +1050,14 @@ const menuView = state => {
                         const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
                         return [
                             m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
-                            m('iframe',{frameBorder:0, width: "100%", height: "100%", src: chartURL + "&width=320&height=160"}), // Currently you can't select a zone and compare so this is a little less useful than it could be
+                            // Currently you can't select a zone and compare so
+                            // this is a little less useful than it could be
+                            m('iframe', {
+                                frameBorder:0,
+                                width: "100%",
+                                height: "160px",
+                                src: chartURL + "&width=320&height=160"
+                            }),
                         ]
                     })(),
                     // Todo: set width + height programmatically
