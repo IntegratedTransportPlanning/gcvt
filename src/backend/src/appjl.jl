@@ -115,7 +115,11 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     return collect(flatten(result))
 end
 
-@memoize function var_stats(domain,variable,quantiles=(0,1),percent=false)
+# Return values likely to be quantiles for this variable across all scenarios.
+#
+# Quantiles are too expensive to calculate on-the-fly. We could calculate exact
+# quantiles, but sampling is also fine.
+@memoize function var_stats(domain, variable, quantiles=(0, 1), percent=false)
     vars = []
     if domain == "od_matrices"
         vars = [scen[variable] for scen in values(mats)]
@@ -206,6 +210,8 @@ route("/stats") do
     end
 end
 
+# Return a vector of data, usually floats, for the requested scenario,
+# comparison parameters, and so on.
 route("/data") do
     defaults = Dict(
         :domain => "od_matrices",
@@ -224,6 +230,7 @@ route("/data") do
     compareyear = d[:compareyear] == "auto" ? year : parse(Int, d[:compareyear])
     percent = d[:percent] == "true"
     comparewith = d[:comparewith]
+
     if d[:domain] == "od_matrices"
         if d[:row] != "false"
             rows = parse.(Int,split(d[:row],','))
@@ -232,13 +239,15 @@ route("/data") do
         if d[:comparewith] == "none"
             reshape(sum(mat_data(scenario, year, variable), dims = 2), :) |> json
         else
-            mat_comp(scenario, year, variable, comparewith, compareyear, percent=percent) |> json
+            mat_comp(scenario, year, variable,
+                     comparewith, compareyear, percent=percent) |> json
         end
     elseif d[:domain] == "links"
         if d[:comparewith] == "none"
             link_data(scenario, year, variable) |> json
         else
-            link_comp(scenario, year, variable, comparewith, compareyear, percent=percent) |> json
+            link_comp(scenario, year, variable,
+                      comparewith, compareyear, percent=percent) |> json
         end
     else
         throw(DomainError(d[:domain]))
