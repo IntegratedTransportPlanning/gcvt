@@ -1,4 +1,4 @@
-FROM julia:1.3
+FROM julia:1.4
 COPY . /julia-gcvt/
 
 # Install toolchain needed for many Julia packages
@@ -12,6 +12,9 @@ WORKDIR julia-gcvt
 
 # Cache packages so subsequent runs are fairly speedy
 RUN julia setup.jl
+
+# Use pkg server for faster builds
+ENV JULIA_PKG_SERVER=pkg.julialang.org
 
 ARG GENIE_PORT=8000
 
