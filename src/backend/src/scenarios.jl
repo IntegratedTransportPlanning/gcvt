@@ -32,12 +32,12 @@ function load_scenarios(packdir=packdir)
         DataFrame |>
         (df -> Dict((name, year) => data for (name, year, _, data) in zip(eachcol(df)...)))
 
-    metadata = get_metadata(links, packdir)
+    metadata = get_metadata(links, mats, packdir)
 
     return links, mats, metadata
 end
 
-function get_metadata(links, packdir)
+function get_metadata(links, mats, packdir)
     # This should probably be reloaded periodically so server doesn't need to be restarted?
     metadata = YAML.load_file(joinpath(packdir, "meta.yaml"))
 
@@ -60,19 +60,30 @@ function get_metadata(links, packdir)
         metadata["scenarios"][k]["name"] = get(metadata["scenarios"][k],"name",k)
     end
 
-    # Add the years back in
+    # Store what years are available for each scenario
     d = Dict(links |> keys .|> x -> (x[1], Int[]))
     for (k, v) in links |> keys
         push!(d[k], v)
     end
 
-    for (k, v) in d
+    d2 = Dict(mats |> keys .|> x -> (x[1], Int[]))
+    for (k, v) in mats |> keys
+        push!(d2[k], v)
+    end
+
+    scenarioYears = Dict(
+        k => sort(intersect(d[k], d2[k]))
+        for k in keys(d)
+    )
+
+    for (name, years) in scenarioYears
         try
-            metadata["scenarios"][k]["at"] = v
+            metadata["scenarios"][name]["at"] = years
         catch x
             if isa(x, KeyError)
-                metadata["scenarios"][k] = Dict("use" => false)
-            else throw(x)
+                metadata["scenarios"][name] = Dict("use" => false)
+            else
+                rethrow()
             end
         end
     end
