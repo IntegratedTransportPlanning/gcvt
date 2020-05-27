@@ -41,12 +41,37 @@ read_scenarios = function(pack_dir) {
 # linksscenarios = scenarios[scenarios$type=="links"]$dataDF
 process_links = function(geom, scenarios) {
 
+  tables = scenarios$dataDF
+
   # Convert all character columns to factor
-  scenarios = lapply(scenarios, function(scen) {
+  tables = lapply(tables, function(scen) {
     to_convert = lapply(scen, typeof) == "character"
     scen[to_convert] = lapply(scen[to_convert], factor)
     scen
   })
+
+  # Assert all scenarios contain the same columns and types
+  print (paste("scenarios is length : ", length(scenarios)))
+  for (i in 1:length(scenarios)) {
+    check_names = all(names(tables[[i]]) == names(tables[[2]]))
+    check_types = all(sapply(tables[[i]], typeof) == sapply(tables[[2]], typeof))
+    if (!check_names) {
+      print (paste("Validation error! -", scenarios$name[[i]], scenarios$year[[i]], "- column names don't match"))
+    }
+    if (!check_types) {
+      print (paste("Validation error! -", scenarios$name[[i]], scenarios$year[[i]], "- column types don't match"))
+    }
+  }
+
+  tables %>%
+    lapply(function(meta) {
+      all(names(meta) == names(tables[[2]])) &
+        all(sapply(meta, typeof) == sapply(tables[[2]], typeof))
+    }) %>%
+    as.logical() %>%
+    all() %>%
+    stopifnot()
+  print ("Link scenarios have matching column names and types!")
 
   geom = st_transform(geom, 4326)
 
@@ -60,45 +85,24 @@ process_links = function(geom, scenarios) {
   # Remove points
   geom = geom[grepl("LINESTRING", sapply(st_geometry(geom), st_geometry_type)),]
 
-  # Assert all scenarios contain the same columns and types
-  print (paste("scenarios is length : ", length(scenarios)))
-  for (i in 1:length(scenarios)) {
-    check_names = all(names(scenarios[[i]]) == names(scenarios[[1]]))
-    check_types = all(sapply(scenarios[[i]], typeof) == sapply(scenarios[[1]], typeof))
-    print (paste(i, ":names: ", check_names))
-    print (paste(i, ":types: ", check_types))
-    print (paste(i, ":as.logical(names):" , all(as.logical(check_names))))
-    print (paste(i, ":as.logical(types):" , all(as.logical(check_types))))
-    print (paste(i, ":all():", all(as.logical(check_names), as.logical(check_types))))
-  }
-  scenarios %>%
-    lapply(function(meta) {
-      all(names(meta) == names(scenarios[[1]])) &
-        all(sapply(meta, typeof) == sapply(scenarios[[1]], typeof))
-    }) %>%
-    as.logical() %>%
-    all() %>%
-    stopifnot()
-
-  print ("completed first round of assertions")
   # Remove all link geometries for which there is no metadata
-  geom = geom[geom$ID_LINK %in% scenarios[[1]]$Link_ID,]
+  geom = geom[geom$ID_LINK %in% tables[[1]]$Link_ID,]
 
   # Remove all metadata for which there is no geometry (e.g. the geometry was outside the study area)
   # and re-order each scenario to have the same row-order as the geometry.
-  scenarios = lapply(scenarios, function(meta) meta[match(geom$ID_LINK, meta$Link_ID),])
+  tables = lapply(tables, function(meta) meta[match(geom$ID_LINK, meta$Link_ID),])
 
   # Remove connectors from geometry
-  geom = geom[!grepl("Connect", scenarios[[1]]$LType),]
+  geom = geom[!grepl("Connect", tables[[1]]$LType),]
 
   # Crop scenarios again to reduced geometry
-  scenarios = lapply(scenarios, function(meta) meta[match(geom$ID_LINK, meta$Link_ID),])
+  tables = lapply(tables, function(meta) meta[match(geom$ID_LINK, meta$Link_ID),])
 
   # Drop unused LType levels.
-  scenarios = lapply(scenarios, function(meta) {meta$LType = droplevels(meta$LType); meta})
+  tables = lapply(tables, function(meta) {meta$LType = droplevels(meta$LType); meta})
 
   # Assert all scenarios contain the same links as `links` in the same order
-  scenarios %>%
+  tables %>%
     lapply(function(meta) {all(geom$ID_LINK == as.character(meta$Link_ID))}) %>%
     as.logical() %>%
     all() %>%
@@ -109,6 +113,7 @@ process_links = function(geom, scenarios) {
   # This tibble must be saved with write_sf(geom, path, fid_column_name = "id").
   # There used to be more batshit ways of doing this.
 
+  scenarios$dataDF = tables
   list(just_geometry, scenarios)
 }
 
@@ -130,9 +135,9 @@ geom = read_sf(path(pack_dir, "geometry", "links.shp"))
 
 print ("Link scenarios found: ")
 print (scenarios[scenarios$type=="links",]$name)
-temp = process_links(geom, scenarios[scenarios$type=="links",]$dataDF)
+temp = process_links(geom, scenarios[scenarios$type=="links",])
 geom = temp[[1]]
-scenarios[scenarios$type=="links",]$dataDF = temp[[2]]
+scenarios[scenarios$type=="links",] = temp[[2]]
 rm(temp)
 
 # Replace the DFs for matrix data with lists of matrices
