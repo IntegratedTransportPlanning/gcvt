@@ -1156,7 +1156,7 @@ function setLinkColours(nums, colour,weights) {
             'interpolate',
             ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
             ['zoom'],
-            1, ["*", 1*magic_multiplier, ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
+            1, ["*", 1*magic_multiplier, ["^", 2, -6]],
             14, ["*", 1*magic_multiplier, ["^", 2, 8]]
         ])
     }
@@ -1180,10 +1180,10 @@ function setLinkColours(nums, colour,weights) {
     map.setPaintProperty('links', 'line-color',
         ['to-color', atId(colours)])
     map.setPaintProperty('links','line-offset', ['interpolate',
-        ['linear'],
+        ['exponential', 1.4],
         ['zoom'],
-        4,0.5,
-        10, 1.8
+        5, ["*", .5 * magic_multiplier, ["^", 2, -6]],
+        14, ["*", magic_multiplier, ["^", 2, 8]]
     ])
 }
 
