@@ -6,7 +6,7 @@ library(tibble)
 library(tidyr)
 library(dplyr)
 
-source = "data/sensitive/14-Nov/"
+source = "data/sensitive/May-2020/"
 destination = "data/sensitive/GCVT_Scenario_Pack/"
 
 scenario_names = list.files(source) %>%
