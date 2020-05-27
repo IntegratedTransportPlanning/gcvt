@@ -18,7 +18,9 @@ function load_scenarios(packdir=packdir)
     scenarios = @suppress load(File(format"RDataSingle", joinpath(packdir, "processed", "julia_compat_scenarios.Rds")));
 
     df = DataFrame(values(scenarios), [:scenario, :year, :type, :data]);
-    df.year = parse.(Int, df.year)
+    if !(typeof(df.year) <: Vector{T} where T <: Integer)
+        df.year = parse.(Int, df.year)
+    end
 
     links = df |>
         @filter(_.type == "links") |>
