@@ -99,7 +99,6 @@ end
 mat_comp(args...; kwargs...) = comp(mat_data, args...; kwargs...)
 link_comp(args...; kwargs...) = comp(link_data, args...; kwargs...)
 function comp(data, scenario, year, variable, comparison_scenario, comparison_year;percent=true)
-    # TODO: palettes, normalisation, etc.
 
     main = data(scenario, year, variable)
     comparator = data(comparison_scenario, comparison_year, variable)
@@ -108,7 +107,10 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     # Returns Array{Float,2} but we want Array{Float,1} so we flatten it
     if percent
         # Avoid NaN from dividing by zero.
-        eps = mean(sum(main, dims = 2)) / 10000
+        # Skip missing values here because we don't want eps to be `missing`
+        # and poison every value.
+        eps = mean(sum(skipmissing(vec(main)))) / 10000
+
         result = (sum(main, dims = 2) .+ eps) ./ (sum(comparator, dims = 2) .+ eps) .- 1
     else
         result = sum(main .- comparator, dims = 2)
