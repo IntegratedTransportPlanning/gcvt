@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 USAGE="Usage: $0 /path/to/foo.geojson /path/to/outputdirectory"
 

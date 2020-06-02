@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 # cd to directory of script, obviously
 cd "${0%/*}"
