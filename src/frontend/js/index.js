@@ -1108,24 +1108,15 @@ function getScenMinMaxStep(scenario){
 
 states.map(menuView)
 
+
 // STYLING
 
-// look at src/app/mb.js for more examples
-
-// At the moment, `map` is global.
+// MapboxGL styling spec instructions for looking up an attribute in the array
+// `data` by id (links) or by the property `fid` (zones)
 const atId = data => ['at', ['id'], ["literal", data]]
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
-function setOpacity() {
-    const num_zones = 282
-    const opacities = []
-    for (let i=0; i < num_zones; i++)
-        opacities.push(Math.random())
-
-    map.setPaintProperty('links', 'fill-opacity', atFid(opacities))
-}
-
-function setColours(nums, colour) {
+function setZoneColours(nums, colour) {
     const colours = nums.map(colour)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
@@ -1217,11 +1208,13 @@ function setLinkColours(nums, colour,weights) {
 }
 
 
-// This is now not unused.
+// Scale data to 0..1 between the bounds.
+// If good == "smaller", the data will be inverted s.t.
+// smaller values will be towards 1 and larger towards 0.
 function normalise(v, bounds, good) {
     let min = bounds ? bounds[0] : Math.min(...v)
     let max = bounds ? bounds[1] : Math.max(...v)
-    if (good == "smaller"){
+    if (good == "smaller") {
         ;[min, max] = [max, min]
     }
     return v.map(x => {
@@ -1313,10 +1306,11 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         "links": "links",
     }
     if (!variable || !values) {
+        // If we don't have data to paint, hide the geometry.
         map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
         if (domain == "od_matrices"){
-            setColours(values, palette[0])
+            setZoneColours(values, palette[0])
         } else {
             setLinkColours(values, palette[0],values)
         }
@@ -1339,6 +1333,7 @@ function getPalette(preferred, compare) {
     }
 }
 
+// Debugging tool: get data for a particular piece of geometry
 async function getDataFromId(id,domain="links"){
     const state = states()
     const variable = state.layers[domain].variable
@@ -1348,7 +1343,9 @@ async function getDataFromId(id,domain="links"){
     return {absVal: absData[id], percVal: percData[id]}
 }
 
+// Copy text to the system clipboard.
 function toClipboard(str) {
+    // Yes, this is the convoluted way that it has to be done. Thanks, W3C.
     const t = document.createElement("textarea")
     t.value = str
     t.setAttribute('readonly','')
