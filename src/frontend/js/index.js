@@ -95,7 +95,7 @@ const DEFAULTS = {
     compare: false,
     scenario: "FleetElectric",
     compareWith: "DoMin",
-    scenarioYear: "2030",
+    scenarioYear: 2030,
     compareYear: "auto",
     showctrl: true,
     mapReady: false,
