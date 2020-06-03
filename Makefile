@@ -2,8 +2,8 @@
 
 tiles:
 	# TODO: These paths are pretty project-specific. Should specify the packdir better.
-	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/processed/links.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles
-	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles
+	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/processed/links.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles/2
+	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles/2
 
 setup:
 	cd src/backend && julia --project=. -e "import Pkg; Pkg.instantiate()"
