@@ -73,6 +73,24 @@ const LTYPE_LOOKUP = {
 // e.g. [1,2] == [2,1]
 const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
 
+
+/*
+ * Calculate average and total values per zone for the selected scenario and variable
+ *
+ * If one or more zones is selected, show statistics for flows into those zones only.
+ */
+function zones2summary(summariser, state) {
+    return R.pipe(summariser,x=>numberToHuman(x, state))(
+        state.selectedZones.length > 0 ?
+        R.pipe(R.pickAll,R.values)(
+            R.map(R.add(-1),state.selectedZones), state.layers.od_matrices.basevalues
+        ) :
+        state.layers.od_matrices.basevalues
+    ) +
+        (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
+}
+
+
 // INITIAL STATE
 
 const DEFAULTS = {
@@ -161,16 +179,6 @@ function stateFromSearch(search) {
     return qsObj
 }
 
-function zones2summary(summariser, state) {
-    return R.pipe(summariser,x=>numberToHuman(x, state))(
-        state.selectedZones.length > 0 ?
-        R.pipe(R.pickAll,R.values)(
-            R.map(R.add(-1),state.selectedZones), state.layers.od_matrices.basevalues
-        ) : 
-        state.layers.od_matrices.basevalues
-    ) +
-        (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
-}
 
 const initial = (() => {
     const qsObj = stateFromSearch(window.location.search)
