@@ -73,6 +73,26 @@ const LTYPE_LOOKUP = {
 // e.g. [1,2] == [2,1]
 const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
 
+/*
+ * A number formatted for easy human comprehension, given the context it comes from
+ */
+function numberToHuman(number,{percent, compare}){
+    number = percent && compare ? number * 100 : number
+    const strnum = parseFloat(number.toPrecision(3)).toLocaleString()
+    return ((number >= 0 && compare) ? "+" : "") + strnum
+}
+
+/*
+ * Rtn a sorted array. `by` defaults to something sensible
+ * for strings and numbers.
+ */
+function sort(arr, by) {
+    // Make a copy of an array (or make an array from something else)
+    arr = Array.from(arr)
+    if (by === undefined)
+        by = (a, b) => a > b ? 1 : -1
+    return arr.sort(by)
+}
 
 /*
  * Calculate average and total values per zone for the selected scenario and variable
@@ -133,6 +153,10 @@ const DEFAULTS = {
     }
 }
 
+
+/*
+ * Read the URL's query string and build into a schema we can merge with the app state.
+ */
 function stateFromSearch(search) {
     const queryString = new URLSearchParams(search)
     let qsObj = Object.fromEntries(queryString)
@@ -307,6 +331,8 @@ const mapboxInit = ({lng, lat, zoom}) => {
 
     map.on('load', loadLayers)
     map.on('sourcedata', _ => {
+        // Get the names of each zone from the geometry. Probably this should
+        // be in the scenario pack and provided by the api instead.
         if (map.getSource('zones') && map.isSourceLoaded('zones')) {
             const a = []
             map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.NAME})
@@ -754,29 +780,10 @@ const { update, states, actions } =
 
 }
 
-function numberToHuman(number,{percent, compare}){
-    number = percent && compare ? number * 100 : number
-    const strnum = parseFloat(number.toPrecision(3)).toLocaleString()
-    return ((number >= 0 && compare) ? "+" : "") + strnum
-}
 
-/*
- * Rtn a sorted array. `by` defaults to something sensible
- * for strings and numbers.
- */
-function sort(arr, by) {
-    // Make a copy of an array (or make an array from something else)
-    arr = Array.from(arr)
-    if (by === undefined)
-        by = (a, b) => a > b ? 1 : -1
-    return arr.sort(by)
-}
+// HTML Views
 
-// Side menu
-
-const mountpoint = document.createElement('div')
-document.body.appendChild(mountpoint)
-
+// Create an array of `option` elements for use in a `select` element.
 function meta2options(metadata, selected) {
     return Object.entries(metadata)
         .filter(([k, v]) => v["use"] !== false)
@@ -821,6 +828,9 @@ function getUnit(meta, domain, variable, percent=false){
     }
 }
 
+
+const mountpoint = document.createElement('div')
+document.body.appendChild(mountpoint)
 
 const menuView = state => {
     // let popup = state.mapUI.popup
