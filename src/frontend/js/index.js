@@ -62,7 +62,7 @@ const divergingPalette = _ => d3.interpolateRdYlGn
 const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateViridis
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
-// This is a cludge: we should get this data from the metat.yaml somehow.
+// TODO: This is a cludge: we should get this data from the meta.yaml somehow.
 const LTYPE_LOOKUP = {
     "IWW": "Inland waterway",
     "Maritime": "Maritime",
