@@ -53,7 +53,8 @@ function erf(x) {
 const nerf = x => (1+erf(x*2-1))/2
 
 // get data from Julia:
-const getData = async endpoint => (await fetch("/api/" + endpoint)).json()
+const getData = async endpoint =>
+    (await fetch("/api/" + endpoint)).json().catch(e => console.error(`Error getting data from:\n/api/${endpoint}\n\n`, e))
 
 // d3 really doesn't offer a sane way to pick these.
 // Supported list: https://github.com/d3/d3-scale-chromatic/blob/master/src/index.js
