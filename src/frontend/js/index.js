@@ -876,7 +876,7 @@ const menuView = state => {
                             },
                                 sort(state.meta.scenarios[state.scenario].at).map(
                                     year =>
-                                        m('option', {value: year, selected: year === state.scenarioYear}, year)
+                                        m('option', {value: year, selected: year == state.scenarioYear}, year)
                                 ),
                             ),
                             // m(UI.InputSelect, {
