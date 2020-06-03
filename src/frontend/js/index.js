@@ -785,6 +785,17 @@ const { update, states, actions } =
         hover && hover.remove()
     })
 
+    map.on('mouseleave', 'links', async event => {
+        const hover = states().mapUI.hover
+        // Problem: The links are very narrow, so it's difficult to get the cursor right on them
+        // Cludgy solution: Delay removing the popup so that you only need to pass the cursor over the link.
+        // Our previous cludge was, IMO, even worse: the popup just hung around forever.
+        //
+        // Possibly a better way to do this would be to define a transparent layer
+        // using the same geometry but a bit wider, but that also has issues.
+        hover && setTimeout(_ => hover.remove(), 1000)
+    })
+
     map.on('mousemove', 'links', async event => update(state =>
         merge(state, {
             mapUI: {
