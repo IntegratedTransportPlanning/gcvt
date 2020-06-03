@@ -1,3 +1,40 @@
+/*
+ * This file describes the frontend for the tool.
+ *
+ * We've tried to build it following the functional-reactive programming style
+ * that Elm popularised, but this is compromised slightly by how we interact
+ * with mapboxgl, which continues to manage its own state.
+ *
+ * Notably, the popups that appear on hover and on click are mostly managed by
+ * mapboxgl, which causes some minor problems.
+ *
+ * Perhaps we should have wrapped mapboxgl, as has been done for React, but I
+ * think that this has come out OK.
+ *
+ * Actions fetch a bunch of information from the API at runtime:
+ *
+ *  - Scenario and variable metadata (names, years, pretty names, descriptions, etc)
+ *  - Arrays of numbers for the value of the variable for each link or zone
+ *  - Suitable quantiles for a given variable
+ *  - Centroids for each zone
+ *  - and so on
+ *
+ * This information feeds into the `state` of the app, which is then used to
+ * update the "views": the map and our own HTML elements (the menu, legend,
+ * chart, and help box).
+ *
+ * These views register callbacks that can modify the state, which will of
+ * course cause the views to be updated.
+ *
+ * To avoid turning into spaghetti, it's probably useful to keep that flow:
+ * There is a state, from which views are rendered, and callbacks on the views
+ * can update the state.
+ *
+ * The state should only ever be mutated through the update() function or one
+ * of the actions.blah methods (which all call update internally).
+ *
+ */
+
 const DEBUG = true
 const log = DEBUG ? console.log : _ => undefined
 
