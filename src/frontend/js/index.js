@@ -180,10 +180,11 @@ function stateFromSearch(search) {
 }
 
 
-const initial = (() => {
-    const qsObj = stateFromSearch(window.location.search)
-    return merge(DEFAULTS,qsObj)
-})()
+/*
+ * Construct the initial app state.
+ */
+const initial = merge(DEFAULTS, stateFromSearch(window.location.search))
+
 
 const mapboxInit = ({lng, lat, zoom}) => {
     mapboxgl.accessToken = 'pk.eyJ1IjoiYm92aW5lM2RvbSIsImEiOiJjazJrcjkwdHIxd2tkM2JwNTJnZzQxYjFjIn0.P0rLbO5oj5d3AwpuVqjBSw'
@@ -653,8 +654,8 @@ const { update, states, actions } =
 
     map.on('click', 'zones', actions.clickZone)
 
-    map.on('click', 'links', async event => ((event, state) => {
-        update({
+    map.on('click', 'links', async event => update(state =>
+        merge(state, {
             mapUI: {
                 popup: oldpopup => {
                     if (oldpopup) {
@@ -688,7 +689,7 @@ const { update, states, actions } =
                 },
             }
         })
-    })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+    ))
 
     map.on('mousemove', 'zones', event => {
         update(state => {
@@ -721,8 +722,8 @@ const { update, states, actions } =
         hover && hover.remove()
     })
 
-    map.on('mousemove', 'links', async event => ((event, state) => {
-        update({
+    map.on('mousemove', 'links', async event => update(state =>
+        merge(state, {
             mapUI: {
                 hover: oldpopup => {
                     if (oldpopup) {
@@ -749,7 +750,8 @@ const { update, states, actions } =
                 },
             }
         })
-    })(event,states())) // Not sure what the meiosis-y way to do this is - need to read state in this function.
+    ))
+
 }
 
 function numberToHuman(number,{percent, compare}){
