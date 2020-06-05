@@ -54,6 +54,9 @@ import * as turf from "@turf/turf"
 
 import * as R from "ramda"
 
+import ITPLOGO from "../../resources/itp.png"
+import WBLOGO from "../../resources/WB Logo Landscape.jpg"
+
 
 // UTILITY FUNCS
 
@@ -886,6 +889,25 @@ const menuView = state => {
         // Position relative and full height are required for positioning elements at the bottom
         // translate(0,0) is required to put it in front of mapbox.
         m('div', {style: 'pointer-events: none; height: 100vh; position: relative; transform: translate(0,0)'}, [
+
+            // Sponsor logos. Most important stuff first.
+            // We create an invisible div the size of the screen, rotate it upside down, then float a smaller div left.
+            // That puts us in the bottom right corner. There are other ways to do this, but this works.
+            m('div', {style: 'height: 100vh; width: 100%; position: absolute; transform: rotate(180deg)'},
+                m('div', {style: 'float: left; transform: rotate(180deg); margin: 5px'},
+                    m(UI.Card, {style: 'pointer-events: auto', fluid: true},
+                        [
+                            m('a', {href: "https://www.itpworld.net", target: "_blank"},
+                                m('img', {src: ITPLOGO, width: 60, style: 'margin-right: 5px'})
+                            ),
+                            m('a', {href: "https://www.worldbank.org", target: "_blank"},
+                                m('img', {src: WBLOGO, height: 60})
+                            ),
+                        ]
+                    )
+                ),
+            ),
+
             // popup &&
             //         m(UI.Popover, {
             //             content: m('', popup.feature),
