@@ -965,7 +965,13 @@ const menuView = state => {
                                 name: 'year',
                                 onchange: e => actions.updateScenario(state.scenario, e.target.value)
                             },
-                                sort(state.meta.scenarios[state.scenario].at).map(
+                                sort(state.compare ?
+                                    R.intersection(
+                                        state.meta.scenarios[state.scenario].at,
+                                        state.meta.scenarios[state.compareWith].at
+                                    ) :
+                                        state.meta.scenarios[state.scenario].at
+                                ).map(
                                     year =>
                                         m('option', {value: year, selected: year == state.scenarioYear}, year)
                                 ),
@@ -1003,7 +1009,10 @@ const menuView = state => {
                                 onchange: e =>
                                     actions.updateBaseScenario({scenario: e.target.value})
                             },
-                                meta2options(state.meta.scenarios, state.compareWith)
+                                meta2options(
+                                    R.filter(scen => scen.at.includes(parseInt(state.scenarioYear, 10)), state.meta.scenarios),
+                                    state.compareWith
+                                )
                             ),
 
                             m('label', {for: 'basetracksactive'},
@@ -1029,15 +1038,15 @@ const menuView = state => {
                                 m('br'),
                                 state.meta.scenarios[state.compareWith] &&
                                 (state.meta.scenarios[state.compareWith].at.length > 1) &&
-                                m('input', {
-                                    name: 'compyear',
-                                    type: "range",
-                                    ...getScenMinMaxStep(state.meta.scenarios[state.compareWith]),
-                                    value: state.compareYear,
-                                    onchange: e => actions.updateBaseScenario({
-                                        year: e.target.value,
-                                    })
-                                }),
+                                m('select', {
+                                    name: 'year',
+                                    onchange: e => actions.updateBaseScenario({year: e.target.value})
+                                },
+                                    sort(state.meta.scenarios[state.compareWith].at).map(
+                                        year =>
+                                            m('option', {value: year, selected: year == state.compareYear}, year)
+                                    ),
+                                ),
                             ],
                         ],
 
