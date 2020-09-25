@@ -875,7 +875,7 @@ function getUnit(meta, domain, variable, percent=false){
             return meta.links[variable].unit
         }
     } catch (e){
-        return "Arbitrary units"
+        return "Units"
     }
 }
 
