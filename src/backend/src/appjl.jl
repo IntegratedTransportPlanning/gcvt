@@ -403,7 +403,7 @@ route("/charts") do
             type = "quantitative",
             axis = {
                 formatType = "number",
-                format = ".3s",
+                format = ".3~s",
             },
         },
     )
