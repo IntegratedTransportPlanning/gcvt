@@ -1341,9 +1341,9 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
 
             let props = {
                 opacity: Math.min(5 * weights[origIndex][index],1),
-                weight: 5 * weights[origIndex][index],
+                weight: 10 * weights[origIndex][index],
             }
-            if (props.weight > 10) props.weight = 10
+            if (props.weight > 20) props.weight = 20
 
             let cline = turf.greatCircle(
                 getPos(originPoint),
