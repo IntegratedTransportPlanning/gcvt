@@ -958,7 +958,7 @@ const menuView = state => {
                         ),
 
                         state.meta.scenarios && [
-                            m('label', {for: 'year'}, 'Scenario year: ' + state.scenarioYear),
+                            m('label', {for: 'year'}, 'Year: ' + state.scenarioYear),
                             state.meta.scenarios[state.scenario] &&
                             state.meta.scenarios[state.scenario].at.length > 1 &&
                             m('select', {
@@ -992,7 +992,7 @@ const menuView = state => {
                             // }),
                         ],
 
-                        m('label', {for: 'compare'}, 'Compare with base: ',
+                        m('label', {for: 'compare'}, 'Compare with: ',
                             m('input', {
                                 name: 'compare',
                                 type:"checkbox",
