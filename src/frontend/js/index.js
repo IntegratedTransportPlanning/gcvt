@@ -1239,13 +1239,13 @@ function setLinkColours(nums, colour,weights) {
         // Adapted from https://github.com/mapbox/mapbox-gl-js/issues/5861#issuecomment-352033339
         map.setPaintProperty("links", "line-width", [
             'interpolate',
-            ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
+            ['exponential', 1.3],  // Higher base -> thickness is concentrated at higher zoom levels
             ['zoom'],
             1, ["*", atId(weights), ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
             14, ["*", atId(weights), ["^", 2, 8]]
         ])
         map.setPaintProperty('links','line-offset', ['interpolate',
-            ['exponential', 1.4],
+            ['exponential', 1.3],
             ['zoom'],
             5, ["*", atId(weights), ["^", 2, -6]],
             14, ["*", .75, atId(weights), ["^", 2, 8]]
