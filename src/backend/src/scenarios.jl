@@ -5,6 +5,8 @@ using DataFrames: DataFrame
 using Query: @filter
 using Suppressor: @suppress
 
+using OrderedCollections: OrderedDict
+
 import YAML
 
 packdir = "$(@__DIR__)/../data/"
@@ -39,7 +41,7 @@ end
 
 function get_metadata(links, mats, packdir)
     # This should probably be reloaded periodically so server doesn't need to be restarted?
-    metadata = YAML.load_file(joinpath(packdir, "meta.yaml"))
+    metadata = YAML.load_file(joinpath(packdir, "meta.yaml"); dicttype=OrderedDict{String, Any})
 
     default_meta = Dict(
         "good" => "smaller",
