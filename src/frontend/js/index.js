@@ -738,7 +738,7 @@ const { update, states, actions } =
                     else
                         str = numberToHuman(value, state) +
                             (state.compare && state.percent ? "" : " ") +
-                            getUnit(state.meta,"links",state.linkVar,state.compare && state.percent)
+                            getUnit(state.meta, "links", state.layers.links.variable, state.compare && state.percent)
                     const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&domain=links&variable=${state.layers.links.variable}&rows=${id+1}`
                     const maxWidth = 400
                     //TODO: consider adding link to open chart in new tab
