@@ -908,12 +908,7 @@ const menuView = state => {
                 ),
             ),
 
-            // popup &&
-            //         m(UI.Popover, {
-            //             content: m('', popup.feature),
-            //             trigger: m('div', {style: `position: absolute; left: ${popup.x}px; top: ${popup.y}px`}),
-            //             isOpen: true,
-            //         }),
+            // Legend
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
@@ -930,6 +925,8 @@ const menuView = state => {
                     ]
                 )
             ),
+
+            // Main menu panel
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
                     m('label', {for: 'showctrls'}, 'Show controls: ',
@@ -1135,6 +1132,7 @@ const menuView = state => {
                 ),
             ),
 
+            // Info / description window
             (state.showDesc || state.showLinkHelp || state.showMatHelp) && m('div', {style: 'position: absolute; top: 0; font-size: small;'},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
                     [
@@ -1144,6 +1142,8 @@ const menuView = state => {
                     ]
                 )
             ),
+
+            // Chart
             state.showChart && (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
                 m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
                     (() => {
