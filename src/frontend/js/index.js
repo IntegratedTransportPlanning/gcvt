@@ -179,8 +179,6 @@ const DEFAULTS = {
     showctrl: true,
     mapReady: false,
     showDesc: true,
-    showMatHelp: true,
-    showLinkHelp: true,
     showClines: true,
     showChart: false,
     desiredLTypes: [],
@@ -209,7 +207,7 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare","showctrl","showDesc","showClines","showLinkHelp","showMatHelp","showChart"]) {
+    for (let k of ["percent","compare","showctrl","showDesc","showClines","showChart"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
         }
@@ -944,9 +942,7 @@ const menuView = state => {
                     state.showctrl && [
                         m('br'),
 
-                        m('label', {for: 'scenario'}, "Scenario (help? ",
-                            m('input', {name: 'showDesc', type:"checkbox", checked:state.showDesc, onchange: e => update({showDesc: e.target.checked})}),
-                        " )"),
+                        m('label', {for: 'scenario'}, "Scenario"),
                         m('select', {
                             name: 'scenario',
                             onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
@@ -1057,9 +1053,7 @@ const menuView = state => {
                         ),
 
                         m('br'),
-                        m('label', {for: 'link_variable'}, "Links (help? ",
-                            m('input', {name: 'showLinkHelp', type:"checkbox", checked:state.showLinkHelp, onchange: e => update({showLinkHelp: e.target.checked})}),
-                        " )"),
+                        m('label', {for: 'link_variable'}, "Links"),
                         m('select', {
                             name: 'link_variable',
                             onchange: e => actions.changeLayerVariable("links", e.target.value),
@@ -1075,10 +1069,9 @@ const menuView = state => {
                             R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k]), Object.keys(LTYPE_LOOKUP))
                         ),
 
-                        m('label', {for: 'matrix_variable'}, "Zones (help? ",
-                            m('input', {name: 'showMatHelp', type:"checkbox", checked:state.showMatHelp, onchange: e => update({showMatHelp: e.target.checked})}),
+                        m('label', {for: 'matrix_variable'}, "Zones",
                             (state.layers.od_matrices.variable !== "") && [
-                                " chart? ",
+                                " (chart? ",
                                 m('input', {name: 'showChart', type:"checkbox", checked:state.showChart, onchange: e => update({showChart: e.target.checked})}),
                             ],
                             ")",
@@ -1133,14 +1126,26 @@ const menuView = state => {
             ),
 
             // Info / description window
-            (state.showDesc || state.showLinkHelp || state.showMatHelp) && m('div', {style: 'position: absolute; top: 0; font-size: small;'},
-                m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; max-width: 60%', fluid: true},
-                    [
+            Object.keys(state.meta.scenarios).length > 0 && m('div', {
+                style: 'position: absolute; top: 0; font-size: small; pointer-events: auto; margin: 5px;',
+            },
+                (state.showDesc
+                ?  m(UI.Callout, {
+                    style: 'padding-bottom: 0px; max-width: 60%; background: white',
+                    fluid: true,
+                    onDismiss: _ => update({showDesc: false}),
+                    content: [
                         state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
-                        state.showLinkHelp && state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
-                        state.showMatHelp && state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
-                    ]
-                )
+                        state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
+                        state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
+                    ],
+                },
+
+                    )
+                : m(UI.Button, {
+                    iconLeft: UI.Icons.INFO,
+                    onclick: _ => update({showDesc: true}),
+                }))
             ),
 
             // Chart
