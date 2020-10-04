@@ -851,6 +851,7 @@ const Legend = () => {
         legendelem = legend({
             color: palette,
             title: vnode.attrs.title + ` (${unit})`,
+            tickFormat: ",.3~s"
         })
         vnode.dom.appendChild(legendelem)
     }
