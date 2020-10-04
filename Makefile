@@ -22,6 +22,8 @@ front:
 ## Sort of deprecated ##
 
 pack:
+	cd src/data-preparation && julia --project -e "import Pkg; Pkg.instantiate()"
+	cd src/data-preparation && julia --project speed_freeflow_hack.jl
 	Rscript ./src/data-preparation/process_pack_dir.R
 
 setupR:
