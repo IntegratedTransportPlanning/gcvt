@@ -103,12 +103,13 @@ const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.int
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
 // TODO: This is a cludge: we should get this data from the meta.yaml somehow.
-const LTYPE_LOOKUP = {
-    "IWW": "Inland waterway",
-    "Maritime": "Maritime",
-    "Rail": "Rail",
-    "Road": "Road",
-}
+const LTYPE_LOOKUP = [
+    "",
+    "Inland waterway",
+    "Maritime",
+    "Rail",
+    "Road",
+]
 
 // e.g. [1,2] == [2,1]
 const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
