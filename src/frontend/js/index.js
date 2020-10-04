@@ -561,11 +561,11 @@ const app = {
 
                     // TODO: make bounds consistent across all scenarios (currently it makes them all look about the same!)
                     const sortedValues = sort(values)
-                    bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.9) ]
+                    bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.99) ]
 
                     const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
-                    const palette = getPalette(dir, bounds, meta[domain][variable], compare)
+                    const palette = getPalette(dir, bounds, meta[domain][variable], compare, true)
 
                     return update({
                         centroidLineWeights,
@@ -1403,7 +1403,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
 }
 
 // TODO: support categorical variables
-function getPalette(dir, bounds, {palette, bins}, compare) {
+function getPalette(dir, bounds, {palette, bins}, compare, usesymlog=false) {
     let pal = continuousPalette(palette)
     if (pal === undefined) {
         console.warn(variable + " has an invalid colour scheme set in the metadata.")
@@ -1413,9 +1413,9 @@ function getPalette(dir, bounds, {palette, bins}, compare) {
         if (compare) {
             pal = divergingPalette()
         }
-        return d3.scaleSequential(
+        return (usesymlog ? d3.scaleSequentialSymlog : d3.scaleSequential)(
             dir == "smaller" ? R.reverse(bounds) : bounds,
-            pal
+            x => pal(nerf(x))
         )
     } else {
         bins = bins.slice(1, -1)
