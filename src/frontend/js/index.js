@@ -117,9 +117,13 @@ const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
 /*
  * A number formatted for easy human comprehension, given the context it comes from
  */
-function numberToHuman(number,{percent, compare}){
-    number = percent && compare ? number * 100 : number
-    const strnum = parseFloat(number.toPrecision(3)).toLocaleString()
+function numberToHuman(number,{percent, compare}) {
+    let format = ",.3~s"
+    if (percent && compare) {
+        number = number * 100
+        format = ",.3r"
+    }
+    const strnum = d3.format(format)(number)
     return ((number >= 0 && compare) ? "+" : "") + strnum
 }
 
