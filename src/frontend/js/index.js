@@ -560,10 +560,7 @@ const app = {
 
                     const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
-                    const palette = d3.scaleSequential(
-                        dir == "smaller" ? R.reverse(bounds) : bounds,
-                        getPalette(meta[domain][variable].palette, compare)
-                    )
+                    const palette = getPalette(dir, bounds, meta[domain][variable], compare)
 
                     return update({
                         centroidLineWeights,
@@ -605,10 +602,7 @@ const app = {
                     }
                 }
 
-                const palette = d3.scaleSequential(
-                    dir == "smaller" ? R.reverse(bounds) : bounds,
-                    getPalette(meta[domain][variable].palette, compare)
-                )
+                const palette = getPalette(dir, bounds, meta[domain][variable], compare)
 
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer(R.merge({
@@ -1403,17 +1397,25 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
 }
 
 // TODO: support categorical variables
-// TODO: consider removing this as it's pretty vestigial now
-function getPalette(preferred, compare) {
-    if (compare) {
-        return divergingPalette()
-    } else {
-        let pal =  continuousPalette(preferred)
-        if (pal === undefined) {
-            console.warn(variable + " has an invalid colour scheme set in the metadata.")
-            pal = continuousPalette()
+function getPalette(dir, bounds, {palette, bins}, compare) {
+    let pal = continuousPalette(palette)
+    if (pal === undefined) {
+        console.warn(variable + " has an invalid colour scheme set in the metadata.")
+        pal = continuousPalette()
+    }
+    if (compare || bins === undefined) {
+        if (compare) {
+            pal = divergingPalette()
         }
-        return pal
+        return d3.scaleSequential(
+            dir == "smaller" ? R.reverse(bounds) : bounds,
+            pal
+        )
+    } else {
+        bins = bins.slice(1, -1)
+        // Get n+1 evenly spaced colours from the defined colour scheme.
+        const colours = R.range(0, bins.length+1).map(i => pal(i/bins.length))
+        return d3.scaleThreshold(bins, colours)
     }
 }
 
