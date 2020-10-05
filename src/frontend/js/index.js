@@ -103,13 +103,12 @@ const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.int
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
 // TODO: This is a cludge: we should get this data from the meta.yaml somehow.
-const LTYPE_LOOKUP = [
-    "",
-    "Inland waterway",
-    "Maritime",
-    "Rail",
-    "Road",
-]
+const LTYPE_LOOKUP = {
+    1: "Inland waterway",
+    2: "Maritime",
+    3: "Rail",
+    4: "Road",
+}
 
 // e.g. [1,2] == [2,1]
 const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
@@ -727,7 +726,7 @@ const { update, states, actions } =
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id]]
-                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes)) return;
+                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let str = ""
                     let value = state.layers.links.values[id]
                     if (value === null)
@@ -805,7 +804,7 @@ const { update, states, actions } =
                     }
                     let id = event.features[0].id
                     let ltype = LTYPE_LOOKUP[state.LTypes[id]]
-                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes)) return;
+                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let value = state.layers.links.values[id]
                     let str
                     if (value === null)
@@ -1280,7 +1279,7 @@ function setLinkColours(nums, colour,weights) {
 
     if (!R.equals(state.desiredLTypes, [])) {
         const opacities = state.LTypes.map(x => {
-            return R.includes(x,state.desiredLTypes) ? 1 : 0
+            return R.includes(x, state.desiredLTypes.map(y => parseInt(y, 10))) ? 1 : 0
         })
         map.setPaintProperty("links", "line-opacity", atId(opacities))
     } else {
