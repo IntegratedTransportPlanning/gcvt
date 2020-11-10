@@ -1420,6 +1420,7 @@ function getPalette(dir, bounds, {palette, bins}, compare, usesymlog=false) {
         bins = bins.slice(1, -1)
         // Get n+1 evenly spaced colours from the defined colour scheme.
         const colours = R.range(0, bins.length+1).map(i => pal(i/bins.length))
+        dir == "smaller" && colours.reverse()
         return d3.scaleThreshold(bins, colours)
     }
 }
