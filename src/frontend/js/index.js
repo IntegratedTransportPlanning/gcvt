@@ -55,7 +55,7 @@ import * as turf from "@turf/turf"
 import * as R from "ramda"
 
 import ITPLOGO from "../../resources/itp.png"
-import WBLOGO from "../../resources/logo-wb-header-en.svg"
+import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
 
 
