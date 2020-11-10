@@ -1126,11 +1126,11 @@ const menuView = state => {
 
             // Info / description window
             Object.keys(state.meta.scenarios).length > 0 && m('div', {
-                style: 'position: absolute; top: 0; font-size: small; pointer-events: auto; margin: 5px;',
+                style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
             },
                 (state.showDesc
                 ?  m(UI.Callout, {
-                    style: 'padding-bottom: 0px; max-width: 60%; background: white',
+                    style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
                     fluid: true,
                     onDismiss: _ => update({showDesc: false}),
                     content: [
