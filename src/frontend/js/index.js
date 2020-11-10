@@ -55,7 +55,8 @@ import * as turf from "@turf/turf"
 import * as R from "ramda"
 
 import ITPLOGO from "../../resources/itp.png"
-import WBLOGO from "../../resources/WB Logo Landscape.jpg"
+import WBLOGO from "../../resources/logo-wb-header-en.svg"
+import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
 
 
 // UTILITY FUNCS
@@ -904,7 +905,10 @@ const menuView = state => {
                                 m('img', {src: ITPLOGO, width: 60, style: 'margin-right: 5px'})
                             ),
                             m('a', {href: "https://www.worldbank.org", target: "_blank"},
-                                m('img', {src: WBLOGO, height: 60})
+                                m('img', {src: WBLOGO, height: 60, style: 'padding: 8px; margin-right: 5px'})
+                            ),
+                            m('a', {href: "http://www.kgreengrowthpartnership.org/", target: "_blank"},
+                                m('img', {src: KGFLOGO, height: 60})
                             ),
                         ]
                     )
