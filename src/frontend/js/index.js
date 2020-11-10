@@ -845,12 +845,18 @@ const Legend = () => {
             palette = palette.copy()
             palette.domain(palette.domain().map(x => x * 100))
         }
+        // Format numbers to 3sf with SI prefixes.
+        let tickFormat = ",.3~s"
+        if (palette.invertExtent) {
+            // Unless the palette is discrete, then don't use SI prefixes
+            tickFormat = ",.3~r"
+        }
         const unit = vnode.attrs.unit
         legendelem && legendelem.remove()
         legendelem = legend({
             color: palette,
             title: vnode.attrs.title + ` (${unit})`,
-            tickFormat: ",.3~s"
+            tickFormat,
         })
         vnode.dom.appendChild(legendelem)
     }
