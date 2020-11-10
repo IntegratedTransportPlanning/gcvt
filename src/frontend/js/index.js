@@ -1072,8 +1072,8 @@ const menuView = state => {
                             (state.layers.od_matrices.variable !== "") && [
                                 " (chart? ",
                                 m('input', {name: 'showChart', type:"checkbox", checked:state.showChart, onchange: e => update({showChart: e.target.checked})}),
+                                ")",
                             ],
-                            ")",
                         ),
                         m('select', {
                             name: 'matrix_variable',
