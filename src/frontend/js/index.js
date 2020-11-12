@@ -1152,6 +1152,7 @@ const menuView = state => {
 
                     )
                 : m(UI.Button, {
+                    style: 'pointer-events: auto',
                     iconLeft: UI.Icons.INFO,
                     onclick: _ => update({showDesc: true}),
                 }))
