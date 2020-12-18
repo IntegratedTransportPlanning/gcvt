@@ -39,6 +39,9 @@ end
 
 ### APP ###
 
+
+## State (all constant)
+
 include("$(@__DIR__)/scenarios.jl")
 
 zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
@@ -54,6 +57,10 @@ const NUM_ZONES = zone_centroids |> length
 links, mats, metadata = load_scenarios(packdir)
 
 const NUM_LINKS = (links |> first)[2] |> size |> first
+
+
+## Funcs
+
 
 # Get list of scenarios (scenario name, id, years active)
 list_scenarios() = metadata["scenarios"]
@@ -196,6 +203,10 @@ println("Warming up the cache: matrices")
     var_stats("od_matrices", variable, (0.05, 0.95), true)
 end
 
+
+## Routes
+
+
 route("/scenarios") do
     list_scenarios() |> json
 end
@@ -204,7 +215,7 @@ route("/variables/:domain") do
     list_variables(@params(:domain)) |> json
 end
 
-
+# Return a vector: [low_quantile, high_quantile]
 route("/stats") do
     # Was removed this in ac81797 but is 'needed' below
     defaults = Dict(
