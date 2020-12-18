@@ -119,11 +119,21 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     return collect(flatten(result))
 end
 
-# Return values likely to be quantiles for this variable across all scenarios.
-#
-# Quantiles are too expensive to calculate on-the-fly. We could calculate exact
-# quantiles, but sampling is also fine.
-@memoize function var_stats(domain, variable, quantiles=(0, 1), percent=false)
+"""
+    var_stats(domain, variable, quantiles, percent=false)
+
+Return quantiles to use when comparing `variable` between scenarios.
+
+We approximate the quantiles for all pair-wise differences with this algorithm:
+
+1. Compute the element-wise difference between each pair of scenarios for the
+given `domain` and `variable`
+2. sample from these differences to create a vector of differences
+3. return the quantiles of the sampled vector
+"""
+# This is expensive, so it is memoized and the cache is warmed up before the
+# webserver starts.
+@memoize function var_stats(domain, variable, quantiles, percent=false)
     vars = []
     if domain == "od_matrices"
         vars = [scen[variable] for scen in values(mats)]
@@ -150,7 +160,15 @@ end
     return quantile(flatten(vcat(diffs...)), quantiles)
 end
 
-@memoize function var_stats_1d(domain,variable,quantiles=(0,1))
+"""
+    var_stats_1d(domain, variable, quantiles)
+
+Collect all values for `variable` from all scenarios in `domain` into a vector
+and return the quantiles of that vector.
+
+This is a bit expensive, so it is memoized.
+"""
+@memoize function var_stats_1d(domain, variable, quantiles)
     # dims = 2 sums rows; dims = 1 sums cols
     vars = []
     if domain == "od_matrices"
