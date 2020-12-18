@@ -239,7 +239,7 @@ route("/data") do
         :domain => "od_matrices",
         :scenario => "Rail",
         :year => "2030",
-        :comparewith => "DoMin", # Consider making comparison optional: show absolute level
+        :comparewith => "DoMin",
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
@@ -356,9 +356,7 @@ function vegalite_to_html(vl;title="Greener Connectivity Plot",width=200,height=
     """
 end
 
-# Todo:
-# resolve scenario etc to pretty name
-# don't hardcode years - use metadata
+# TODO:
 # display units
 # sensible ticks for years
 #
