@@ -220,17 +220,13 @@ route("/stats") do
     # Was removed this in ac81797 but is 'needed' below
     defaults = Dict(
         :domain => "od_matrices",
-        :scenario => "Rail",
-        :year => "2030",
         :comparewith => "DoMin",
-        :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
         :quantiles => "0.0001,0.9999",  # These default percentiles seem v. generous
                                         # but we look at all possible differences
                                         # so overwhelming majority of differences are
                                         # tiny. Seems to work OK in practice.
-        :row => "false",
     )
     d = merge(defaults, getpayload())
     quantiles = parse.(Float64,split(d[:quantiles],","))
