@@ -44,9 +44,9 @@ end
 
 include("$(@__DIR__)/scenarios.jl")
 
-zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
+const zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
 
-zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
+const zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
 for f in zones.features
     zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
 end
@@ -54,7 +54,7 @@ end
 const NUM_ZONES = zone_centroids |> length
 
 # This should probably be reloaded periodically so server doesn't need to be restarted?
-links, mats, metadata = load_scenarios(packdir)
+const links, mats, metadata = load_scenarios(packdir)
 
 const NUM_LINKS = (links |> first)[2] |> size |> first
 
