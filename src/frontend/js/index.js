@@ -37,6 +37,7 @@
 
 const DEBUG = true
 const log = DEBUG ? console.log : _ => undefined
+const ZONE_OPACITY = 0.5
 
 import meiosisMergerino from "meiosis-setup/mergerino"
 import simpleStream from "meiosis-setup/simple-stream"
@@ -288,7 +289,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             paint: {
                 'fill-color': 'grey',
                 'fill-outline-color': '#000',
-                'fill-opacity': 0.5,
+                'fill-opacity': ZONE_OPACITY,
             },
             layout: {
                 visibility: 'none'
@@ -859,6 +860,7 @@ const Legend = () => {
             title: vnode.attrs.title + ` (${unit})`,
             tickFormat,
         })
+        legendelem.classList.add("colourbar")
         vnode.dom.appendChild(legendelem)
     }
     return {
@@ -1459,6 +1461,14 @@ function toClipboard(str) {
     document.execCommand("copy")
     document.body.removeChild(t)
 }
+
+
+// Ensure legend style can't get out of sync with zone
+const legend_style = document.createElement("style")
+legend_style.innerHTML = `.colourbar image {
+    opacity: ${ZONE_OPACITY};
+}`
+document.body.appendChild(legend_style)
 
 
 if (DEBUG)
