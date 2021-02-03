@@ -1080,20 +1080,31 @@ const menuView = state => {
                             R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k]), Object.keys(LTYPE_LOOKUP))
                         ),
 
-                        m('label', {for: 'matrix_variable'}, "Zones",
+                        m('label', {for: 'matrix_variable'}, "Zones"),
+                        m('div[style=display:flex;align-items:center]', [
+                            m('select', {
+                                name: 'matrix_variable',
+                                onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
+                            },
+                                m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
+                                meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
+                            ),
                             (state.layers.od_matrices.variable !== "") && [
-                                " (chart? ",
-                                m('input', {name: 'showChart', type:"checkbox", checked:state.showChart, onchange: e => update({showChart: e.target.checked})}),
-                                ")",
+                                " ",
+                                m(UI.Button, {
+                                    name: 'showChart',
+                                    iconLeft: UI.Icons.BAR_CHART_2,
+                                    active:state.showChart,
+                                    compact: true,
+                                    size: "xs",
+                                    style: "margin: 0.5em;",
+                                    onclick: e => {
+                                        e.target.active = !e.target.active;
+                                        return update({showChart: e.target.active})
+                                    }
+                                }),
                             ],
-                        ),
-                        m('select', {
-                            name: 'matrix_variable',
-                            onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
-                        },
-                            m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
-                            meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
-                        ),
+                        ]),
 
                         state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
 
