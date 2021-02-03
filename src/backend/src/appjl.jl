@@ -175,6 +175,7 @@ and return the quantiles of that vector.
 
 This is a bit expensive, so it is memoized.
 """
+# memoized functions can't have docstrings - don't delete this comment
 @memoize function var_stats_1d(domain, variable, quantiles)
     # dims = 2 sums rows; dims = 1 sums cols
     vars = []
