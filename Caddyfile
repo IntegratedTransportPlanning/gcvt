@@ -12,7 +12,7 @@
 }
 
 :2016/api/ {
-	proxy / localhost:8000 {
+	proxy / :8000 {
 		websocket
 	}
 }

@@ -39,11 +39,14 @@ end
 
 ### APP ###
 
+
+## State (all constant)
+
 include("$(@__DIR__)/scenarios.jl")
 
-zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
+const zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
 
-zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
+const zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
 for f in zones.features
     zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
 end
@@ -51,9 +54,13 @@ end
 const NUM_ZONES = zone_centroids |> length
 
 # This should probably be reloaded periodically so server doesn't need to be restarted?
-links, mats, metadata = load_scenarios(packdir)
+const links, mats, metadata = load_scenarios(packdir)
 
 const NUM_LINKS = (links |> first)[2] |> size |> first
+
+
+## Funcs
+
 
 # Get list of scenarios (scenario name, id, years active)
 list_scenarios() = metadata["scenarios"]
@@ -119,11 +126,21 @@ function comp(data, scenario, year, variable, comparison_scenario, comparison_ye
     return collect(flatten(result))
 end
 
-# Return values likely to be quantiles for this variable across all scenarios.
-#
-# Quantiles are too expensive to calculate on-the-fly. We could calculate exact
-# quantiles, but sampling is also fine.
-@memoize function var_stats(domain, variable, quantiles=(0, 1), percent=false)
+"""
+    var_stats(domain, variable, quantiles, percent=false)
+
+Return quantiles to use when comparing `variable` between scenarios.
+
+We approximate the quantiles for all pair-wise differences with this algorithm:
+
+1. Compute the element-wise difference between each pair of scenarios for the
+given `domain` and `variable`
+2. sample from these differences to create a vector of differences
+3. return the quantiles of the sampled vector
+"""
+# This is expensive, so it is memoized and the cache is warmed up before the
+# webserver starts.
+@memoize function var_stats(domain, variable, quantiles, percent=false)
     vars = []
     if domain == "od_matrices"
         vars = [scen[variable] for scen in values(mats)]
@@ -150,7 +167,16 @@ end
     return quantile(flatten(vcat(diffs...)), quantiles)
 end
 
-@memoize function var_stats_1d(domain,variable,quantiles=(0,1))
+"""
+    var_stats_1d(domain, variable, quantiles)
+
+Collect all values for `variable` from all scenarios in `domain` into a vector
+and return the quantiles of that vector.
+
+This is a bit expensive, so it is memoized.
+"""
+# memoized functions can't have docstrings - don't delete this comment
+@memoize function var_stats_1d(domain, variable, quantiles)
     # dims = 2 sums rows; dims = 1 sums cols
     vars = []
     if domain == "od_matrices"
@@ -178,6 +204,10 @@ println("Warming up the cache: matrices")
     var_stats("od_matrices", variable, (0.05, 0.95), true)
 end
 
+
+## Routes
+
+
 route("/scenarios") do
     list_scenarios() |> json
 end
@@ -186,22 +216,18 @@ route("/variables/:domain") do
     list_variables(@params(:domain)) |> json
 end
 
-
+# Return a vector: [low_quantile, high_quantile]
 route("/stats") do
     # Was removed this in ac81797 but is 'needed' below
     defaults = Dict(
         :domain => "od_matrices",
-        :scenario => "Rail",
-        :year => "2030",
         :comparewith => "DoMin",
-        :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
         :quantiles => "0.0001,0.9999",  # These default percentiles seem v. generous
                                         # but we look at all possible differences
                                         # so overwhelming majority of differences are
                                         # tiny. Seems to work OK in practice.
-        :row => "false",
     )
     d = merge(defaults, getpayload())
     quantiles = parse.(Float64,split(d[:quantiles],","))
@@ -221,7 +247,7 @@ route("/data") do
         :domain => "od_matrices",
         :scenario => "Rail",
         :year => "2030",
-        :comparewith => "DoMin", # Consider making comparison optional: show absolute level
+        :comparewith => "DoMin",
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
@@ -338,9 +364,7 @@ function vegalite_to_html(vl;title="Greener Connectivity Plot",width=200,height=
     """
 end
 
-# Todo:
-# resolve scenario etc to pretty name
-# don't hardcode years - use metadata
+# TODO:
 # display units
 # sensible ticks for years
 #
