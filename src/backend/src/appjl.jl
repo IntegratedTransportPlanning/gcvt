@@ -190,18 +190,22 @@ end
 "Given a pair of variable_name => meta, return true if it should be used"
 is_used((name, meta)) = get(meta, "use", true)
 
-println("Warming up the cache: links")
-@showprogress for variable in keys(filter(is_used, list_variables("links")))
-    # get these quantiles from colourMap in index.js
-    var_stats("links", variable, (0.1, 0.9))
-    var_stats("links", variable, (0.05, 0.95), true)
-end
+Threads.@spawn begin
+    println("Warming up the cache: links")
+    for variable in keys(filter(is_used, list_variables("links")))
+        # get these quantiles from colourMap in index.js
+        var_stats("links", variable, (0.1, 0.9))
+        var_stats("links", variable, (0.05, 0.95), true)
+    end
+    println("Link cache warm")
 
-println("Warming up the cache: matrices")
-@showprogress for variable in keys(filter(is_used, list_variables("od_matrices")))
-    # get these quantiles from colourMap in index.js
-    var_stats("od_matrices", variable, (0.0001, 0.9999))
-    var_stats("od_matrices", variable, (0.05, 0.95), true)
+    println("Warming up the cache: matrices")
+    for variable in keys(filter(is_used, list_variables("od_matrices")))
+        # get these quantiles from colourMap in index.js
+        var_stats("od_matrices", variable, (0.0001, 0.9999))
+        var_stats("od_matrices", variable, (0.05, 0.95), true)
+    end
+    println("Matrix cache warm")
 end
 
 
