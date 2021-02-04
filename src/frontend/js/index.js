@@ -1275,7 +1275,8 @@ function setZoneColours(nums, colour) {
     // Quick proof of concept.
     // TODO: Handle missings here.
     map.setPaintProperty("zones", "fill-opacity", [
-        "match", atFid(nums),
+        "match",
+        ["to-number", ["has", ["to-string", ["-", ["get", "fid"], 1]], ["literal", nums]]],
         0, 0,
         /* fallback */ .5
     ])
