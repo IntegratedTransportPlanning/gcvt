@@ -564,17 +564,20 @@ const app = {
                 const {compare, compareYear, scenario, scenarioYear: year, meta} = state
                 const compareWith = compare ? state.compareWith : "none"
                 const percent = compare && state.percent
-                let bounds, values, basevalues
+                let bounds, valuesObj, basevaluesObj
 
                 const dir = state.compare ? meta[domain][variable]["good"] :
                     meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
-                    ;[values, basevalues] = await Promise.all([
+                    ;[valuesObj, basevaluesObj] = await Promise.all([
                         getDataArr("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
                         getDataArr("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
+
+                    const values = Object.values(valuesObj)
+                    const basevalues = Object.values(basevaluesObj)
 
                     // TODO: make bounds consistent across all scenarios (currently it makes them all look about the same!)
                     const sortedValues = sort(values)
@@ -588,8 +591,8 @@ const app = {
                         centroidLineWeights,
                         layers: {
                             [domain]: {
-                                values,
-                                basevalues,
+                                values: valuesObj,
+                                basevalues: basevaluesObj,
                                 bounds,
                                 dir,
                                 // In an array otherwise it gets executed by the patch func
@@ -609,11 +612,11 @@ const app = {
                             [0.1,0.9]
 
                     // Quantiles should be overridden by metadata
-                    ;[bounds, values, basevalues] = await Promise.all([
+                    ;[bounds, valuesObj, basevaluesObj] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
-                        (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getDataArr("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
-                        getDataArr("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
-                        domain == "od_matrices" && getDataArr("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
+                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
@@ -628,13 +631,13 @@ const app = {
 
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer(R.merge({
-                    values,
+                    values: valuesObj,
                     bounds,
                     dir,
                     // In an array otherwise it gets executed by the patch func
                     palette: [palette],
                     unit,
-                }, basevalues ? {basevalues} : {}))
+                }, basevaluesObj ? {basevalues: basevaluesObj} : {}))
             },
         }
     },
@@ -1260,11 +1263,13 @@ states.map(menuView)
 
 // MapboxGL styling spec instructions for looking up an attribute in the array
 // `data` by id (links) or by the property `fid` (zones)
-const atId = data => ['at', ['id'], ["literal", data]]
-const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
+// I can never find these docs so I'm leaving them here as a gift to future me (and, perhaps, you)
+// https://docs.mapbox.com/mapbox-gl-js/style-spec/expressions/#at
+const atId = data => ['get', ["to-string", ['id']], ["literal", data]]
+const atFid = data => ['get', ["to-string", ["-", ['get', 'fid'], 1]], ["literal", data]]
 
 function setZoneColours(nums, colour) {
-    const colours = nums.map(colour)
+    const colours = R.map(colour)(nums)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
     // Quick proof of concept.
@@ -1279,7 +1284,7 @@ function setZoneColours(nums, colour) {
 }
 
 function setLinkColours(nums, colour,weights) {
-    const colours = nums.map(colour)
+    const colours = R.map(colour)(nums)
     const state = states() // This is not kosher
 
     const COMPARE_MODE = state.compare
