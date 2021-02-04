@@ -2,6 +2,8 @@
 
 module tmp
 
+const API_VERSION = "0.0.1" # Change this to invalidate HTTP cache
+
 import Genie
 using Genie.Router: route, @params
 using Genie.Requests: getpayload
@@ -27,7 +29,7 @@ VegaLite.actionlinks(false) # Global setting - disable action button on all plot
 json(data; status::Int = 200) =
     Genie.Renderer.json(data; status = status, headers = Dict(
         "Access-Control-Allow-Origin" => "*",
-        "Cache-Control" => "public, max-age=$(14 * 24 * 60 * 60)", # cache for 2 weeks
+        "Cache-Control" => "public, max-age=$(365 * 24 * 60 * 60)", # cache for a year (max recommended). Change API_VERSION to invalidate
     ))
 
 Genie.config.session_auto_start = false
@@ -37,6 +39,14 @@ Genie.config.session_auto_start = false
 # Test route
 route("/") do
     json(Dict("Answer" => 42))
+end
+
+# Used solely to invalidate caches - increment API_VERSION if you need to do so
+route("/version") do
+    Genie.Renderer.json(Dict("version" => API_VERSION); status = 200, headers = Dict(
+        "Access-Control-Allow-Origin" => "*",
+        "Cache-Control" => "max-age=0", # Don't cache 
+    ))
 end
 
 
