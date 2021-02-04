@@ -302,6 +302,26 @@ const mapboxInit = ({lng, lat, zoom}) => {
         })
 
         map.addLayer({
+            id: 'tempZoneBorders',
+            type: 'line',
+            source: {
+                type: 'vector',
+                tiles: [BASEURL + '/tiles/2/zones/{z}/{x}/{y}.pbf',],
+                // If you don't have this, mapbox doesn't show tiles beyond the
+                // zoom level of the tiles, which is not what we want.
+                maxzoom: 6,
+            },
+            "source-layer": "zones",
+            paint: {
+                'line-color': 'red',
+                'line-width': 2,
+            },
+            layout: {
+                visibility: 'none'
+            }
+        })
+
+        map.addLayer({
             id: 'zoneBorders',
             type: 'line',
             source: {
@@ -769,6 +789,7 @@ const { update, states, actions } =
                 numberToHuman(layer.values[fid - 1], state) +
                 (state.compare && state.percent ? "" : " ") +
                 layer.unit
+            tempOutlineZone(fid)
 
             return merge(state, {
                     mapUI: {
@@ -789,6 +810,7 @@ const { update, states, actions } =
 
     map.on('mouseleave', 'zones', event => {
         const hover = states().mapUI.hover
+        tempUnoutlineZone()
         hover && hover.remove()
     })
 
@@ -1357,6 +1379,21 @@ function hideCentroids({selectedZones}) {
 
 }
 
+function tempOutlineZone(zone) {
+        const lookup = {}
+        lookup[zone] = true
+        map.setPaintProperty("tempZoneBorders", "line-opacity",
+            ["to-number", ["has", ["to-string", ["get", "fid"]], ["literal", lookup]]])
+        map.setLayoutProperty("tempZoneBorders", "visibility", "visible")
+}
+
+function tempUnoutlineZone(zone) {
+        const lookup = {}
+        map.setPaintProperty("tempZoneBorders", "line-opacity",
+            ["to-number", ["has", ["to-string", ["get", "fid"]], ["literal", lookup]]])
+        map.setLayoutProperty("tempZoneBorders", "visibility", "none")
+}
+
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     const id = selectedZones[0] - 1
     const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1]))
@@ -1405,6 +1442,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     })
 
     map.setLayoutProperty("zoneBorders", "visibility", "none")
+    map.setLayoutProperty("tempZoneBorders", "visibility", "none")
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
