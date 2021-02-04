@@ -1269,6 +1269,54 @@ const atId = data => ['get', ["to-string", ['id']], ["literal", data]]
 const atFid = data => ['get', ["to-string", ["-", ['get', 'fid'], 1]], ["literal", data]]
 
 function setZoneColours(nums, colour) {
+
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //
+    //                     \||/
+    //                     |  @___oo
+    //           /\  /\   / (__,,,,|
+    //          ) /^\) ^\/ _)
+    //          )   /^\/   _)
+    //          )   _ /  / _)
+    //      /\  )/\/ ||  | )_)
+    //     <  >      |(,,) )__)
+    //      ||      /    \)___)\
+    //      | \____(      )___) )___
+    //       \______(_______;;; __;;;
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    // Dave the dragon is eating half of
+    // your data
+    nums = R.pickBy(_ => Math.random() < 0.5, nums)
+    // Dave the dragon says it would be a
+    // bad idea to let this line sneak into
+    // production
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //
+    //                     \||/
+    //                     |  @___oo
+    //           /\  /\   / (__,,,,|
+    //          ) /^\) ^\/ _)
+    //          )   /^\/   _)
+    //          )   _ /  / _)
+    //      /\  )/\/ ||  | )_)
+    //     <  >      |(,,) )__)
+    //      ||      /    \)___)\
+    //      | \____(      )___) )___
+    //       \______(_______;;; __;;;
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
     const colours = R.map(colour)(nums)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
