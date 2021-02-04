@@ -55,6 +55,8 @@ import * as turf from "@turf/turf"
 
 import * as R from "ramda"
 
+import memoize from "fast-memoize"
+
 import ITPLOGO from "../../resources/itp.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
@@ -95,8 +97,11 @@ function erf(x) {
 const nerf = x => (1+erf(x*2-1))/2
 
 // get data from Julia:
-const getData = async endpoint =>
+const _getData = async endpoint =>
     (await fetch("/api/" + endpoint)).json().catch(e => console.error(`Error getting data from:\n/api/${endpoint}\n\n`, e))
+
+// Cache data locally for nicer client performance
+const getData = memoize(_getData)
 
 // d3 really doesn't offer a sane way to pick these.
 // Supported list: https://github.com/d3/d3-scale-chromatic/blob/master/src/index.js
