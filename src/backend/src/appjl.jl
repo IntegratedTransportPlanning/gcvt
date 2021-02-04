@@ -25,7 +25,10 @@ VegaLite.actionlinks(false) # Global setting - disable action button on all plot
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
-    Genie.Renderer.json(data; status = status, headers = Dict("Access-Control-Allow-Origin" => "*"))
+    Genie.Renderer.json(data; status = status, headers = Dict(
+        "Access-Control-Allow-Origin" => "*",
+        "Cache-Control" => "public, max-age=$(14 * 24 * 60 * 60)", # cache for 2 weeks
+    ))
 
 Genie.config.session_auto_start = false
 # Default headers are supposed to go here, but they don't seem to work.
