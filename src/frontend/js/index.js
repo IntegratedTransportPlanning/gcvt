@@ -1183,14 +1183,37 @@ const menuView = state => {
                     (() => {
                         const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
                         return [
-                            m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
+                            m('div', {
+                                style: "position: absolute; right: 0.5em;",
+                            }, [
+                                m(UI.Button, {
+                                    name: 'extChart',
+                                    iconLeft: UI.Icons.EXTERNAL_LINK,
+                                    compact: true,
+                                    basic: true,
+                                    size: "xs",
+                                    onclick: e => {
+                                        return window.open(chartURL + "&width=800&height=500", "_blank")
+                                    }
+                                }),
+                                m(UI.Button, {
+                                    name: 'closeExtChart',
+                                    iconLeft: UI.Icons.X,
+                                    compact: true,
+                                    basic: true,
+                                    size: "xs",
+                                    onclick: e => {
+                                        return update({showChart: false})
+                                    }
+                                }),
+                            ]),
                             // Currently you can't select a zone and compare so
                             // this is a little less useful than it could be
                             m('iframe', {
                                 frameBorder:0,
                                 width: "100%",
                                 height: "160px",
-                                src: chartURL + "&width=320&height=160"
+                                src: chartURL + "&width=350&height=160"
                             }),
                         ]
                     })(),
