@@ -469,6 +469,9 @@ const app = {
                         getData("scenarios"),
                     ])
 
+                // Warm up the cache without slowing down time-to-paint
+                setTimeout(() => warmCache(od_matrices, scenarios), 1000)
+
                 // TODO: read default from yaml properties
                 update({
                     meta: {links, od_matrices, scenarios},
@@ -1486,6 +1489,16 @@ legend_style.innerHTML = `.colourbar image {
 }`
 document.body.appendChild(legend_style)
 
+function warmCache(od_matrices, scenarios) {
+    for (const variable in od_matrices) {
+        for (const scenario in scenarios) {
+            for (const year of scenarios[scenario].at) {
+                getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=true&comparewith=none")
+                getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=false&comparewith=none")
+            }
+        }
+    }
+}
 
 if (DEBUG)
     Object.assign(window, {
