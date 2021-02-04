@@ -1324,9 +1324,17 @@ function setZoneColours(nums, colour) {
     // TODO: Handle missings here.
     map.setPaintProperty("zones", "fill-opacity", [
         "match",
+
+        // take the fid from the zone properties (not 100% sure _where_ this is set. Perhaps in geojson?)
+        // subtract 1
+        // convert it to a string
+        // check if the `nums` object contains has a key with this name, return a boolean
+        // then convert this boolean to a number
         ["to-number", ["has", ["to-string", ["-", ["get", "fid"], 1]], ["literal", nums]]],
-        0, 0,
-        /* fallback */ .5
+
+        1, 0.5, // If we have data for the zone, opacity 50%
+        0, 0,   // If we don't have data for the zone, opacity 0%
+        0.5,    // Fallback (unused)
     ])
     map.setPaintProperty('zones', 'fill-color',
         ['to-color', atFid(colours)])
