@@ -646,6 +646,7 @@ const app = {
                     ...strings_in_query.map(key => `${key}=${state[key]}`),
                     ...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`),
                     ...arrays_in_query.map(k => `${k}=${JSON.stringify(state[k])}`),
+                    "z" // Fixes #132 - never end URL with a square bracket
                 ]
                 history.replaceState({},"", "?" + queryItems.join("&"))
             }
