@@ -165,7 +165,7 @@ function zones2summary(summariser, state) {
     return R.pipe(summariser,x=>numberToHuman(x, state))(
         state.selectedZones.length > 0 ?
         R.pipe(R.pickAll,R.values)(
-            R.map(R.add(-1),state.selectedZones), state.layers.od_matrices.basevalues
+            state.selectedZones, state.layers.od_matrices.basevalues
         ) :
         state.layers.od_matrices.basevalues
     ) +
