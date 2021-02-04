@@ -39,17 +39,21 @@ function get_quantiles(data, variable, p)
 end
 
 """
-   get_aggregate_flows(data, variable, scenario, direction)
+   get_aggregate_flows(data, variable, scenario, direction, zones)
 
 Aggregated (always summed?) flows for all zones. Returns an iterable of pairs (zone_id => flow_amount), maybe a Dict.
 
 Motivation: chloropleth view.
+
+If `zones` is not `:`, only sum flows from/to those zones.
+
+Motivation: chloropleth once you've selected one or more zones.
 """
-function get_aggregate_flows(data, variable, scenario, direction)
+function get_aggregate_flows(data, variable, scenario, direction, zones)
 end
 
 """
-   get_aggregate_flows(data, variable, scenario, direction, comparison_scenario, percent::Bool)
+   get_aggregate_flows(data, variable, scenario, direction, zones, comparison_scenario, percent::Bool)
 
 Compare the aggregate flows for each zone for the given variable in the two scenarios.
 Returns an iterable of pairs (zone_id => difference_in_flows), maybe a Dict.
@@ -57,8 +61,12 @@ Returns an iterable of pairs (zone_id => difference_in_flows), maybe a Dict.
 If `percent` is true, compute the percentage difference in aggregate flow, otherwise compute the absolute difference.
 
 Motivation: comparison chloropleth view.
+
+If `zones` is not `:`, only sum flows from/to those zones.
+
+Motivation: comparison chloropleth once you've selected one or more zones (new feature)
 """
-function get_aggregate_flows(data, variable, scenario, direction, comparison_scenario, percent::Bool)
+function get_aggregate_flows(data, variable, scenario, direction, zones, comparison_scenario, percent::Bool)
 end
 
 """
@@ -84,16 +92,30 @@ end
 
 Return centroids for each zone. `[zone1_centroid, zone2_centroid, ...]`
 """
-function get_centroids(x)
-end
+function get_centroids end
 
 """
     get_zone_info(x)
 
 Get some info for a popup or whatever.
-"""
-function get_zone_info end # unimplemented
 
+In the old code, we add new names to `zoneNames` in the config as new tiles are
+loaded or removed. On the one hand, if we ever had loads and loads of zones,
+that would be handy, on the other it triggers a lot of unnecessary events.
+"""
+function get_zone_info end
+
+
+"""
+    get_metadata(x)
+
+Motivation:
+ - client-side needs to draw some menus
+ - need to know what scenarios each variable is in
+ - want to know any custom units, palettes, scales, etc.
+ - need to know default map position, scenario, variable, selection criteria, etc.
+"""
+function get_metadata end
 
 using Mux
 
@@ -101,4 +123,5 @@ using Mux
     Mux.defaults,
     route("/", debug_page), # some kind of debug page or API help page
     # need to pick some route names
+    Mux.notfound()
 )
