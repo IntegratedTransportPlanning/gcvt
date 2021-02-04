@@ -102,6 +102,8 @@ const getData = async endpoint =>
         e => console.error(`Error getting data from:\n/api/${endpoint}\n\n`, e)
     )
 
+const getDataArr = async endpoint => Object.values(await getData(endpoint))
+
 async function getApiVersion() {
     try {
         return (await (await fetch("/api/version")).json())["version"]
@@ -163,7 +165,7 @@ function zones2summary(summariser, state) {
     return R.pipe(summariser,x=>numberToHuman(x, state))(
         state.selectedZones.length > 0 ?
         R.pipe(R.pickAll,R.values)(
-            R.map(R.add(-1),state.selectedZones), state.layers.od_matrices.basevalues
+            state.selectedZones, state.layers.od_matrices.basevalues
         ) :
         state.layers.od_matrices.basevalues
     ) +
@@ -493,7 +495,7 @@ const app = {
                 })
             },
             getLTypes: async () => update({
-                LTypes: await getData("data?domain=links&variable=LType&comparewith=none")
+                LTypes: await getDataArr("data?domain=links&variable=LType&comparewith=none")
             }),
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
@@ -562,23 +564,26 @@ const app = {
                 const {compare, compareYear, scenario, scenarioYear: year, meta} = state
                 const compareWith = compare ? state.compareWith : "none"
                 const percent = compare && state.percent
-                let bounds, values, basevalues
+                let bounds, valuesObj, basevaluesObj
 
                 const dir = state.compare ? meta[domain][variable]["good"] :
                     meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
                 const unit = getUnit(meta, domain, variable, percent)
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
-                    ;[values, basevalues] = await Promise.all([
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                    ;[valuesObj, basevaluesObj] = await Promise.all([
+                        getDataArr("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
+                        getDataArr("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
+
+                    const values = Object.values(valuesObj)
+                    const basevalues = Object.values(basevaluesObj)
 
                     // TODO: make bounds consistent across all scenarios (currently it makes them all look about the same!)
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.99) ]
 
-                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
+                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getDataArr("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
                     const palette = getPalette(dir, bounds, meta[domain][variable], compare, true)
 
@@ -586,8 +591,8 @@ const app = {
                         centroidLineWeights,
                         layers: {
                             [domain]: {
-                                values,
-                                basevalues,
+                                values: valuesObj,
+                                basevalues: basevaluesObj,
                                 bounds,
                                 dir,
                                 // In an array otherwise it gets executed by the patch func
@@ -607,7 +612,7 @@ const app = {
                             [0.1,0.9]
 
                     // Quantiles should be overridden by metadata
-                    ;[bounds, values, basevalues] = await Promise.all([
+                    ;[bounds, valuesObj, basevaluesObj] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
                         (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
                         getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
@@ -626,13 +631,13 @@ const app = {
 
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer(R.merge({
-                    values,
+                    values: valuesObj,
                     bounds,
                     dir,
                     // In an array otherwise it gets executed by the patch func
                     palette: [palette],
                     unit,
-                }, basevalues ? {basevalues} : {}))
+                }, basevaluesObj ? {basevalues: basevaluesObj} : {}))
             },
         }
     },
@@ -1258,26 +1263,85 @@ states.map(menuView)
 
 // MapboxGL styling spec instructions for looking up an attribute in the array
 // `data` by id (links) or by the property `fid` (zones)
-const atId = data => ['at', ['id'], ["literal", data]]
-const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
+// I can never find these docs so I'm leaving them here as a gift to future me (and, perhaps, you)
+// https://docs.mapbox.com/mapbox-gl-js/style-spec/expressions/#at
+const atId = data => ['get', ["to-string", ['id']], ["literal", data]]
+const atFid = data => ['get', ["to-string", ["-", ['get', 'fid'], 1]], ["literal", data]]
 
 function setZoneColours(nums, colour) {
-    const colours = nums.map(colour)
+
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    //
+    //                     \||/
+    //                     |  @___oo
+    //           /\  /\   / (__,,,,|
+    //          ) /^\) ^\/ _)
+    //          )   /^\/   _)
+    //          )   _ /  / _)
+    //      /\  )/\/ ||  | )_)
+    //     <  >      |(,,) )__)
+    //      ||      /    \)___)\
+    //      | \____(      )___) )___
+    //       \______(_______;;; __;;;
+    //VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    // Dave the dragon is eating half of
+    // your data
+    nums = R.pickBy(_ => Math.random() < 0.5, nums)
+    // Dave the dragon says it would be a
+    // bad idea to let this line sneak into
+    // production
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //
+    //                     \||/
+    //                     |  @___oo
+    //           /\  /\   / (__,,,,|
+    //          ) /^\) ^\/ _)
+    //          )   /^\/   _)
+    //          )   _ /  / _)
+    //      /\  )/\/ ||  | )_)
+    //     <  >      |(,,) )__)
+    //      ||      /    \)___)\
+    //      | \____(      )___) )___
+    //       \______(_______;;; __;;;
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    const colours = R.map(colour)(nums)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
     // Quick proof of concept.
     // TODO: Handle missings here.
     map.setPaintProperty("zones", "fill-opacity", [
-        "match", atFid(nums),
-        0, 0,
-        /* fallback */ .5
+        "match",
+
+        // take the fid from the zone properties (not 100% sure _where_ this is set. Perhaps in geojson?)
+        // subtract 1
+        // convert it to a string
+        // check if the `nums` object contains has a key with this name, return a boolean
+        // then convert this boolean to a number
+        ["to-number", ["has", ["to-string", ["-", ["get", "fid"], 1]], ["literal", nums]]],
+
+        1, 0.5, // If we have data for the zone, opacity 50%
+        0, 0,   // If we don't have data for the zone, opacity 0%
+        0.5,    // Fallback (unused)
     ])
     map.setPaintProperty('zones', 'fill-color',
         ['to-color', atFid(colours)])
 }
 
 function setLinkColours(nums, colour,weights) {
-    const colours = nums.map(colour)
+    const colours = R.map(colour)(nums)
     const state = states() // This is not kosher
 
     const COMPARE_MODE = state.compare
@@ -1492,8 +1556,8 @@ async function getDataFromId(id,domain="links"){
     const state = states()
     const variable = state.layers[domain].variable
     log("state is ", state)
-    const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
-    const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
+    const percData = await getDataArr("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
+    const absData = await getDataArr("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
     return {absVal: absData[id], percVal: percData[id]}
 }
 
