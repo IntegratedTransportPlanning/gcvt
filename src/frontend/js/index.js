@@ -817,10 +817,11 @@ const menuView = state => {
             ),
 
             // Legend
+	    state.layers.od_matrices.bounds &&
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.layers.od_matrices.bounds && m(Legend, {
+                        m(Legend, {
                             title: state.layers.od_matrices.variable,
                             percent: state.compare && state.percent,
                             ...state.layers.od_matrices
