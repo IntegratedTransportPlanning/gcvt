@@ -159,7 +159,7 @@ function zones2summary(summariser, state) {
 const DEFAULTS = {
     lng: -1.129,
     lat: 53.231,
-    zoom: 4.21,
+    zoom: 8,
     meta: {
         od_matrices: {},
         scenarios: {},
@@ -400,13 +400,14 @@ const app = {
             },
             changeLayerVariable: (domain, variable) => {
                 update(state => {
-                    let scens = scenarios_with(state.meta, variable)
+                    let scens = R.keys(scenarios_with(state.meta, variable))
                     let scenario = state.scenario
-                    if (!R.contains(state.scenario, scens))
+                    if (!R.contains(state.scenario, scens)) {
                         scenario = scens[0]
+                    }
 
                     return merge(state, {
-                        scenario,
+                        scenario: scenario,
                         layers: { [domain]: { variable }}}
                     )
                 })
@@ -746,7 +747,7 @@ const Legend = () => {
         legendelem && legendelem.remove()
         legendelem = legend({
             color: palette,
-            title: vnode.attrs.title + ` (${unit})`,
+            title: vnode.attrs.title + (unit ? ` (${unit})` : ""),
             tickFormat,
         })
         legendelem.classList.add("colourbar")
@@ -811,7 +812,7 @@ const menuView = state => {
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
                         state.layers.od_matrices.bounds && m(Legend, {
-                            title: 'Zones',
+                            title: state.layers.od_matrices.variable,
                             percent: state.compare && state.percent,
                             ...state.layers.od_matrices
                         }),
@@ -889,45 +890,8 @@ const menuView = state => {
                                 onchange: e =>
                                     actions.updateBaseScenario({scenario: e.target.value})
                             },
-                                meta2options(
-                                    R.filter(scen => scen.at.includes(parseInt(state.scenarioYear, 10)), state.meta.scenarios),
-                                    state.compareWith
-                                )
+                                meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.compareWith)
                             ),
-
-                            m('label', {for: 'basetracksactive'},
-                                'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
-                                m('input', {
-                                    name: 'basetracksactive',
-                                    type:"checkbox",
-                                    checked: state.compareYear !== "auto",
-                                    onchange: e => {
-                                        if (!e.target.checked) {
-                                            actions.updateBaseScenario({
-                                                year: "auto",
-                                            })
-                                        } else {
-                                            actions.updateBaseScenario({
-                                                year: state.scenarioYear,
-                                            })
-                                        }
-                                    }}),
-                            " )"),
-
-                            state.compareYear !== "auto" && [
-                                m('br'),
-                                state.meta.scenarios[state.compareWith] &&
-                                (state.meta.scenarios[state.compareWith].at.length > 1) &&
-                                m('select', {
-                                    name: 'year',
-                                    onchange: e => actions.updateBaseScenario({year: e.target.value})
-                                },
-                                    sort(state.meta.scenarios[state.compareWith].at).map(
-                                        year =>
-                                            m('option', {value: year, selected: year == state.compareYear}, year)
-                                    ),
-                                ),
-                            ],
                         ],
 
                         state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
@@ -984,7 +948,7 @@ const menuView = state => {
             Object.keys(state.meta.scenarios).length > 0 && m('div', {
                 style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
             },
-                (state.showDesc
+                (state.showDesc && false // TODO: turn this back on with better defaults when there aren't descriptions, etc.
                 ?  m(UI.Callout, {
                     style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
                     fluid: true,
