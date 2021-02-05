@@ -864,6 +864,7 @@ const menuView = state => {
                             ],
                         ]),
 
+                        state.layers.od_matrices.variable && [
 
                         m('label', {for: 'scenario'}, "Scenario"),
                         m('select', {
@@ -938,6 +939,7 @@ const menuView = state => {
                             && m('p',
                                 "Total value: " + zones2summary(R.sum,state)
                             )
+                        ],
                         ],
 
                     ],
