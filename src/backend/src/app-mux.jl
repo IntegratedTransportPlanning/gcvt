@@ -77,16 +77,12 @@ Motivation: chloropleth once you've selected one or more zones.
 """
 function get_aggregate_flows(data, variable, scenario, direction, zones)
     col_idx = column_index(data, variable, scenario)
-    if direction == :incoming
-        # Sum only flows originating in `zones`
-        return map(data.grouped_by_destination) do grp
-            sum(filter(:origin => in(zones), grp)[!, col_idx])
-        end
-    else
-        # Sum only flows ending in `zones`
-        return map(data.grouped_by_origin) do grp
-            sum(filter(:destination => in(zones), grp)[!, col_idx])
-        end
+    (grouptype, sourcecol) = direction == :incoming ? (:grouped_by_destination, :origin) : (:grouped_by_origin, :destination)
+    return map(getfield(data, grouptype)) do grp
+        sources = grp[!, sourcecol]
+        col = grp[!, col_idx]
+        gen = (v for (o, v) in zip(sources, col) if o in zones)
+        reduce(+, gen; init = zero(eltype(col))) # From Julia 1.6+ we can use sum(...; init = ...)
     end
 end
 
