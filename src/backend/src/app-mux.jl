@@ -150,8 +150,6 @@ zone_centroids = load_pct_centroids()
 
 QUANTILES = (0.1, 0.9)
 
-summed_incoming_flows(scenario, variable) = sum.(get_grouped(data, variable, scenario, :incoming))
-
 # APP
 
 import HTTP
@@ -163,6 +161,7 @@ jsonresp(obj) = Dict(:body => String(JSON3.write(obj)), :headers => Dict("Conten
 
 queryparams(req) = HTTP.URIs.queryparams(req[:query])
 
+# Just a hack while the frontend still expects an array
 function fill_up(dict)
     map(idx -> get(dict, idx, 0), 1:524)
 end
@@ -197,8 +196,8 @@ end
         elseif comparewith == "none"
             vs = get_aggregate_flows(data, variable, scenario, :incoming, :)
         else
-            main = summed_incoming_flows(scenario, variable)
-            comparator = summed_incoming_flows(comparewith, variable)
+            main = get_aggregate_flows(data, variable, scenario, :incoming, :)
+            comparator = get_aggregate_flows(data, variable, comparewith, :incoming, :)
             vs = main .- comparator
         end
         # Ordered for debugging reasons.
