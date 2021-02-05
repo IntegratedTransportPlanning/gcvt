@@ -13,7 +13,7 @@ http:
 	caddy
 
 back:
-	cd src/backend && julia --project=. src/appjl.jl
+	cd src/backend && env ITP_OD_PROD=1 julia --project=. src/app-mux.jl
 
 front:
 	cd src/frontend && yarn run watch
