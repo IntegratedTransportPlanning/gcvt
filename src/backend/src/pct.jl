@@ -45,7 +45,7 @@ function load_pct_data()
 
     column_scens = map(names(df)[3:end]) do name
         scen = findfirst(v -> startswith(name, v), scenario_prefixes)
-        isnothing(scen) ? nothing : scenario_prefixes[scen]
+        isnothing(scen) ? "base" : scenario_prefixes[scen]
     end
 
     return ODData(df, column_vars, column_scens)
