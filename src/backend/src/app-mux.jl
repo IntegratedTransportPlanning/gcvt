@@ -1,5 +1,6 @@
 @enum FlowDirection Incoming Outgoing
 
+using Base.Iterators: product
 using Statistics
 
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
@@ -24,19 +25,32 @@ function get_aggregate_quantiles(data, variable, p, direction)
 end
 
 """
-    get_aggregate_quantiles(data, variable, p, comparison::Bool, percent::Bool, direction::FlowDirection)
+    get_aggregate_comparison_quantiles(data, variable, p, direction, percent)
 
 Sample the pairwise comparisons between all scenarios featuring `variable` and compute the sample quantiles.
 `p` is a vector of the probabilities at which to calculate the quantiles (see `Statistics.quantile`).
 
 Motivation: comparison chloropleth view.
 """
-function get_aggregate_quantiles(data,
-                                 variable,
-                                 p,
-                                 comparison::Bool,
-                                 percent::Bool,
-                                 direction::FlowDirection)
+function get_aggregate_comparison_quantiles(data, variable, p, direction, percent)
+    vars = map(scenarios_with(data, variable)) do scen
+        sum.(get_grouped(data, variable, scen, direction))
+    end
+
+    function percent_diff(a, b)
+        eps = mean(skipmissing(a)) / 10000
+        @. (a + eps) / (b + eps) - 1
+    end
+    absolute_diff(a, b) = a .- b
+
+    diff_fnc = percent ? percent_diff : absolute_diff
+
+    # Sample the differences between the values of this variable for each pair
+    # of scenarios.
+    pairs = product(1:length(vars), 1:length(vars))
+    diffs = skipmissing(reduce(vcat, rand(diff_fnc(vars[a], vars[b]), 10000) for (a, b) in pairs))
+
+    return quantile(diffs, p)
 end
 
 """
@@ -45,7 +59,7 @@ end
 Return the quantiles for all values of `variable`.
 `p` is a vector of the probabilities at which to calculate the quantiles (see `Statistics.quantile`).
 
-Motivation: used for scaling flow lines (and, in GCVT, link lines).
+Motivation: maybe used for scaling link colours and widths in GCVT?
 """
 function get_quantiles(data, variable, p)
 end
@@ -194,11 +208,11 @@ end
         d = queryparams(req)
         comparewith = d["comparewith"]
         variable = d["variable"]
-        if comparewith != "none"
+        if comparewith == "none"
             jsonresp(get_aggregate_quantiles(data, variable, QUANTILES, :incoming))
         else
-            # TODO change this
-            jsonresp(get_aggregate_quantiles(data, variable, QUANTILES, :incoming))
+            percent = get(d, "percent", "false") == "true"
+            jsonresp(get_aggregate_comparison_quantiles(data, variable, QUANTILES, :incoming, percent))
         end
     end,
     route("/data") do req
