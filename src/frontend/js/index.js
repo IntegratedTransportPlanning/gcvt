@@ -411,12 +411,17 @@ const app = {
                 update(state => {
                     let scens = R.keys(scenarios_with(state.meta, variable))
                     let scenario = state.scenario
-                    if (!R.contains(state.scenario, scens)) {
+                    if (!R.contains(scenario, scens)) {
                         scenario = scens[0]
+                    }
+                    let compareWith = state.compareWith
+                    if (!R.contains(compareWith, scens)) {
+                        compareWith = scens[0]
                     }
 
                     return merge(state, {
-                        scenario: scenario,
+                        scenario,
+                        compareWith,
                         layers: { [domain]: { variable }}}
                     )
                 })
