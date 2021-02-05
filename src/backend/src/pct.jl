@@ -91,6 +91,61 @@ function load_pct_centroids()
     return zone_centroids
 end
 
+# Expects to find shapefiles and CSV in `$dir/raw`
+function process_pct_geometry(dir="$(@__DIR__)/../data/")
+    # Get zone names and IDs
+    df = CSV.read(joinpath(dir, "raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
+    zones = sort!(unique(vcat(df[!, :geo_code1], df[!, :geo_code2])))
+    zone_id(code) = findfirst(==(code), zones)
+    all_zones = Dict(zip(zones, keys(zones)))
+
+    # Generate geojson with ogr2ogr (part of GDAL)
+    prefix = "$dir/raw/Middle_Layer_Super_Output_Areas__December_2011__EW_BGC_V2"
+    run(```ogr2ogr -f "geojson" -t_srs epsg:4326 -s_srs epsg:27700
+        $prefix.geojson
+        $prefix.shp
+    ```)
+
+    geom = GeoJSON.read(read("$prefix.geojson"))
+    # This is buggy, but should have worked.
+    # geom = open(GeoJSON.read, "$prefix.geojson")
+
+    # Add our numeric key to the geojson
+    zone_name_key = "MSOA11CD"
+    found_zones = []
+    for feat in geom.features
+        # Bug, Features can have a field "id", but GeoJSON.jl doesn't let us read or edit that.
+        zone_name = feat.properties[zone_name_key]
+        push!(found_zones, zone_name)
+        fid = get(all_zones, zone_name, "")
+        if haskey(all_zones, zone_name)
+            feat.properties["fid"] = fid
+        end
+    end
+
+    # Remove irrelevant features
+    filter!(feat -> haskey(feat.properties, "fid"), geom.features)
+
+    x = setdiff(found_zones, zones)
+    !isempty(x) && @warn "Zones in geometry but not in data:" x
+    x = setdiff(zones, found_zones)
+    !isempty(x) && @warn "Zones in data but not in geometry:" x
+
+
+    # Save new geojson and generate tiles from it
+    processed_geojson = "$dir/processed/zones.geojson"
+    mkpath(dirname(processed_geojson))
+
+    open(processed_geojson, "w") do f
+        write(f, GeoJSON.write(geom))
+    end
+
+    tiles_dir = "$dir/processed/tiles"
+    mkpath("$dir/processed/tiles")
+
+    run(`$(@__DIR__)/tiles.sh $processed_geojson $tiles_dir/`)
+end
+
 # using Test
 
 # function tests()
