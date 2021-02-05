@@ -6,7 +6,7 @@ using Statistics
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
 
 # Change this to invalidate HTTP cache
-const API_VERSION = IN_PRODUCTION ? "0.0.1m" : rand(['a':'z'..., string.(0:9)...], 4) |> join
+const API_VERSION = IN_PRODUCTION ? "0.0.2" : rand(['a':'z'..., string.(0:9)...], 4) |> join
 
 
 """
