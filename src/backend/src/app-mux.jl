@@ -56,6 +56,22 @@ If `zones` is not `:`, only sum flows from/to those zones.
 Motivation: chloropleth once you've selected one or more zones.
 """
 function get_aggregate_flows(data, variable, scenario, direction, zones)
+    col_idx = column_index(data, variable, scenario)
+    if direction == :incoming
+        # Sum only flows originating in `zones`
+        return map(data.grouped_by_destination) do grp
+            sum(filter(:origin => in(zones), grp)[!, col_idx])
+        end
+    else
+        # Sum only flows ending in `zones`
+        return map(data.grouped_by_origin) do grp
+            sum(filter(:destination => in(zones), grp)[!, col_idx])
+        end
+    end
+end
+
+function get_aggregate_flows(data, variable, scenario, direction, ::Colon)
+    sum.(get_grouped(data, variable, scenario, direction))
 end
 
 """
@@ -176,8 +192,10 @@ end
         scenario = d["scenario"]
         comparewith = d["comparewith"]
         variable = d["variable"]
-        if comparewith == "none"
-            vs = summed_incoming_flows(scenario, variable)
+        if haskey(d, "row")
+            vs = get_aggregate_flows(data, variable, scenario, :incoming, parse.(Int, split(d["row"], ',')))
+        elseif comparewith == "none"
+            vs = get_aggregate_flows(data, variable, scenario, :incoming, :)
         else
             main = summed_incoming_flows(scenario, variable)
             comparator = summed_incoming_flows(comparewith, variable)
