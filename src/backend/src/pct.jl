@@ -5,7 +5,7 @@ using OrderedCollections: OrderedDict
 include("ODData.jl")
 
 function load_pct_data()
-    df = CSV.read(joinpath(@__DIR__, "Propensity to Cycle Tool example dataset/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
+    df = CSV.read(joinpath(@__DIR__, "../data/raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
 
     scenario_prefixes = ("govtarget", "dutch", "cambridge", "govnearmkt", "gendereq", "ebike", "base")
     prefixed_names = filter(n -> any(startswith.(n, scenario_prefixes)), names(df))
