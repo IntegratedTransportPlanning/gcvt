@@ -180,7 +180,7 @@ const DEFAULTS = {
     },
     percent: true,
     compare: false,
-    scenario: "govtarget",
+    scenario: "",
     compareWith: "none",
     scenarioYear: 2010,
     compareYear: "auto",
