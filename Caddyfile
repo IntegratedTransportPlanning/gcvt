@@ -12,7 +12,7 @@
 }
 
 :2016/api/ {
-	proxy / :8000 {
+	proxy / :2017 {
 		websocket
 	}
 }

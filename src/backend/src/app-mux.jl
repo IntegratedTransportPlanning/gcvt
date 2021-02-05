@@ -1,5 +1,7 @@
 @enum FlowDirection Incoming Outgoing
 
+using Statistics
+
 """
     get_aggregate_quantiles(data, variable, p, direction::FlowDirection)
 
@@ -8,7 +10,11 @@ Compute the aggregated flows in `direction` for `variable` and compute the quant
 
 Motivation: chloropleth view.
 """
-function get_aggregate_quantiles(data, variable, p, direction::FlowDirection)
+function get_aggregate_quantiles(data, variable, p, direction)
+    vars = mapreduce(vcat, scenarios_with(data, variable)) do scen
+        sum.(get_grouped(data, variable, scen, direction))
+    end
+    return quantile(vars, p)
 end
 
 """
@@ -92,7 +98,9 @@ end
 
 Return centroids for each zone. `[zone1_centroid, zone2_centroid, ...]`
 """
-function get_centroids end
+function get_centroids()
+    return zone_centroids
+end
 
 """
     get_zone_info(x)
@@ -117,11 +125,68 @@ Motivation:
 """
 function get_metadata end
 
+# DATA
+include("pct.jl")
+
+data = load_pct_data()
+metadata = load_pct_metadata(data)
+zone_centroids = load_pct_centroids()
+
+QUANTILES = (0.1, 0.9)
+
+summed_incoming_flows(scenario, variable) = sum.(get_grouped(data, variable, scenario, :incoming))
+
+# APP
+
+import HTTP
+
 using Mux
+using JSON3
+
+jsonresp(obj) = Dict(:body => String(JSON3.write(obj)), :headers => Dict("Content-Type" => "application/json"))
+
+queryparams(req) = HTTP.URIs.queryparams(req[:query])
+
+function fill_up(dict)
+    map(idx -> get(dict, idx, 0), 1:524)
+end
 
 @app app = (
     Mux.defaults,
-    route("/", debug_page), # some kind of debug page or API help page
+    page("/", req -> jsonresp(42)), # some kind of debug page or API help page
     # need to pick some route names
+    #
+    # Compatibility with GCVT:
+    route("/centroids", req -> jsonresp(get_centroids())),
+    route("/scenarios", req -> jsonresp(metadata["scenarios"])),
+    route("/variables/od_matrices", req -> jsonresp(metadata["od_matrices"]["columns"])),
+    route("/stats") do req
+        d = queryparams(req)
+        comparewith = d["comparewith"]
+        variable = d["variable"]
+        if comparewith != "none"
+            jsonresp(get_aggregate_quantiles(data, variable, QUANTILES, :incoming))
+        else
+            # TODO change this
+            jsonresp(get_aggregate_quantiles(data, variable, QUANTILES, :incoming))
+        end
+    end,
+    route("/data") do req
+        d = queryparams(req)
+        scenario = d["scenario"]
+        comparewith = d["comparewith"]
+        variable = d["variable"]
+        if comparewith == "none"
+            vs = summed_incoming_flows(scenario, variable)
+        else
+            main = summed_incoming_flows(scenario, variable)
+            comparator = summed_incoming_flows(comparewith, variable)
+            vs = main .- comparator
+        end
+        # Ordered for debugging reasons.
+        fill_up(OrderedDict(zip(origins(data), vs))) |> jsonresp
+    end,
     Mux.notfound()
 )
+
+serve(app, 2017)
