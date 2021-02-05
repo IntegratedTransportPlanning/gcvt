@@ -184,7 +184,7 @@ end
             vs = main .- comparator
         end
         # Ordered for debugging reasons.
-        fill_up(OrderedDict(zip(origins(data), vs))) |> jsonresp
+        fill_up(OrderedDict(zip(destinations(data), vs))) |> jsonresp
     end,
     Mux.notfound()
 )

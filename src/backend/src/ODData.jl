@@ -120,9 +120,9 @@ end
 # Get data grouped by origin or destination
 function get_grouped(d::ODData, var, scen, direction)
     col_idx = column_index(d, var, scen)
-    if direction == :incoming
+    if direction == :outgoing
         (skipmissing(row[!, col_idx]) for row in d.grouped_by_origin)
-    elseif direction == :outgoing
+    elseif direction == :incoming
         (skipmissing(row[!, col_idx]) for row in d.grouped_by_destination)
     else
         throw(DomainError("direction must be :incoming or :outgoing"))
