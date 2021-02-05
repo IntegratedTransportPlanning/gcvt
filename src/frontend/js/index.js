@@ -889,6 +889,8 @@ const menuView = state => {
                             meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.scenario)
                         ),
 
+                        // Show compare with button if there's more than one scenario featuring this variable
+                        R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 &&
                         m('label', {for: 'compare'}, 'Compare with: ',
                             m('input', {
                                 name: 'compare',
