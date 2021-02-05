@@ -724,7 +724,7 @@ function meta2options(metadata, selected) {
 function scenarios_with(meta, variable) {
     const v = meta.od_matrices[variable]
     if (v === undefined)
-        return [];
+        return {}
     else
         return Object.fromEntries(Object.entries(meta.scenarios).filter(([scen, _]) => R.contains(scen, v.scenarios_with)))
 }
@@ -768,7 +768,7 @@ function getUnit(meta, domain, variable, percent=false){
         if (domain == "od_matrices") {
             return meta.od_matrices[variable].unit
         } else {
-            throw "unreachable"
+            throw new Error("unreachable")
         }
     } catch (e){
         return "Units"
@@ -847,7 +847,7 @@ const menuView = state => {
                                 m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
                                 meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
                             ),
-                            (state.layers.od_matrices.variable !== "") && [
+                            false && (state.layers.od_matrices.variable !== "") && [
                                 " ",
                                 m(UI.Button, {
                                     name: 'showChart',
@@ -1226,5 +1226,5 @@ if (DEBUG)
         setEqual,
         nerf,
 
-        scenarios_with
+        scenarios_with,
     })

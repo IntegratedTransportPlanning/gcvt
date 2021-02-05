@@ -4,7 +4,6 @@ authors = ["Colin Caine <cmcaine@gmail.com>"]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-Genie = "c43c736e-a2d1-11e8-161f-af95117fbd1e"
 GeoJSON = "61d90e0f-e114-555e-ac52-39dfb47a3ef9"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
