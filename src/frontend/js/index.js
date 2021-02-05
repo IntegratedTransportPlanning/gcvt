@@ -341,7 +341,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         // be in the scenario pack and provided by the api instead.
         if (map.getSource('zones') && map.isSourceLoaded('zones')) {
             const a = []
-            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.NAME})
+            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.MSOA11NM})
             update({
                 zoneNames: a,
             })
@@ -681,11 +681,11 @@ const { update, states, actions } =
     map.on('mousemove', 'zones', event => {
         update(state => {
             const layer = state.layers.od_matrices
-            const {NAME, fid} = event.features[0].properties
+            const {MSOA11NM: NAME, fid} = event.features[0].properties
             const value =
                 numberToHuman(layer.values[fid - 1], state) +
                 (state.compare && state.percent ? "" : " ") +
-                layer.unit
+                (layer.unit || "")
 
             return merge(state, {
                     mapUI: {
