@@ -221,4 +221,4 @@ end
     Mux.notfound()
 )
 
-serve(app, 2017)
+IN_PRODUCTION && wait(serve(app, 2017))
