@@ -176,7 +176,7 @@ function fill_up(dict)
 end
 
 @app app = (
-    Mux.defaults,
+    IN_PRODUCTION ? Mux.prod_defaults : Mux.defaults,
     page("/", req -> jsonresp(42)), # some kind of debug page or API help page
     # need to pick some route names
     #
