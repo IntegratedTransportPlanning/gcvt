@@ -2,6 +2,12 @@
 
 using Statistics
 
+const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
+
+# Change this to invalidate HTTP cache
+const API_VERSION = IN_PRODUCTION ? "0.0.1m" : rand(['a':'z'..., string.(0:9)...], 4) |> join
+
+
 """
     get_aggregate_quantiles(data, variable, p, direction::FlowDirection)
 
@@ -157,7 +163,10 @@ import HTTP
 using Mux
 using JSON3
 
-jsonresp(obj) = Dict(:body => String(JSON3.write(obj)), :headers => Dict("Content-Type" => "application/json"))
+jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :headers => merge(Dict(
+    "Content-Type" => "application/json",
+    "Cache-Control" => IN_PRODUCTION ? "public, max-age=$(365 * 24 * 60 * 60)" : "max-age=0", # cache for a year (max recommended). Change API_VERSION to invalidate
+), headers))
 
 queryparams(req) = HTTP.URIs.queryparams(req[:query])
 
@@ -172,6 +181,12 @@ end
     # need to pick some route names
     #
     # Compatibility with GCVT:
+    route("/version", req -> jsonresp(
+        Dict("version" => API_VERSION);
+        headers = Dict(
+            "Cache-Control" => "max-age=0",
+        )
+    )),
     route("/centroids", req -> jsonresp(get_centroids())),
     route("/scenarios", req -> jsonresp(metadata["scenarios"])),
     route("/variables/od_matrices", req -> jsonresp(metadata["od_matrices"]["columns"])),
