@@ -1,6 +1,7 @@
 using CSV
 using DataFrames
 using OrderedCollections: OrderedDict
+using GDAL_jll: ogr2ogr_path
 
 include("ODData.jl")
 
@@ -99,12 +100,13 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
     zone_id(code) = findfirst(==(code), zones)
     all_zones = Dict(zip(zones, keys(zones)))
 
-    # Generate geojson with ogr2ogr (part of GDAL)
     prefix = "$dir/raw/Middle_Layer_Super_Output_Areas__December_2011__EW_BGC_V2"
-    run(```ogr2ogr -f "geojson" -t_srs epsg:4326 -s_srs epsg:27700
-        $prefix.geojson
-        $prefix.shp
-    ```)
+    ogr2ogr_path() do ogr2ogr
+        run(```$ogr2ogr -f "geojson" -t_srs epsg:4326 -s_srs epsg:27700
+            $prefix.geojson
+            $prefix.shp
+        ```)
+    end
 
     geom = GeoJSON.read(read("$prefix.geojson"))
     # This is buggy, but should have worked.
