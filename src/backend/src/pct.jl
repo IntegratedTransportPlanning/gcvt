@@ -1,9 +1,10 @@
 using CSV
 using DataFrames
 using OrderedCollections: OrderedDict
-using GDAL_jll: ogr2ogr_path
 
 include("ODData.jl")
+include("Ogr2Ogr.jl")
+using Ogr2Ogr: ogr2ogr
 
 function load_pct_data()
     df = CSV.read(joinpath(@__DIR__, "../data/raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
@@ -100,17 +101,18 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
     zone_id(code) = findfirst(==(code), zones)
     all_zones = Dict(zip(zones, keys(zones)))
 
-    prefix = "$dir/raw/Middle_Layer_Super_Output_Areas__December_2011__EW_BGC_V2"
-    ogr2ogr_path() do ogr2ogr
-        run(```$ogr2ogr -f "geojson" -t_srs epsg:4326 -s_srs epsg:27700
-            $prefix.geojson
-            $prefix.shp
-        ```)
-    end
+    shapefile = "$dir/raw/Middle_Layer_Super_Output_Areas__December_2011__EW_BGC_V2.shp"
 
-    geom = GeoJSON.read(read("$prefix.geojson"))
-    # This is buggy, but should have worked.
-    # geom = open(GeoJSON.read, "$prefix.geojson")
+    geom = GeoJSON.read(
+        ogr2ogr(
+            shapefile,
+            flags = Dict(
+                 "f" => "geojson",
+                 "t_srs" => "epsg:4326",
+                 "s_srs" => "epsg:27700",
+            )
+        )
+    )
 
     # Add our numeric key to the geojson
     zone_name_key = "MSOA11CD"
