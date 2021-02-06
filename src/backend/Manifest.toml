@@ -150,16 +150,16 @@ uuid = "d604d12d-fa86-5845-992e-78dc15976526"
 version = "3.9.0+0"
 
 [[GeoInterface]]
-deps = ["RecipesBase", "Test"]
-git-tree-sha1 = "0c0c0bf9c79b10e48aa089e78ac504ebc43db3a0"
+deps = ["RecipesBase"]
+git-tree-sha1 = "62f6ed44e73c11d10e282053d70b33b0ed8dcbe2"
 uuid = "cf35fbd7-0cd7-5166-be24-54bfbe79505f"
-version = "0.4.1"
+version = "0.5.4"
 
 [[GeoJSON]]
-deps = ["GeoInterface", "JSON", "Test"]
-git-tree-sha1 = "1a09ab107eeb872d4f6266e0e0c8ac495e7c7457"
+deps = ["GeoInterface", "JSON3"]
+git-tree-sha1 = "4764da92d333658552b2bedc9f6b379f017c727b"
 uuid = "61d90e0f-e114-555e-ac52-39dfb47a3ef9"
-version = "0.4.0"
+version = "0.5.1"
 
 [[Glob]]
 git-tree-sha1 = "4df9f7e06108728ebf00a0a11edee4b29a482bb2"
@@ -415,9 +415,9 @@ deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[RecipesBase]]
-git-tree-sha1 = "7bdce29bc9b2f5660a6e5e64d64d91ec941f6aa2"
+git-tree-sha1 = "b3fb709f3c97bfc6e948be68beeecb55a0b340ae"
 uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
-version = "0.7.0"
+version = "1.1.1"
 
 [[Reexport]]
 deps = ["Pkg"]
@@ -529,9 +529,9 @@ version = "0.9.5"
 
 [[Turf]]
 deps = ["GeoInterface", "GeoJSON", "Reexport", "Statistics", "Test"]
-git-tree-sha1 = "378a410de8f2aa1f19bb5efd6c65b39165259155"
+git-tree-sha1 = "f54e4ec7e528f259ad9833a32195dc08f84ffc0f"
 repo-rev = "master"
-repo-url = "https://github.com/philoez98/Turf.jl.git"
+repo-url = "https://github.com/bovine3dom/Turf.jl"
 uuid = "e89237b0-9201-11e9-31b0-6361926203f7"
 version = "0.2.0"
 
