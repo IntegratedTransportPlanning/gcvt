@@ -4,7 +4,9 @@ using OrderedCollections: OrderedDict
 
 include("ODData.jl")
 include("Ogr2Ogr.jl")
-using Ogr2Ogr: ogr2ogr
+
+# Magic syntax: "." prefix means a submodule
+using .Ogr2Ogr: ogr2ogr
 
 function load_pct_data()
     df = CSV.read(joinpath(@__DIR__, "../data/raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
