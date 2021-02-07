@@ -740,7 +740,7 @@ function scenarios_with(meta, variable) {
     if (v === undefined)
         return {}
     else
-        return Object.fromEntries(Object.entries(meta.scenarios).filter(([scen, _]) => R.contains(scen, v.scenarios_with)))
+        return R.pickBy((_, key) => R.contains(key, v.scenarios_with), meta.scenarios)
 }
 
 const Legend = () => {
