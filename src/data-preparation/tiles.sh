@@ -6,15 +6,6 @@ USAGE="Usage: $0 /path/to/foo.geojson /path/to/outputdirectory"
 
 set -ex
 
-mkmbtiles() {
-    local geojson="$1"
-    local outdir="$2"
-    local base="$(basename -s .geojson "$geojson")"
-
-    mkdir -p "$outdir"
-    tippecanoe -zg -pC -f "$geojson" -o "$outdir/$base.mbtiles"
-}
-
 mktiledir() {
     local mbtiles="$1"
     local outdir="$2"
@@ -55,5 +46,4 @@ geom_extension=${geometry#*.}
 #     geometry="$base.geojson"
 # fi
 
-mkmbtiles "$geometry" "$outdir"
 mktiledir "$outdir/$base.mbtiles" "$outdir"

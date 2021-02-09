@@ -4,9 +4,11 @@ using OrderedCollections: OrderedDict
 
 include("ODData.jl")
 include("Ogr2Ogr.jl")
+include("Tippecanoe.jl")
 
 # Magic syntax: "." prefix means a submodule
 using .Ogr2Ogr: ogr2ogr
+using .Tippecanoe: tippecanoe
 
 function load_pct_data()
     df = CSV.read(joinpath(@__DIR__, "../data/raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
@@ -148,6 +150,7 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
 
     tiles_dir = "$dir/processed/tiles"
     mkpath("$dir/processed/tiles")
+    tippecanoe(processed_geojson, tiles_dir)
 
     run(`$(@__DIR__)/tiles.sh $processed_geojson $tiles_dir/`)
 end
