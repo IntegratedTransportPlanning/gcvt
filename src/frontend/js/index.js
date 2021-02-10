@@ -162,6 +162,8 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
+// convert a weight between 0 and 1 to a hsl value between (230, 20%, 32%) and (283, 100%, 32%)
+const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
 
 // INITIAL STATE
 
@@ -334,7 +336,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
             paint: {
                 'line-opacity': .8,
-                'line-color': 'hsl(283, 100%, 32%)',
+                'line-color': weightToColor(1),
             },
         })
 
@@ -1104,13 +1106,11 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         zoneCentres.forEach((dest, index) => {
             const destPoint = turf.point(dest)
             const getPos = x => x.geometry.coordinates
-            const hue = 230 + weights[origIndex][index] * 53
-            const saturation = 20 + weights[origIndex][index] * 80
 
             let props = {
                 opacity: weights[origIndex][index] * .6,
                 weight: 10 * weights[origIndex][index],
-                color: `hsl(${hue}, ${saturation}%, 32%)`,
+                color: weightToColor(weights[origIndex][index]),
             }
             if (props.weight > 20) props.weight = 20
 
@@ -1134,7 +1134,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
                 properties: {
                     weight: 2,
                     opacity: 1,
-                    color: 'hsl(283, 100%, 32%)',
+                    color: weightToColor(1),
                 },
             },
         ))
