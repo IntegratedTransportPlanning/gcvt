@@ -162,7 +162,6 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
-
 // INITIAL STATE
 
 const DEFAULTS = {
@@ -331,10 +330,6 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-cap': 'round',
                 'line-join': 'round',
                 visibility: 'none',
-            },
-            paint: {
-                'line-opacity': .8,
-                'line-color': 'red',
             },
         })
 
@@ -1097,6 +1092,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
     const weights = centroidLineWeights.map(x=>x.map(
         d3.scaleLinear(centroidBounds, [0, 1]).clamp(true)))
+    const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
 
     const centroidLines = []
 
@@ -1106,8 +1102,9 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
             const getPos = x => x.geometry.coordinates
 
             let props = {
-                opacity: Math.min(5 * weights[origIndex][index],1),
+                opacity: weights[origIndex][index] * .6,
                 weight: 10 * weights[origIndex][index],
+                color: weightToColor(weights[origIndex][index]),
             }
             if (props.weight > 20) props.weight = 20
 
@@ -1131,6 +1128,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
                 properties: {
                     weight: 2,
                     opacity: 1,
+                    color: weightToColor(1),
                 },
             },
         ))
@@ -1141,6 +1139,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
     map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
+    map.setPaintProperty("centroidLines", "line-color", ["get", "color"])
     map.moveLayer("centroidLines")
     map.setLayoutProperty("centroidLines", "visibility", "visible")
 }
