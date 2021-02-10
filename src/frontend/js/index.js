@@ -334,7 +334,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
             paint: {
                 'line-opacity': .8,
-                'line-color': 'red',
+                'line-color': 'hsl(283, 100%, 32%)',
             },
         })
 
@@ -1104,10 +1104,13 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         zoneCentres.forEach((dest, index) => {
             const destPoint = turf.point(dest)
             const getPos = x => x.geometry.coordinates
+            const hue = 230 + weights[origIndex][index] * 53
+            const saturation = 20 + weights[origIndex][index] * 80
 
             let props = {
-                opacity: Math.min(5 * weights[origIndex][index],1),
+                opacity: weights[origIndex][index] * .6,
                 weight: 10 * weights[origIndex][index],
+                color: `hsl(${hue}, ${saturation}%, 32%)`,
             }
             if (props.weight > 20) props.weight = 20
 
@@ -1131,6 +1134,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
                 properties: {
                     weight: 2,
                     opacity: 1,
+                    color: 'hsl(283, 100%, 32%)',
                 },
             },
         ))
@@ -1141,6 +1145,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
     map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
+    map.setPaintProperty("centroidLines", "line-color", ["get", "color"])
     map.moveLayer("centroidLines")
     map.setLayoutProperty("centroidLines", "visibility", "visible")
 }
