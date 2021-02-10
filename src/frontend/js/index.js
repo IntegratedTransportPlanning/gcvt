@@ -162,9 +162,6 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
-// convert a weight between 0 and 1 to a hsl value between (230, 20%, 32%) and (283, 100%, 32%)
-const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
-
 // INITIAL STATE
 
 const DEFAULTS = {
@@ -333,10 +330,6 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-cap': 'round',
                 'line-join': 'round',
                 visibility: 'none',
-            },
-            paint: {
-                'line-opacity': .8,
-                'line-color': weightToColor(1),
             },
         })
 
@@ -1099,6 +1092,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
     const weights = centroidLineWeights.map(x=>x.map(
         d3.scaleLinear(centroidBounds, [0, 1]).clamp(true)))
+    const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
 
     const centroidLines = []
 
