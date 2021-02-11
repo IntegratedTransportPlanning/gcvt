@@ -922,7 +922,7 @@ const menuView = state => {
                             m('div', { class: 'flowlistholder' },
                                 m('span', 'Showing absolute flows for:'),
                                 m('ul', state.selectedZones.map(id => m('li',
-                                    m('input', {
+                                    m(UI.Checkbox, {
                                         name: `deselect_one_${id}`,
                                         type: 'checkbox',
                                         checked: true,
@@ -932,27 +932,28 @@ const menuView = state => {
                                             })
                                             actions.fetchLayerData('od_matrices')
                                         },
+                                        label: zoneToHuman(id,state),
                                     }),
-                                    m('label', { for: `deselect_one_${id}` }, zoneToHuman(id,state)),
                                 )))),
                             m('div',
-                                m('button', {
+                                m(UI.Button, {
                                     name: 'show_clines',
                                     onclick: e => {
                                         actions.toggleCentroids(!state.showClines)
-                                    }},
-                                    'Toggle Flow Lines'),
-                                m('button', {
+                                    },
+                                    label: 'Toggle Flow Lines',
+                                }),
+                                m(UI.Button, {
                                     name: 'deselect_zone',
                                     onclick: e => {
-                                        state.selectedZones.length == 0
                                         update({
                                             selectedZones: [],
                                             centroidLineWeights: null,
                                         })
                                         actions.fetchLayerData("od_matrices")
-                                    }},
-                                    'Deselect'),
+                                    },
+                                    label: 'Deselect All',
+                                }),
                             ),
                         ],
 
