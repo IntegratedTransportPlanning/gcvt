@@ -919,21 +919,40 @@ const menuView = state => {
                         state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
 
                         state.selectedZones.length !== 0 && [
-                            m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', arrayToHumanList(state.selectedZones.map(id => zoneToHuman(id,state))), ' (deselect? ',
-                                m('input', {
+                            m('div', { class: 'flowlistholder' },
+                                m('span', 'Showing absolute flows for:'),
+                                m('ul', state.selectedZones.map(id => m('li',
+                                    m('input', {
+                                        name: `deselect_one_${id}`,
+                                        type: 'checkbox',
+                                        checked: true,
+                                        onchange: e => {
+                                            update({
+                                                selectedZones: state.selectedZones.filter(x => x != id),
+                                            })
+                                            actions.fetchLayerData('od_matrices')
+                                        },
+                                    }),
+                                    m('label', { for: `deselect_one_${id}` }, zoneToHuman(id,state)),
+                                )))),
+                            m('div',
+                                m('button', {
+                                    name: 'show_clines',
+                                    onclick: e => {
+                                        actions.toggleCentroids(!state.showClines)
+                                    }},
+                                    'Toggle Flow Lines'),
+                                m('button', {
                                     name: 'deselect_zone',
-                                    type:"checkbox",
-                                    checked: state.selectedZones.length == 0,
-                                    onchange: e => {
+                                    onclick: e => {
+                                        state.selectedZones.length == 0
                                         update({
                                             selectedZones: [],
                                             centroidLineWeights: null,
                                         })
                                         actions.fetchLayerData("od_matrices")
-                                    }}),
-                            ')'),
-                            m('label', {for: 'show_clines'}, 'Flow lines: ',
-                                m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => actions.toggleCentroids(e.target.checked)}),
+                                    }},
+                                    'Deselect'),
                             ),
                         ],
 
