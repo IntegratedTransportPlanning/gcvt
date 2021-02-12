@@ -79,7 +79,7 @@ Variable: Passenger hours
 
 [compare mode: [x]]
 Current | Base [swap]
-Transport mode: Bicycle | Hovercraft [unlink: [x]]
+Transport mode: Bicycle | SUV [unlink: [x]]
 
 ## UI with comparison disabled:
 Variable: Passenger hours
