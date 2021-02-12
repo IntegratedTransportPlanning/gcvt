@@ -788,6 +788,95 @@ function getUnit(meta, domain, variable, percent=false){
 const mountpoint = document.createElement('div')
 document.body.appendChild(mountpoint)
 
+// MENU FUNCTIONS
+
+const variableSelector = state => {
+    return [
+        m('label', {for: 'matrix_variable'}, "Variable"),
+        m('div[style=display:flex;align-items:center]', [
+            m('select', {
+                name: 'matrix_variable',
+                onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
+            },
+                m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
+                meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
+            ),
+            false && (state.layers.od_matrices.variable !== "") && [
+                " ",
+                m(UI.Button, {
+                    name: 'showChart',
+                    iconLeft: UI.Icons.BAR_CHART_2,
+                    active: state.showChart,
+                    compact: true,
+                    size: "xs",
+                    style: "margin: 0.5em;",
+                    onclick: e => {
+                        e.target.active = !e.target.active;
+                        return update({showChart: e.target.active})
+                    }
+                }),
+            ],
+        ]),
+    ]
+}
+
+const scenarioSelector = state => {
+    return [
+        m('label', {for: 'scenario'}, "Scenario"),
+        m('select', {
+            name: 'scenario',
+            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
+        },
+            meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.scenario)
+        ),
+    ]
+}
+
+const selectionList = state => {
+    return [
+        state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
+
+        state.selectedZones.length !== 0 && [
+            m('div', { class: 'flowlistholder' },
+                m('span', 'Showing absolute flows for:'),
+                m('ul', state.selectedZones.map(id => m('li',
+                    m(UI.Checkbox, {
+                        name: `deselect_one_${id}`,
+                        type: 'checkbox',
+                        checked: true,
+                        onchange: e => {
+                            update({
+                                selectedZones: state.selectedZones.filter(x => x != id),
+                            })
+                            actions.fetchLayerData('od_matrices')
+                        },
+                        label: zoneToHuman(id,state),
+                    }),
+                )))),
+            m('div',
+                m(UI.Button, {
+                    name: 'show_clines',
+                    onclick: e => {
+                        actions.toggleCentroids(!state.showClines)
+                    },
+                    label: 'Toggle Flow Lines',
+                }),
+                m(UI.Button, {
+                    name: 'deselect_zone',
+                    onclick: e => {
+                        update({
+                            selectedZones: [],
+                            centroidLineWeights: null,
+                        })
+                        actions.fetchLayerData("od_matrices")
+                    },
+                    label: 'Deselect All',
+                }),
+            ),
+        ],
+    ]
+}
+
 const menuView = state => {
     // let popup = state.mapUI.popup
     render(mountpoint,
@@ -847,131 +936,59 @@ const menuView = state => {
                     }}, "Copy link"),
                     state.showctrl && state.meta.scenarios && [
                         m('br'),
-
-                        m('label', {for: 'matrix_variable'}, "Variable"),
-                        m('div[style=display:flex;align-items:center]', [
-                            m('select', {
-                                name: 'matrix_variable',
-                                onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
-                            },
-                                m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
-                                meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
-                            ),
-                            false && (state.layers.od_matrices.variable !== "") && [
-                                " ",
-                                m(UI.Button, {
-                                    name: 'showChart',
-                                    iconLeft: UI.Icons.BAR_CHART_2,
-                                    active:state.showChart,
-                                    compact: true,
-                                    size: "xs",
-                                    style: "margin: 0.5em;",
-                                    onclick: e => {
-                                        e.target.active = !e.target.active;
-                                        return update({showChart: e.target.active})
-                                    }
-                                }),
-                            ],
-                        ]),
-
+                        variableSelector(state),
                         state.layers.od_matrices.variable && [
+                            scenarioSelector(state),
 
-                        m('label', {for: 'scenario'}, "Scenario"),
-                        m('select', {
-                            name: 'scenario',
-                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
-                        },
-                            meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.scenario)
-                        ),
-
-                        // Show compare with button if there's more than one scenario featuring this variable
-                        R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 &&
-                        m('label', {for: 'compare'}, 'Compare with: ',
-                            m('input', {
-                                name: 'compare',
-                                type:"checkbox",
-                                checked: state.compare,
-                                onchange: e => actions.setCompare(e.target.checked),
-                            }),
-                        ),
-
-                        state.meta.scenarios && state.compare && [
-                            m('br'),
-                            m('label', {for: 'scenario'}, "Base scenario"),
-                            m('select', {
-                                name: 'scenario',
-                                onchange: e =>
-                                    actions.updateBaseScenario({scenario: e.target.value})
-                            },
-                                meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.compareWith)
-                            ),
-                        ],
-
-                        state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
-                            m('input', {
-                                name: 'percent',
-                                type:"checkbox",
-                                checked: state.percent,
-                                onchange: e => actions.setPercent(e.target.checked),
-                            }),
-                        ),
-
-                        state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
-
-                        state.selectedZones.length !== 0 && [
-                            m('div', { class: 'flowlistholder' },
-                                m('span', 'Showing absolute flows for:'),
-                                m('ul', state.selectedZones.map(id => m('li',
-                                    m(UI.Checkbox, {
-                                        name: `deselect_one_${id}`,
-                                        type: 'checkbox',
-                                        checked: true,
-                                        onchange: e => {
-                                            update({
-                                                selectedZones: state.selectedZones.filter(x => x != id),
-                                            })
-                                            actions.fetchLayerData('od_matrices')
-                                        },
-                                        label: zoneToHuman(id,state),
-                                    }),
-                                )))),
-                            m('div',
-                                m(UI.Button, {
-                                    name: 'show_clines',
-                                    onclick: e => {
-                                        actions.toggleCentroids(!state.showClines)
-                                    },
-                                    label: 'Toggle Flow Lines',
-                                }),
-                                m(UI.Button, {
-                                    name: 'deselect_zone',
-                                    onclick: e => {
-                                        update({
-                                            selectedZones: [],
-                                            centroidLineWeights: null,
-                                        })
-                                        actions.fetchLayerData("od_matrices")
-                                    },
-                                    label: 'Deselect All',
+                            // Show compare with button if there's more than one scenario featuring this variable
+                            R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 &&
+                            m('label', {for: 'compare'}, 'Compare with: ',
+                                m('input', {
+                                    name: 'compare',
+                                    type:"checkbox",
+                                    checked: state.compare,
+                                    onchange: e => actions.setCompare(e.target.checked),
                                 }),
                             ),
-                        ],
 
-                        // Summary statistics for zones
-                        state.layers.od_matrices.variable !== ""
-                        && state.meta.od_matrices[state.layers.od_matrices.variable]
-                        && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show"
-                        && state.layers.od_matrices.basevalues
-                        && [
-                            m('p',
-                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
+                            state.meta.scenarios && state.compare && [
+                                m('br'),
+                                m('label', {for: 'scenario'}, "Base scenario"),
+                                m('select', {
+                                    name: 'scenario',
+                                    onchange: e =>
+                                        actions.updateBaseScenario({scenario: e.target.value})
+                                },
+                                    meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.compareWith)
+                                ),
+                            ],
+
+                            state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
+                                m('input', {
+                                    name: 'percent',
+                                    type:"checkbox",
+                                    checked: state.percent,
+                                    onchange: e => actions.setPercent(e.target.checked),
+                                }),
                             ),
-                            !(state.compare && state.percent)
-                            && state.selectedZones.length !== 1
-                            && m('p',
-                                "Total value: " + zones2summary(R.sum,state)
-                            )
-                        ],
+
+                            selectionList(state),
+
+                            // Summary statistics for zones
+                            state.layers.od_matrices.variable !== ""
+                            && state.meta.od_matrices[state.layers.od_matrices.variable]
+                            && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show"
+                            && state.layers.od_matrices.basevalues
+                            && [
+                                m('p',
+                                    (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
+                                ),
+                                !(state.compare && state.percent)
+                                && state.selectedZones.length !== 1
+                                && m('p',
+                                    "Total value: " + zones2summary(R.sum,state)
+                                )
+                            ],
                         ],
 
                     ],
