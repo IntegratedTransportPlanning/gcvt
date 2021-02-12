@@ -791,16 +791,25 @@ document.body.appendChild(mountpoint)
 // MENU FUNCTIONS
 
 const variableSelector = state => {
+    const options = [m('option', {
+        value: '',
+        selected: state.layers.od_matrices.variable === null,
+    }, 'None')].concat(meta2options(state.meta.od_matrices, state.layers.od_matrices.variable))
+
     return [
         m('label', {for: 'matrix_variable'}, "Variable"),
         m('div[style=display:flex;align-items:center]', [
-            m('select', {
+            m(UI.Select, {
                 name: 'matrix_variable',
-                onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
-            },
-                m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
-                meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
-            ),
+                fluid: true,
+                options: options,
+                onchange: e => {
+                    // UI.Select seems to ignore the value set for an option if the option dom node has a text child
+                    // so we gotta manually switch from 'None' to null
+                    console.log(e.currentTarget)
+                    actions.changeLayerVariable("od_matrices", e.currentTarget.value === 'None' ? null : e.currentTarget.value)
+                },
+            }),
             false && (state.layers.od_matrices.variable !== "") && [
                 " ",
                 m(UI.Button, {
