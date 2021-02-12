@@ -723,11 +723,11 @@ const { update, states, actions } =
 
 // HTML Views
 
-// Create an array of `option` elements for use in a `select` element.
+// Create an array of `option` objects for use in a `UI.Select` element.
 function meta2options(metadata, selected) {
     return Object.entries(metadata)
         .filter(([k, v]) => v["use"] !== false)
-        .map(([k, v]) => m('option', {value: k, selected: selected === k}, v.name || k))
+        .map(([k, v]) => { return { value: k, label: v.name || k } })
 }
 
 function scenarios_with(meta, variable) {
@@ -791,24 +791,20 @@ document.body.appendChild(mountpoint)
 // MENU FUNCTIONS
 
 const variableSelector = state => {
-    const options = [m('option', {
+    const options = [{
+        label: 'None',
         value: '',
-        selected: state.layers.od_matrices.variable === null,
-    }, 'None')].concat(meta2options(state.meta.od_matrices, state.layers.od_matrices.variable))
+    }].concat(meta2options(state.meta.od_matrices, state.layers.od_matrices.variable))
 
     return [
-        m('label', {for: 'matrix_variable'}, "Variable"),
+        m('label', {for: 'matrix_variable'}, 'Variable'),
         m('div[style=display:flex;align-items:center]', [
             m(UI.Select, {
                 name: 'matrix_variable',
                 fluid: true,
                 options: options,
-                onchange: e => {
-                    // UI.Select seems to ignore the value set for an option if the option dom node has a text child
-                    // so we gotta manually switch from 'None' to null
-                    console.log(e.currentTarget)
-                    actions.changeLayerVariable("od_matrices", e.currentTarget.value === 'None' ? null : e.currentTarget.value)
-                },
+                defaultValue: state.layers.od_matrices.variable,
+                onchange: e => actions.changeLayerVariable('od_matrices', e.currentTarget.value),
             }),
             false && (state.layers.od_matrices.variable !== "") && [
                 " ",
@@ -831,13 +827,25 @@ const variableSelector = state => {
 
 const scenarioSelector = state => {
     return [
-        m('label', {for: 'scenario'}, "Scenario"),
-        m('select', {
+        m('label', {for: 'scenario'}, 'Scenario'),
+        m(UI.Select, {
             name: 'scenario',
-            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
-        },
-            meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.scenario)
-        ),
+            fluid: true,
+            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.scenario),
+            onchange: e => actions.updateScenario(e.currentTarget.value, state.scenarioYear),
+        }),
+    ]
+}
+
+const comparisonSelector = state => {
+    return [
+        m('label', {for: 'scenario'}, 'Base scenario'),
+        m(UI.Select, {
+            name: 'scenario',
+            fluid: true,
+            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.compareWith),
+            onchange: e => actions.updateBaseScenario({ scenario: e.currentTarget.value })
+        }),
     ]
 }
 
@@ -972,17 +980,7 @@ const menuView = state => {
                                 }),
                             ),
 
-                            state.meta.scenarios && state.compare && [
-                                m('br'),
-                                m('label', {for: 'scenario'}, "Base scenario"),
-                                m('select', {
-                                    name: 'scenario',
-                                    onchange: e =>
-                                        actions.updateBaseScenario({scenario: e.target.value})
-                                },
-                                    meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.compareWith)
-                                ),
-                            ],
+                            state.meta.scenarios && state.compare && comparisonSelector(state),
 
                             state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
                                 m('input', {
