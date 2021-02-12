@@ -17,7 +17,7 @@ model_[dependent_variable](independent_variables...) = {zoneID1 => some number, 
 So, for example,
 
 ```
-model_kgco2perKM(scenario="the-squirrels-fight-back", year=1862, transportMode="jetpack", passengerAges="18-27") = {... => 9001}
+model_kgco2perKM(scenario="the-squirrels-fight-back", year=1862, transportMode="jetpack", passengerAges="18-27") = {1 => 9001, 4 => 589, ...}
 ```
 
 Our key assumption is that each model has consistent units (i.e. different sets of criteria are directly comparable for the same dependent variable). We also assume that addition makes sense for all outputs.
