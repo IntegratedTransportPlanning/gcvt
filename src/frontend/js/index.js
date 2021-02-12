@@ -922,20 +922,32 @@ const menuView = state => {
             // Main menu panel
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
-                    m('label', {for: 'showctrls'}, 'Show controls: ',
-                        m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
-                    ),
-                    " ",
-                    m('a', {href: document.location.href, onclick: e => {
-                        toClipboard(e.target.href)
+                    m(UI.Button, {
+                        label: 'Copy link',
+                        fluid: true,
+                        align: 'left',
+                        basic: true,
+                        iconLeft: UI.Icons.LINK,
+                        href: document.location.href,
+                        onclick: e => {
+                            e.preventDefault()
+                            toClipboard(e.target.href)
 
-                        // Provide feedback to user
-                        e.target.innerText = "Link copied!";
-                        setTimeout(_ => e.target.innerText = "Copy link", 3000)
-
-                    }}, "Copy link"),
+                            // Provide feedback to user
+                            e.target.innerText = "Link copied!";
+                            setTimeout(_ => e.target.innerText = "Copy link", 3000)
+                        },
+                    }),
+                    m(UI.Button, {
+                        label: 'Show Controls',
+                        fluid: true,
+                        align: 'left',
+                        basic: true,
+                        iconLeft: UI.Icons.SETTINGS,
+                        iconRight: state.showctrl ? UI.Icons.CHEVRON_UP : UI.Icons.CHEVRON_DOWN,
+                        onclick: e => update({ showctrl: !state.showctrl }),
+                    }),
                     state.showctrl && state.meta.scenarios && [
-                        m('br'),
                         variableSelector(state),
                         state.layers.od_matrices.variable && [
                             scenarioSelector(state),
