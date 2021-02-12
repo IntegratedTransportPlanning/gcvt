@@ -832,7 +832,7 @@ const scenarioSelector = state => {
     ]
 }
 
-const selectionList = state => {
+const flowLineControls = state => {
     return [
         state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
 
@@ -972,7 +972,7 @@ const menuView = state => {
                                 }),
                             ),
 
-                            selectionList(state),
+                            flowLineControls(state),
 
                             // Summary statistics for zones
                             state.layers.od_matrices.variable !== ""
