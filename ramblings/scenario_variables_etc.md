@@ -11,7 +11,7 @@ I'm going to be lazy and pretend that predictions and observations are the same 
 What is a model? It maps a series of independent variables (things you can change) to dependent variables (things you measure or predict).
 
 ```
-model_[dependent_variable](independent_variables...) = {zoneID => some number}
+model_[dependent_variable](independent_variables...) = {zoneID1 => some number, zoneID2 => some number, ...}
 ```
 
 So, for example,
