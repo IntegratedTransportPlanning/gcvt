@@ -877,14 +877,19 @@ const flowLineControls = state => {
             ),
             m('div',
                 m(UI.Button, {
-                    name: 'show_clines',
+                    label: 'Toggle Flow Lines',
+                    fluid: true,
+                    align: 'left',
+                    outlined: true,
                     onclick: e => {
                         actions.toggleCentroids(!state.showClines)
                     },
-                    label: 'Toggle Flow Lines',
                 }),
                 m(UI.Button, {
-                    name: 'deselect_zone',
+                    label: 'Deselect All',
+                    fluid: true,
+                    align: 'left',
+                    outlined: true,
                     onclick: e => {
                         update({
                             selectedZones: [],
@@ -892,7 +897,6 @@ const flowLineControls = state => {
                         })
                         actions.fetchLayerData("od_matrices")
                     },
-                    label: 'Deselect All',
                 }),
             ),
         ],
@@ -948,7 +952,7 @@ const menuView = state => {
                         label: 'Copy link',
                         fluid: true,
                         align: 'left',
-                        basic: true,
+                        outlined: true,
                         iconLeft: UI.Icons.LINK,
                         href: document.location.href,
                         onclick: e => {
@@ -964,7 +968,7 @@ const menuView = state => {
                         label: 'Show Controls',
                         fluid: true,
                         align: 'left',
-                        basic: true,
+                        outlined: true,
                         iconLeft: UI.Icons.SETTINGS,
                         iconRight: state.showctrl ? UI.Icons.CHEVRON_UP : UI.Icons.CHEVRON_DOWN,
                         onclick: e => update({ showctrl: !state.showctrl }),
