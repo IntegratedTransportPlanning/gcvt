@@ -954,11 +954,8 @@ const menuView = state => {
                         align: 'left',
                         outlined: true,
                         iconLeft: UI.Icons.LINK,
-                        href: document.location.href,
                         onclick: e => {
-                            e.preventDefault()
-                            toClipboard(e.target.href)
-
+                            toClipboard(document.location.href)
                             // Provide feedback to user
                             e.target.innerText = "Link copied!";
                             setTimeout(_ => e.target.innerText = "Copy link", 3000)
