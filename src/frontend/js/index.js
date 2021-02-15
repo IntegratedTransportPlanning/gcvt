@@ -970,26 +970,19 @@ const menuView = state => {
                             scenarioSelector(state),
 
                             // Show compare with button if there's more than one scenario featuring this variable
-                            R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 &&
-                            m('label', {for: 'compare'}, 'Compare with: ',
-                                m('input', {
-                                    name: 'compare',
-                                    type:"checkbox",
-                                    checked: state.compare,
-                                    onchange: e => actions.setCompare(e.target.checked),
-                                }),
-                            ),
+                            R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 && m(UI.Switch, {
+                                label: 'Compare Scenarios',
+                                checked: state.compare,
+                                onchange: e => actions.setCompare(e.target.checked),
+                            }),
 
                             state.meta.scenarios && state.compare && comparisonSelector(state),
 
-                            state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
-                                m('input', {
-                                    name: 'percent',
-                                    type:"checkbox",
-                                    checked: state.percent,
-                                    onchange: e => actions.setPercent(e.target.checked),
-                                }),
-                            ),
+                            state.compare && m(UI.Switch, {
+                                label: 'Show As Percentage',
+                                checked: state.percent,
+                                onchange: e => actions.setPercent(e.target.checked),
+                            }),
 
                             flowLineControls(state),
 
