@@ -855,21 +855,24 @@ const flowLineControls = state => {
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
-                m('span', 'Showing absolute flows for:'),
+                m('span', { class: 'flowlistheader' }, 'Showing absolute flows for:'),
                 m('ul', state.selectedZones.map(id => m('li',
-                    m(UI.Checkbox, {
-                        name: `deselect_one_${id}`,
-                        type: 'checkbox',
-                        checked: true,
-                        onchange: e => {
+                    m(UI.Button, {
+                        label: zoneToHuman(id,state),
+                        size: 'xs',
+                        fluid: true,
+                        align: 'left',
+                        basic: true,
+                        iconLeft: UI.Icons.X,
+                        onclick: e => {
                             update({
                                 selectedZones: state.selectedZones.filter(x => x != id),
                             })
                             actions.fetchLayerData('od_matrices')
                         },
-                        label: zoneToHuman(id,state),
                     }),
-                )))),
+                )))
+            ),
             m('div',
                 m(UI.Button, {
                     name: 'show_clines',
