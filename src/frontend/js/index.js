@@ -724,7 +724,7 @@ const { update, states, actions } =
 // HTML Views
 
 // Create an array of `option` objects for use in a `UI.Select` element.
-function meta2options(metadata, selected) {
+function meta2options(metadata) {
     return Object.entries(metadata)
         .filter(([k, v]) => v["use"] !== false)
         .map(([k, v]) => { return { value: k, label: v.name || k } })
@@ -794,7 +794,7 @@ const variableSelector = state => {
     const options = [{
         label: 'None',
         value: '',
-    }].concat(meta2options(state.meta.od_matrices, state.layers.od_matrices.variable))
+    }].concat(meta2options(state.meta.od_matrices))
 
     return [
         m('label', {for: 'matrix_variable'}, 'Variable'),
@@ -831,7 +831,8 @@ const scenarioSelector = state => {
         m(UI.Select, {
             name: 'scenario',
             fluid: true,
-            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.scenario),
+            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
+            defaultValue: state.scenario,
             onchange: e => actions.updateScenario(e.currentTarget.value, state.scenarioYear),
         }),
     ]
@@ -843,7 +844,8 @@ const comparisonSelector = state => {
         m(UI.Select, {
             name: 'scenario',
             fluid: true,
-            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable), state.compareWith),
+            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
+            defaultValue: state.compareWith,
             onchange: e => actions.updateBaseScenario({ scenario: e.currentTarget.value })
         }),
     ]
