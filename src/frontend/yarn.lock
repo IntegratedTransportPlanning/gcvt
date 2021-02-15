@@ -4817,24 +4817,12 @@ minizlib@^1.2.1:
   dependencies:
     minipass "^2.9.0"
 
-mithril-n@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/mithril-n/-/mithril-n-1.0.1.tgz#b8687f7b549ecdd7692188c324d589a86a3ec665"
-  integrity sha1-uGh/e1SezddpIYjDJNWJqGo+xmU=
-  dependencies:
-    mithril ">=0.1.0 <0.3.0"
-
 mithril-transition-group@^0.1.7:
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/mithril-transition-group/-/mithril-transition-group-0.1.7.tgz#5616dccb49539d206cc6bd169a7a6c86dbdd42c3"
   integrity sha512-czckLLvNcjBLmUmJQJr8kt+AkmJG6wr5lU43MGoC53qvbc942Q8MCXbJkyKtqOpMqzfAnek7T3z35dumTdFmMw==
   dependencies:
     element-class "^0.2.2"
-
-"mithril@>=0.1.0 <0.3.0":
-  version "0.2.8"
-  resolved "https://registry.yarnpkg.com/mithril/-/mithril-0.2.8.tgz#cc6d470b9227cebb342718655bd0a1d7ab2afb96"
-  integrity sha512-9XuGnVmS2OyFexUuP/CcJFFJjHLM+RGYBxyVRNyQ6khbMfDJIF/xyZ4zq18ZRfPagpFmWUFpjHd5ZqPULGZyNg==
 
 mithril@^2.0.4:
   version "2.0.4"
@@ -6833,11 +6821,6 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
-
-typescript@^3.7.2:
-  version "3.7.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.2.tgz#27e489b95fa5909445e9fef5ee48d81697ad18fb"
-  integrity sha512-ml7V7JfiN2Xwvcer+XAf2csGO1bPBdRbFCkYBczNZggrBZ9c7G3riSUeJmqEU5uOtXNPMhE3n+R4FA/3YOAWOQ==
 
 uncss@^0.17.0:
   version "0.17.2"
