@@ -146,6 +146,7 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
         write(f, GeoJSON.write(geom))
     end
 
+    # TODO: cleanup these dirs before writing to them?
     tiles_dir = "$dir/processed/tiles/zones"
     mkpath("$dir/processed/tiles/zones")
 
