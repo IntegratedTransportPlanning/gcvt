@@ -138,9 +138,7 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
     x = setdiff(zones, found_zones)
     !isempty(x) && @warn "Zones in data but not in geometry:" x
 
-
     # Save new geojson and generate tiles from it
-    # Should this be a temp directory? do we use the geojson for anything else?
     processed_geojson = "$dir/processed/zones.geojson"
     mkpath(dirname(processed_geojson))
 
@@ -148,8 +146,8 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
         write(f, GeoJSON.write(geom))
     end
 
-    tiles_dir = "$dir/processed/tiles"
-    mkpath("$dir/processed/tiles")
+    tiles_dir = "$dir/processed/tiles/zones"
+    mkpath("$dir/processed/tiles/zones")
 
     tippecanoe() do bin
         run(`$bin -zg -pC --detect-shared-borders -f $processed_geojson --output-to-directory=$tiles_dir`)
