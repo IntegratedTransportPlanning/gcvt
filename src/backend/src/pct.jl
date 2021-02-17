@@ -1,6 +1,7 @@
 using CSV
 using DataFrames
 using OrderedCollections: OrderedDict
+using tippecanoe_jll: tippecanoe
 
 include("ODData.jl")
 include("Ogr2Ogr.jl")
@@ -137,7 +138,6 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
     x = setdiff(zones, found_zones)
     !isempty(x) && @warn "Zones in data but not in geometry:" x
 
-
     # Save new geojson and generate tiles from it
     processed_geojson = "$dir/processed/zones.geojson"
     mkpath(dirname(processed_geojson))
@@ -146,10 +146,13 @@ function process_pct_geometry(dir="$(@__DIR__)/../data/")
         write(f, GeoJSON.write(geom))
     end
 
-    tiles_dir = "$dir/processed/tiles"
-    mkpath("$dir/processed/tiles")
+    # TODO: cleanup these dirs before writing to them?
+    tiles_dir = "$dir/processed/tiles/zones"
+    mkpath("$dir/processed/tiles/zones")
 
-    run(`$(@__DIR__)/tiles.sh $processed_geojson $tiles_dir/`)
+    tippecanoe() do bin
+        run(`$bin -zg -pC --detect-shared-borders -f $processed_geojson --output-to-directory=$tiles_dir`)
+    end
 end
 
 # using Test

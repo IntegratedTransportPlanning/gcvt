@@ -618,3 +618,9 @@ deps = ["Libdl", "Pkg"]
 git-tree-sha1 = "8e2c44ab4d49ad9518f359ed8b62f83ba8beede4"
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
 version = "1.40.0+2"
+
+[[tippecanoe_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "SQLite_jll", "Zlib_jll"]
+git-tree-sha1 = "600e8b9681f740d89c053f7f48bb6a5ca8135d91"
+uuid = "6e4bcf07-11bd-542f-a056-5857bcc30079"
+version = "1.36.0+0"
