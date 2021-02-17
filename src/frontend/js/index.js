@@ -58,6 +58,7 @@ import * as R from "ramda"
 import ITPLOGO from "../../resources/itp.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
+import ARROWHEAD from "../../resources/arrowhead.png"
 
 
 // UTILITY FUNCS
@@ -331,6 +332,60 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-join': 'round',
                 visibility: 'none',
             },
+        })
+
+        map.addLayer({
+            id: "zoneHalos",
+            type: "line",
+            source: {
+                type: "geojson",
+                data: {
+                    "type": "Feature",
+                    "geometry": {
+                        type: "LineString",
+                        coordinates: [[0,0],[1,1]],
+                    },
+                    "properties": {
+                        "name": "Dummy line",
+                    },
+                },
+            },
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                visibility: 'none',
+            },
+        })
+
+        map.loadImage(ARROWHEAD, (error, image) => {
+            if (error) return
+            map.addImage('arrowhead', image)
+            map.addLayer({
+                id: "flow_arrowheads",
+                type: "symbol",
+                source: {
+                    type: "geojson",
+                    data: {
+                        "type": "Feature",
+                        "geometry": {
+                            type: "LineString",
+                            coordinates: [[0,0],[1,1]],
+                        },
+                        "properties": {
+                            "name": "Dummy line",
+                        },
+                    },
+                },
+                layout: {
+                    "symbol-placement": "line",
+                    "symbol-spacing": 100,
+                    "icon-allow-overlap": true,
+                    "icon-image": "arrowhead",
+                    "icon-size": 1,
+                    "icon-rotate": 90, // 50% chance this is right. Switch to 270 if not
+                    "visibility": "none",
+                },
+            })
         })
 
         actions.getCentres().catch(e => console.error("Failed to get centroids?", e))
@@ -1123,8 +1178,11 @@ function normalise(v, bounds, good) {
     })
 }
 
+const hideLayer = id => map.setLayoutProperty(id, "visibility", "none")
+const showLayer = id => map.setLayoutProperty(id, "visibility", "visible")
+
 function hideCentroids({selectedZones}) {
-    map.setLayoutProperty("centroidLines","visibility","none")
+    R.forEach(hideLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
     if (selectedZones.length) {
         // Currently looks a bit too shit to use, but maybe we'll want something like it
         // in the future.
@@ -1132,9 +1190,9 @@ function hideCentroids({selectedZones}) {
         selectedZones.forEach(id => lookup[id] = true)
         map.setPaintProperty("zoneBorders", "line-opacity",
             ["to-number", ["has", ["to-string", ["get", "fid"]], ["literal", lookup]]])
-        map.setLayoutProperty("zoneBorders", "visibility", "visible")
+        showLayer("zoneBorders")
     } else {
-        map.setLayoutProperty("zoneBorders", "visibility", "none")
+        hideLayer("zoneBorders")
     }
 
 }
@@ -1173,10 +1231,11 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         })
     }
 
+    const zoneHalos = []
+
     // Draw little circles on selected zones
-    // This should really be another layer but I'm feeling lazy
     selectedZones.length > 1 && originPoints.forEach(origin => {
-        centroidLines.push(turf.circle(
+        zoneHalos.push(turf.circle(
             origin,
             10,
             {
@@ -1192,11 +1251,30 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.setLayoutProperty("zoneBorders", "visibility", "none")
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
+    map.getSource("zoneHalos").setData(turf.featureCollection(zoneHalos))
+    map.getSource("flow_arrowheads").setData(turf.featureCollection(centroidLines))
+
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
+    map.setPaintProperty("zoneHalos", "line-width", ["get", "weight"])
+    // This doesn't work V. FIXME
+    // map.setPaintProperty("flow_arrowheads", "icon-size", ["get", "weight"])
+
     map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
+    map.setPaintProperty("zoneHalos", "line-opacity", ["get", "opacity"])
+    map.setPaintProperty("flow_arrowheads", "icon-opacity", ["get", "opacity"])
+
     map.setPaintProperty("centroidLines", "line-color", ["get", "color"])
+    map.setPaintProperty("zoneHalos", "line-color", ["get", "color"])
+    // NB: V requires "SDF" format, not PNG. FIXME
+    // map.setPaintProperty("flow_arrowheads", "icon-color", ["get", "color"])
+
+    // This doesn't work. Magic?
+    //R.forEach(map.moveLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
     map.moveLayer("centroidLines")
-    map.setLayoutProperty("centroidLines", "visibility", "visible")
+    map.moveLayer("zoneHalos")
+    map.moveLayer("flow_arrowheads")
+
+    R.forEach(showLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
 }
 
 function paint(domain, {variable, values, bounds, dir, palette}) {
