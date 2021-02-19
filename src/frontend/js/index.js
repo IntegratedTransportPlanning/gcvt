@@ -852,13 +852,13 @@ const variableSelector = state => {
     }].concat(meta2options(state.meta.od_matrices))
 
     return [
-        m('label', {for: 'matrix_variable'}, 'Variable'),
+        m('label', { for: 'matrix_variable', class: 'header' }, 'Variable'),
         m('div[style=display:flex;align-items:center]', [
             m(UI.Select, {
                 name: 'matrix_variable',
                 fluid: true,
                 options: options,
-                defaultValue: state.layers.od_matrices.variable,
+                value: state.layers.od_matrices.variable,
                 onchange: e => actions.changeLayerVariable('od_matrices', e.currentTarget.value),
             }),
             false && (state.layers.od_matrices.variable !== "") && [
@@ -882,12 +882,12 @@ const variableSelector = state => {
 
 const scenarioSelector = state => {
     return [
-        m('label', {for: 'scenario'}, 'Scenario'),
+        m('label', { for: 'scenario', class: 'header' }, 'Scenario'),
         m(UI.Select, {
             name: 'scenario',
             fluid: true,
             options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-            defaultValue: state.scenario,
+            value: state.scenario,
             onchange: e => actions.updateScenario(e.currentTarget.value, state.scenarioYear),
         }),
     ]
@@ -895,12 +895,12 @@ const scenarioSelector = state => {
 
 const comparisonSelector = state => {
     return [
-        m('label', {for: 'scenario'}, 'Base scenario'),
+        m('label', { for: 'scenario', class: 'header' }, 'Base scenario'),
         m(UI.Select, {
             name: 'scenario',
             fluid: true,
             options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-            defaultValue: state.compareWith,
+            value: state.compareWith,
             onchange: e => actions.updateBaseScenario({ scenario: e.currentTarget.value })
         }),
     ]
@@ -912,7 +912,7 @@ const flowLineControls = state => {
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
-                m('span', { class: 'flowlistheader' }, 'Showing absolute flows for:'),
+                m('span', { class: 'header' }, 'Showing absolute flows for:'),
                 m('ul', state.selectedZones.map(id => m('li',
                     m(UI.Button, {
                         label: zoneToHuman(id,state),
