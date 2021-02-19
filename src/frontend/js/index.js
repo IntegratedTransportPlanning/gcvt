@@ -852,7 +852,7 @@ const variableSelector = state => {
     }].concat(meta2options(state.meta.od_matrices))
 
     return [
-        m('label', {for: 'matrix_variable'}, 'Variable'),
+        m('label', { for: 'matrix_variable', class: 'header' }, 'Variable'),
         m('div[style=display:flex;align-items:center]', [
             m(UI.Select, {
                 name: 'matrix_variable',
@@ -882,7 +882,7 @@ const variableSelector = state => {
 
 const scenarioSelector = state => {
     return [
-        m('label', {for: 'scenario'}, 'Scenario'),
+        m('label', { for: 'scenario', class: 'header' }, 'Scenario'),
         m(UI.Select, {
             name: 'scenario',
             fluid: true,
@@ -895,7 +895,7 @@ const scenarioSelector = state => {
 
 const comparisonSelector = state => {
     return [
-        m('label', {for: 'scenario'}, 'Base scenario'),
+        m('label', { for: 'scenario', class: 'header' }, 'Base scenario'),
         m(UI.Select, {
             name: 'scenario',
             fluid: true,
@@ -912,7 +912,7 @@ const flowLineControls = state => {
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
-                m('span', { class: 'flowlistheader' }, 'Showing absolute flows for:'),
+                m('span', { class: 'header' }, 'Showing absolute flows for:'),
                 m('ul', state.selectedZones.map(id => m('li',
                     m(UI.Button, {
                         label: zoneToHuman(id,state),
