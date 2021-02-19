@@ -858,7 +858,7 @@ const variableSelector = state => {
                 name: 'matrix_variable',
                 fluid: true,
                 options: options,
-                defaultValue: state.layers.od_matrices.variable,
+                value: state.layers.od_matrices.variable,
                 onchange: e => actions.changeLayerVariable('od_matrices', e.currentTarget.value),
             }),
             false && (state.layers.od_matrices.variable !== "") && [
@@ -887,7 +887,7 @@ const scenarioSelector = state => {
             name: 'scenario',
             fluid: true,
             options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-            defaultValue: state.scenario,
+            value: state.scenario,
             onchange: e => actions.updateScenario(e.currentTarget.value, state.scenarioYear),
         }),
     ]
@@ -900,7 +900,7 @@ const comparisonSelector = state => {
             name: 'scenario',
             fluid: true,
             options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-            defaultValue: state.compareWith,
+            value: state.compareWith,
             onchange: e => actions.updateBaseScenario({ scenario: e.currentTarget.value })
         }),
     ]
