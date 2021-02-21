@@ -275,7 +275,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'fill',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + '/tiles/zones/{z}/{x}/{y}.pbf',],
+                tiles: [BASEURL + `/tiles/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`,],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
@@ -296,7 +296,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'line',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + '/tiles/zones/{z}/{x}/{y}.pbf',],
+                tiles: [BASEURL + `/tiles/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`,],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,

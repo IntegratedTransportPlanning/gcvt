@@ -9,7 +9,7 @@ setup:
 	cd src/frontend && yarn
 
 http:
-	caddy
+	env ITP_CADDY_CACHE_TIME=31536000 caddy
 
 back:
 	cd src/backend && env ITP_OD_PROD=1 julia --project=. src/app-mux.jl

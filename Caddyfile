@@ -4,6 +4,7 @@
 
 :2016/tiles/ {
 	root src/backend/data/processed/tiles/
+    header Cache-Control max-age={$ITP_CADDY_CACHE_TIME:0}
 	browse
 }
 
