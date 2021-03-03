@@ -1,4 +1,4 @@
-.PHONY: front, back, pack, tiles, setup, setupR, http
+.PHONY: front, back, pack, tiles, setup, setupR, http, watchfront, muxd, getcaddy
 
 tiles:
 	# TODO: These paths are pretty project-specific. Should specify the packdir better.
@@ -16,3 +16,12 @@ back:
 
 front:
 	cd src/frontend && yarn run build
+
+watchfront:
+	cd src/frontend && yarn run watch
+
+muxd:
+	tmux new-session\; splitw make watchfront\; splitw make http\; splitw make back\; kill-pane -t0\; select-layout tiled
+
+getcaddy:
+	curl -L https://github.com/caddyserver/caddy/releases/download/v1.0.4/caddy_v1.0.4_linux_amd64.tar.gz | tar xz caddy
