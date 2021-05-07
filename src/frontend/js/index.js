@@ -987,7 +987,7 @@ const menuView = state => {
             ),
 
             // Legend
-	    state.layers.od_matrices.bounds &&
+            state.layers.od_matrices.bounds &&
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
@@ -1017,7 +1017,7 @@ const menuView = state => {
                         },
                     }),
                     m(UI.Button, {
-                        label: 'Show Controls',
+                        label: (state.showctrl ? 'Hide' : 'Show') + ' Controls',
                         fluid: true,
                         align: 'left',
                         outlined: true,
