@@ -107,14 +107,27 @@ function oldmeta2newschema(metadata)
         for scenario in v["scenarios_with"]
             column = Dict(
                           "name" => "$(k in variables_without_scenario ? "" : scenario*"_")$(k)",
-                "independent_variable" => Dict("scenario" => scenario, "year" => 2010),
+                "independent_variables" => Dict("scenario" => scenario, "year" => 2010),
                 "dependent_variable" => k,
             )
             push!(newmeta["files"]["columns"],column)
         end
     end
 
-    newmeta["independent_variables"] = [Dict("id" => "scenario", "values" => [Dict("id" => k, "name" => v["name"]) for (k,v) in metadata["scenarios"]], "type" => "categorical")]
+    newmeta["independent_variables"] = [
+        Dict(
+            "id" => "scenario",
+            "values" => [
+                Dict("id" => k, "name" => v["name"]) for (k,v) in metadata["scenarios"]
+            ],
+            "type" => "categorical",
+        ),
+        Dict(
+            "id" => "year",
+            "values" => [2010],
+            "type" => "numerical", # Probably need to agree on this. Years are continuous IMO - do we care about the distinction? (NB: 3BC = -3AD)
+        ),
+    ]
 
     # I've added a "show_stats" field here 
     # because it seemed like the best place for it
