@@ -2,16 +2,31 @@ using CSV
 using DataFrames
 using OrderedCollections: OrderedDict
 using tippecanoe_jll: tippecanoe
+using TOML
 
 include("ODData.jl")
 include("Ogr2Ogr.jl")
+
+const DATA_ROOT = joinpath(@__DIR__, "../data/")
 
 # Magic syntax: "." prefix means a submodule
 using .Ogr2Ogr: ogr2ogr
 
 function load_pct_data()
-    df = CSV.read(joinpath(@__DIR__, "../data/raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv"), DataFrame; missingstring="NA")
+    meta = TOML.parsefile("pct_meta.toml")
 
+    # TODO: support multiple files
+    df = CSV.read(
+        joinpath(DATA_ROOT, meta["files"][1]["filename"]),
+        DataFrame; missingstring="NA",
+    )
+
+    # TODO: use metadata rather than all of this stuff
+    #           Probably slightly easier to just bin these functions
+    #           because they're very focused on year/scenario stuff
+    #
+    #           We need to change the API a bit so we can support extra ind.vars
+    #
     scenario_prefixes = ("govtarget", "dutch", "cambridge", "govnearmkt", "gendereq", "ebike", "base")
     prefixed_names = filter(n -> any(startswith.(n, scenario_prefixes)), names(df))
     scenariod_variables = unique(last.(split.(prefixed_names, '_')))
@@ -58,6 +73,7 @@ end
 
 # Minimum metadata
 function load_pct_metadata(data)
+    meta = TOML.parsefile("pct_meta.toml")
     # Problems:
     # Software expects that every scenario contains every column
     # Solution:
@@ -88,7 +104,9 @@ import GeoJSON
 import Turf
 
 function load_pct_centroids()
-    zones = GeoJSON.parsefile("$(@__DIR__)/../data/processed/zones.geojson")
+    meta = TOML.parsefile("pct_meta.toml")
+    # TODO: support multiple geometries
+    zones = GeoJSON.parsefile(joinpath(DATA_ROOT,meta["geometries"][1]["filename"]))
     zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
     for f in zones.features
         zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
@@ -96,6 +114,7 @@ function load_pct_centroids()
     return zone_centroids
 end
 
+# This function V really should live in the wizard
 # Expects to find shapefiles and CSV in `$dir/raw`
 function process_pct_geometry(dir="$(@__DIR__)/../data/")
     # Get zone names and IDs

@@ -99,9 +99,9 @@ function oldmeta2newschema(metadata)
 
     newmeta["project"] = Dict("name" => "Bikes and stuff", "description" => "something to do with bikes", "map_origin" => Dict("lat" => 53.231, "lon" => -1.129, "zoom" => 8))
 
-    newmeta["geometries"] = Dict("filename" => "zones.geojson", "id" => "zones", "feature_id" => "ESOA", "feature_name" => "NAME")
+    newmeta["geometries"] = [Dict("filename" => "processed/zones.geojson", "id" => "zones", "feature_id" => "ESOA", "feature_name" => "NAME")]
 
-    newmeta["files"] = Dict("filename" => "PCT example data commute-msoa-nottinghamshire-od_attributes.csv", "type" => "matrix", "for_geometry" => "zones", "origins" => "origin", "destinations" => "destination", "columns" => [])
+    newmeta["files"] = [Dict("filename" => "raw/PCT example data commute-msoa-nottinghamshire-od_attributes.csv", "type" => "matrix", "for_geometry" => "zones", "origins" => "origin", "destinations" => "destination", "columns" => [])]
 
     for (k,v) in metadata["od_matrices"]["columns"]
         for scenario in v["scenarios_with"]
@@ -110,7 +110,7 @@ function oldmeta2newschema(metadata)
                 "independent_variables" => Dict("scenario" => scenario, "year" => 2010),
                 "dependent_variable" => k,
             )
-            push!(newmeta["files"]["columns"],column)
+            push!(newmeta["files"][1]["columns"],column)
         end
     end
 
