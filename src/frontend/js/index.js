@@ -908,7 +908,7 @@ const variableSelector = state => {
     ]
 }
 
-const scenarioSelector = state => {
+const scenarioSelector = async state => {
     // Dumb graceful failure
     try {
         const ivs = state.meta.newmeta["independent_variables"]
@@ -923,6 +923,8 @@ const scenarioSelector = state => {
                 // Need to replicate the scenarios_with thing
                 options: iv["values"].map(o => { return {id: o.id, label: o.name}}),
                 //options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
+
+                // so getData("domain?dependent_variable=...&independent_variables={everything except this one}") and extract the ones we're interested in
                 
                 value: state[iv["id"]],
                 onchange: e => actions.updateIndependentVariables({[iv["id"]]: e.currentTarget.value, scenarioYear: state.scenarioYear}),
@@ -998,7 +1000,7 @@ const flowLineControls = state => {
     ]
 }
 
-const menuView = state => {
+const menuView = async state => {
     // let popup = state.mapUI.popup
     render(mountpoint,
         // Position relative and full height are required for positioning elements at the bottom
@@ -1068,7 +1070,7 @@ const menuView = state => {
                     state.showctrl && state.meta.scenarios && [
                         variableSelector(state),
                         state.layers.od_matrices.variable && [
-                            scenarioSelector(state),
+                            await scenarioSelector(state),
 
                             // Show compare with button if there's more than one scenario featuring this variable
                             R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 && m(UI.Switch, {
@@ -1173,7 +1175,7 @@ function getScenMinMaxStep(scenario){
     return {min, max, step}
 }
 
-states.map(menuView)
+(async () => states.map(await menuView))()
 
 
 // STYLING
