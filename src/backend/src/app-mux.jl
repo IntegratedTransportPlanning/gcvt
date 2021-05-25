@@ -199,6 +199,7 @@ end
     )),
     route("/centroids", req -> jsonresp(get_centroids())),
     route("/scenarios", req -> jsonresp(metadata["scenarios"])),
+    route("/meta", req -> jsonresp(metadata)),
     route("/variables/od_matrices", req -> jsonresp(metadata["od_matrices"]["columns"])),
     route("/stats") do req
         d = queryparams(req)

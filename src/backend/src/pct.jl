@@ -91,6 +91,7 @@ function load_pct_metadata(data)
     scens = OrderedDict(name => Dict("name" => name, "at" => [2010]) for name in scenarios(data))
 
     OrderedDict(
+        "project" => meta["project"],
         "name" => "PCT stuff",
         "description" => "blah",
         "od_matrices" => Dict(

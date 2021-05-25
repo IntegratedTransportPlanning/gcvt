@@ -35,6 +35,9 @@
  *
  */
 
+// Need to check if there's a location before Mapbox sets it
+const INITIAL_HASH = window.location.hash
+
 const DEBUG = true
 const log = DEBUG ? console.log : _ => undefined
 const ZONE_OPACITY = 0.5
@@ -166,10 +169,11 @@ function zones2summary(summariser, state) {
 // INITIAL STATE
 
 const DEFAULTS = {
-    lng: -1.129,
-    lat: 53.231,
-    zoom: 8,
+    lng: 0,
+    lat: 50,
+    zoom: 2,
     meta: {
+        project: {},
         od_matrices: {},
         scenarios: {},
     },
@@ -490,15 +494,17 @@ const app = {
                 actions.fetchAllLayers()
             },
             getMeta: async () => {
-                const [od_matrices, scenarios] =
+                const [allmeta, od_matrices, scenarios] =
                     await Promise.all([
+                        getData("meta"),
                         getData("variables/od_matrices"),
                         getData("scenarios"),
                     ])
 
                 // TODO: read default from yaml properties
+                // TODO: split setting from defaults away from getting metadata
                 update({
-                    meta: {od_matrices, scenarios},
+                    meta: {project: allmeta["project"], od_matrices, scenarios},
                     layers: {
                         od_matrices: {
                             variable: old => old === null ? Object.keys(od_matrices)[0] : old,
@@ -506,6 +512,21 @@ const app = {
                     },
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                 })
+
+
+                // Set map to the project default location
+                // This should _really_ go somewhere else
+                if (INITIAL_HASH === "")  {
+                    try {
+                        const lat = allmeta["project"]["map_origin"]["lat"]
+                        const lng = allmeta["project"]["map_origin"]["lon"]
+                        const zoom = allmeta["project"]["map_origin"]["zoom"]
+
+                        map.flyTo({center: [lng, lat], zoom})
+                    } catch (e) {
+                        console.info("Warning: default location could not be read from metadata")
+                    }
+                }
             },
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
