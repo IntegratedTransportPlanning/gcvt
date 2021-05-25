@@ -431,18 +431,24 @@ const app = {
 
     Actions: update => {
         return {
-            updateScenario: (scenario, scenarioYear) => {
+            // Everything that mentions scenario / year instead needs to iterate over independent variables
+            // Compare with -> compare with a different set of independent variables
+            updateIndependentVariables: ({scenario, scenarioYear}) => {
                 update(state => {
                     scenarioYear = Number(scenarioYear)
+
+                    // This validation step here needs to be replaced with a generic one
+                    // that goes over all other IVs (via the metadata?)
                     const years = state.meta.scenarios[scenario]["at"] || [2030]
                     if (!years.includes(scenarioYear)){
                         scenarioYear = years[0]
                     }
+
                     return merge(state, {scenario, scenarioYear})
                 })
                 actions.fetchAllLayers()
             },
-            updateBaseScenario: ({scenario, year}) => {
+            updateBaseIndependentVariables: ({scenario, year}) => {
                 update(state => {
                     scenario = R.defaultTo(state.compareWith, scenario)
                     year = R.defaultTo(state.compareYear, year)
@@ -506,7 +512,7 @@ const app = {
                 // TODO: read default from yaml properties
                 // TODO: split setting from defaults away from getting metadata
                 update({
-                    meta: {project: allmeta["project"], od_matrices, scenarios},
+                    meta: {project: allmeta.newmeta["project"], od_matrices, scenarios, newmeta: allmeta.newmeta},
                     layers: {
                         od_matrices: {
                             variable: old => old === null ? Object.keys(od_matrices)[0] : old,
@@ -520,9 +526,10 @@ const app = {
                 // This should _really_ go somewhere else
                 if (INITIAL_HASH === "")  {
                     try {
-                        const lat = allmeta["project"]["map_origin"]["lat"]
-                        const lng = allmeta["project"]["map_origin"]["lon"]
-                        const zoom = allmeta["project"]["map_origin"]["zoom"]
+                        const newmeta = allmeta.newmeta
+                        const lat = newmeta["project"]["map_origin"]["lat"]
+                        const lng = newmeta["project"]["map_origin"]["lon"]
+                        const zoom = newmeta["project"]["map_origin"]["zoom"]
 
                         map.flyTo({center: [lng, lat], zoom})
                     } catch (e) {
@@ -801,6 +808,11 @@ function meta2options(metadata) {
         .map(([k, v]) => { return { value: k, label: v.name || k } })
 }
 
+// Want to work out how to replicate this
+// Should _probably_ offload it to Julia? Don't want to care about files/columns here
+//
+// So want a set of valid combinations of dependent variables (always 1: it's the colour on the map) and IVs
+// then hold dependent value & all but one IV fixed and see what other IVs fixed
 function scenarios_with(meta, variable) {
     const v = meta.od_matrices[variable]
     if (v === undefined)
@@ -897,16 +909,28 @@ const variableSelector = state => {
 }
 
 const scenarioSelector = state => {
-    return [
-        m('label', { for: 'scenario', class: 'header' }, 'Scenario'),
-        m(UI.Select, {
-            name: 'scenario',
-            fluid: true,
-            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-            value: state.scenario,
-            onchange: e => actions.updateScenario(e.currentTarget.value, state.scenarioYear),
-        }),
-    ]
+    // Dumb graceful failure
+    try {
+        const ivs = state.meta.newmeta["independent_variables"]
+        const iv = ivs[0]
+        return [
+            m('label', { for: iv["id"], class: 'header' }, iv["description"] || 'Scenario'),
+            m(UI.Select, {
+                name: iv["id"],
+                fluid: true,
+
+                // This get stuck on "base" a lot
+                // Need to replicate the scenarios_with thing
+                options: iv["values"].map(o => { return {id: o.id, label: o.name}}),
+                //options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
+                
+                value: state[iv["id"]],
+                onchange: e => actions.updateIndependentVariables({[iv["id"]]: e.currentTarget.value, scenarioYear: state.scenarioYear}),
+            }),
+        ]
+    } catch(e) {
+        return []
+    }
 }
 
 const comparisonSelector = state => {
@@ -917,7 +941,7 @@ const comparisonSelector = state => {
             fluid: true,
             options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
             value: state.compareWith,
-            onchange: e => actions.updateBaseScenario({ scenario: e.currentTarget.value })
+            onchange: e => actions.updateBaseIndependentVariables({ scenario: e.currentTarget.value })
         }),
     ]
 }
