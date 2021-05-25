@@ -910,21 +910,24 @@ const variableSelector = state => {
 
 const scenarioSelector = async state => {
     // Dumb graceful failure
+    // TODO: make less dumb
     try {
         const ivs = state.meta.newmeta["independent_variables"]
         const iv = ivs[0]
+        // TODO: Obviously stop hardcoding the year here, once we have stored the other IVs in state
+        const valid = await getDomain(state.layers.od_matrices.variable, {year: 2010}, iv["id"])
         return [
             m('label', { for: iv["id"], class: 'header' }, iv["description"] || 'Scenario'),
             m(UI.Select, {
                 name: iv["id"],
                 fluid: true,
 
-                // This get stuck on "base" a lot
-                // Need to replicate the scenarios_with thing
-                options: iv["values"].map(o => { return {id: o.id, label: o.name}}),
-                //options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-
-                // so getData("domain?dependent_variable=...&independent_variables={everything except this one}") and extract the ones we're interested in
+                // Once you select an option it then
+                // switches and displays the wrong one
+                //
+                // :/
+                //
+                options: iv["values"].map(o => { return {id: o.id, label: o.name}}).filter(o => valid.includes(o.id)),
                 
                 value: state[iv["id"]],
                 onchange: e => actions.updateIndependentVariables({[iv["id"]]: e.currentTarget.value, scenarioYear: state.scenarioYear}),
@@ -933,6 +936,12 @@ const scenarioSelector = async state => {
     } catch(e) {
         return []
     }
+}
+
+async function getDomain(dependent_variable, independent_variables = {}, pick = "") {
+    const domain = await getData(`domain?dependent_variable=${dependent_variable}&independent_variables=${JSON.stringify(independent_variables)}`)
+    if (pick == "") return domain
+    return domain.map(o=>o[pick])
 }
 
 const comparisonSelector = state => {
@@ -1406,6 +1415,7 @@ if (DEBUG)
 
         paint,
         getData,
+        getDomain,
 
         mapboxgl,
 
