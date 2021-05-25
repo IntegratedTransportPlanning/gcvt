@@ -166,12 +166,16 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
-// INITIAL STATE
-
-const DEFAULTS = {
+// Just used for initial load
+// Project-specific default comes from metadata
+const DEFAULT_POSITION = {
     lng: 0,
     lat: 50,
     zoom: 2,
+}
+
+// INITIAL STATE
+const DEFAULTS = {
     meta: {
         project: {},
         od_matrices: {},
@@ -211,7 +215,8 @@ function stateFromSearch(search) {
     let qsObj = Object.fromEntries(queryString)
 
     // Floats in the query string
-    for (let k of ["lat","lng","zoom"]) {
+    // Used to be used for lat/lng/zoom but that's now in the anchor
+    for (let k of []) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = parseFloat(qsObj[k])
         }
@@ -415,7 +420,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
 }
 
 // Not in the state because it's it's own state-managing thing.
-const map = mapboxInit(initial)
+const map = mapboxInit(merge(DEFAULT_POSITION, initial))
 
 
 // APP
@@ -426,9 +431,6 @@ const app = {
 
     Actions: update => {
         return {
-            changePosition: (lng, lat, zoom) => {
-                update({lng, lat, zoom})
-            },
             updateScenario: (scenario, scenarioYear) => {
                 update(state => {
                     scenarioYear = Number(scenarioYear)
@@ -753,13 +755,6 @@ const { update, states, actions } =
 
 // Mapbox action callbacks
 {
-    function positionUpdate() {
-        const cent = map.getCenter()
-        actions.changePosition(cent.lng, cent.lat, map.getZoom())
-    }
-
-    map.on("moveend", positionUpdate)
-    map.on("zoomend", positionUpdate)
 
     map.on('click', 'zones', actions.clickZone)
 
