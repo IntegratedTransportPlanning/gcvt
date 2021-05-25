@@ -3,6 +3,10 @@
 using Base.Iterators: product
 using Statistics
 
+# Yes I know we have JSON3 too but programmer time is valuable
+# JSON3.read puts it in a weird Dict rather than the bog standard Dict{String}
+using JSON
+
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
 
 # Change this to invalidate HTTP cache
@@ -201,6 +205,12 @@ end
     route("/scenarios", req -> jsonresp(metadata["scenarios"])),
     route("/meta", req -> jsonresp(metadata)),
     route("/variables/od_matrices", req -> jsonresp(metadata["od_matrices"]["columns"])),
+    route("/domain") do req
+        d = queryparams(req)
+        depvar = d["dependent_variable"]
+        indvars = JSON.parse(get(d,"independent_variables","{}"))
+        jsonresp(valid_ivs(depvar, indvars))
+    end,
     route("/stats") do req
         d = queryparams(req)
         comparewith = d["comparewith"]

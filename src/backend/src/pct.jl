@@ -178,7 +178,7 @@ end
 
 ##### TODO
 
-# Tidy this up and add a route
+# Tidy this up
 # (maybe cache it if it's slow?)
 
 ## Want to work out how to replicate scenarios_with from JS
@@ -187,19 +187,19 @@ end
 ## So want a set of valid combinations of dependent variables (always 1: it's the colour on the map) and IVs
 ## then hold dependent value & all but one IV fixed and see what other IVs fixed
 
-a = Dict{String,Array{Any,1}}()
+DEPS_TO_DOMAIN = Dict{String,Array{Any,1}}()
 for arr in metadata["newmeta"]["files"]
     for d in arr["columns"]
-        if haskey(a,d["dependent_variable"])
-            push!(a[d["dependent_variable"]],d["independent_variables"])
+        if haskey(DEPS_TO_DOMAIN,d["dependent_variable"])
+            push!(DEPS_TO_DOMAIN[d["dependent_variable"]],d["independent_variables"])
         else
-            a[d["dependent_variable"]] = [d["independent_variables"]]
+            DEPS_TO_DOMAIN[d["dependent_variable"]] = [d["independent_variables"]]
         end
     end
 end
 
 function valid_ivs(dependent, independent_variables)
-    filter(d -> issuperdict(d,independent_variables), a[dependent]) 
+    filter(d -> issuperdict(d,independent_variables), DEPS_TO_DOMAIN[dependent]) 
 end
 
 function issuperdict(maybesuper, maybemini)
