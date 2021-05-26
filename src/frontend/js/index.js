@@ -441,42 +441,6 @@ const app = {
         return {
             // Everything that mentions scenario / year instead needs to iterate over independent variables
             // Compare with -> compare with a different set of independent variables
-            updateIndependentVariables: ({scenario, scenarioYear}) => {
-                update(state => {
-                    scenarioYear = Number(scenarioYear)
-
-                    // This validation step here needs to be replaced with a generic one
-                    // that goes over all other IVs (via the metadata?)
-                    const years = state.meta.scenarios[scenario]["at"] || [2030]
-                    if (!years.includes(scenarioYear)){
-                        scenarioYear = years[0]
-                    }
-
-                    return merge(state, {scenario, scenarioYear})
-                })
-                actions.fetchAllLayers()
-            },
-            updateBaseIndependentVariables: ({scenario, year}) => {
-                update(state => {
-                    scenario = R.defaultTo(state.compareWith, scenario)
-                    year = R.defaultTo(state.compareYear, year)
-
-                    if (year !== "auto") {
-                        // Validate year
-                        year = Number(year)
-                        const years = state.meta.scenarios[scenario]["at"] || [2030]
-                        if (!years.includes(year)){
-                            year = years[0]
-                        }
-                    }
-
-                    return merge(state, {
-                        compareYear: year,
-                        compareWith: scenario,
-                    })
-                })
-                actions.fetchAllLayers()
-            },
             changeLayerVariable: (domain, variable) => {
                 update(state => {
                     let scens = R.keys(scenarios_with(state.meta, variable))
@@ -623,13 +587,15 @@ const app = {
                 }
 
                 // Else fetch data
-                const {compare, compareYear, meta} = state
+                const {compare, meta} = state
 
                 // TODO: Stop hard coding these two independent variables
                 // We need to iterate over all of them
                 const {scenario, year} = state.selectedvars.independent_variables
+                const base = state.selectedbasevars.independent_variables
+                const compareYear = base.year
+                const compareWith = compare ? base.scenario : "none"
 
-                const compareWith = compare ? state.compareWith : "none"
                 const percent = compare && state.percent
                 let bounds, values, basevalues
 
@@ -1122,8 +1088,7 @@ const menuView = async state => {
                         state.layers.od_matrices.variable && [
                             await ivSelectors(state),
 
-                            // Show compare with button if there's more than one scenario featuring this variable
-                            R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 && m(UI.Switch, {
+                            m(UI.Switch, {
                                 label: 'Compare Scenarios',
                                 checked: state.compare,
                                 onchange: e => actions.setCompare(e.target.checked),
