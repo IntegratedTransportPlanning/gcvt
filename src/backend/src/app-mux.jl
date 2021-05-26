@@ -265,9 +265,19 @@ end
     end,
     route("/data") do req
         d = queryparams(req)
-        scenario = d["scenario"]
-        comparewith = d["comparewith"]
-        variable = d["variable"]
+
+        # Legacy-compat
+        scenario = get(d, "scenario", "")
+        comparewith = get(d, "comparewith", "")
+        variable = get(d, "variable", "")
+
+        # New bits
+        selectedvars = JSON.parse(get(d,"selectedvars","{}"))
+        variable = get(selectedvars,"dependent_variable",variable)
+
+        # Legacy-compat
+        scenario = get(get(selectedvars, "independent_variables", Dict()), "scenario", scenario)
+
         if haskey(d, "row")
             vs = get_aggregate_flows(data, variable, scenario, :incoming, parse.(Int, split(d["row"], ',')))
         elseif comparewith == "none"

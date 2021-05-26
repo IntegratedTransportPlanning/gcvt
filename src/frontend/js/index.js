@@ -605,15 +605,15 @@ const app = {
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     ;[values, basevalues] = await Promise.all([
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
+                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
 
                     // TODO: make bounds consistent across all scenarios (currently it makes them all look about the same!)
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.99) ]
 
-                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
+                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
                     const palette = getPalette(dir, bounds, meta[domain][variable], compare, true)
 
@@ -645,8 +645,8 @@ const app = {
                     ;[bounds, values, basevalues] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
                         (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
-                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
-                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&scenario=" + scenario + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
