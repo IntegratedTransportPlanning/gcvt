@@ -480,7 +480,13 @@ const app = {
             changeLayerVariable: (domain, variable) => {
                 update(state => {
                     let scens = R.keys(scenarios_with(state.meta, variable))
-                    let scenario = state.scenario
+
+                    // TODO: stop hardcoding this
+                    // (we were probably going to remove this "handholding" anyway, right?
+                    //
+                    // or maybe for the dependent variable it's OK to do some handholding
+                    let scenario = state.selectedvars.independent_variables.scenario
+
                     if (!R.contains(scenario, scens)) {
                         scenario = scens[0]
                     }
@@ -930,22 +936,23 @@ const variableSelector = state => {
     ]
 }
 
-async function ivSelectors(state) {
+async function ivSelectors(state, opts = {base: false}) {
     // Dumb graceful failure
     // TODO: make less dumb
     try {
-        return Promise.all(state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id)))
+        return Promise.all(state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id, opts)))
     } catch(e) {
         return []
     }
 }
-const ivSelector = async (state, id) => {
+const ivSelector = async (state, id, opts = {base: false}) => {
     // Dumb graceful failure
     // TODO: make less dumb
     try {
         const ivs = state.meta.newmeta["independent_variables"]
+        const base = opts.base ? "selectedbasevars" : "selectedvars"
         const iv = ivs.find(v=>v.id == id)
-        const otherIndVars = R.pickBy((val, key) => key !== id, state.selectedvars.independent_variables)
+        const otherIndVars = R.pickBy((val, key) => key !== id, state[base].independent_variables)
         const valid = await getDomain(state.layers.od_matrices.variable, otherIndVars, iv["id"])
         return [
             m('label', { for: iv["id"], class: 'header' }, iv["name"] || iv["id"]),
@@ -974,8 +981,8 @@ const ivSelector = async (state, id) => {
                     // Convert the label to a number if the metadata tells us to
                     const value = iv.type == "numerical" ? Number(e.currentTarget.value) : e.currentTarget.value
 
-                    const newSelection = merge(state.selectedvars, {independent_variables:{[iv["id"]]: value}})
-                    update({selectedvars: newSelection})
+                    const newSelection = merge(state[base], {independent_variables:{[iv["id"]]: value}})
+                    update({[base]: newSelection})
                     actions.fetchAllLayers()
                 },
             }),
@@ -989,19 +996,6 @@ async function getDomain(dependent_variable, independent_variables = {}, pick = 
     const domain = await getData(`domain?dependent_variable=${dependent_variable}&independent_variables=${JSON.stringify(independent_variables)}`)
     if (pick == "") return domain
     return domain.map(o=>o[pick])
-}
-
-const comparisonSelector = state => {
-    return [
-        m('label', { for: 'scenario', class: 'header' }, 'Base scenario'),
-        m(UI.Select, {
-            name: 'scenario',
-            fluid: true,
-            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
-            value: state.compareWith,
-            onchange: e => actions.updateBaseIndependentVariables({ scenario: e.currentTarget.value })
-        }),
-    ]
 }
 
 const flowLineControls = state => {
@@ -1135,7 +1129,7 @@ const menuView = async state => {
                                 onchange: e => actions.setCompare(e.target.checked),
                             }),
 
-                            state.meta.scenarios && state.compare && comparisonSelector(state),
+                            state.meta.scenarios && state.compare && [m("br"), await ivSelectors(state, {base: true})],
 
                             state.compare && m(UI.Switch, {
                                 label: 'Show As Percentage',
@@ -1166,49 +1160,53 @@ const menuView = async state => {
                 ),
             ),
 
-            // Info / description window
-            Object.keys(state.meta.scenarios).length > 0 && m('div', {
-                style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
-            },
-                (state.showDesc && false // TODO: turn this back on with better defaults when there aren't descriptions, etc.
-                ?  m(UI.Callout, {
-                    style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
-                    fluid: true,
-                    onDismiss: _ => update({showDesc: false}),
-                    content: [
-                        state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
-                        state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
-                    ],
-                },
+            // // TODO: un-nuke this
+            //          (it all seemed a little too hardcoded for now)
+            //
+            //
+            // // Info / description window
+            // Object.keys(state.meta.scenarios).length > 0 && m('div', {
+            //     style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
+            // },
+            //     (state.showDesc && false // TODO: turn this back on with better defaults when there aren't descriptions, etc.
+            //     ?  m(UI.Callout, {
+            //         style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
+            //         fluid: true,
+            //         onDismiss: _ => update({showDesc: false}),
+            //         content: [
+            //             state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
+            //             state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
+            //         ],
+            //     },
 
-                    )
-                : m(UI.Button, {
-                    style: 'pointer-events: auto',
-                    iconLeft: UI.Icons.INFO,
-                    onclick: _ => update({showDesc: true}),
-                }))
-            ),
+            //         )
+            //     : m(UI.Button, {
+            //         style: 'pointer-events: auto',
+            //         iconLeft: UI.Icons.INFO,
+            //         onclick: _ => update({showDesc: true}),
+            //     }))
+            // ),
 
-            // Chart
-            state.showChart && (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
-                m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
-                    (() => {
-                        const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
-                        return [
-                            m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
-                            // Currently you can't select a zone and compare so
-                            // this is a little less useful than it could be
-                            m('iframe', {
-                                frameBorder:0,
-                                width: "100%",
-                                height: "160px",
-                                src: chartURL + "&width=320&height=160"
-                            }),
-                        ]
-                    })(),
-                    // Todo: set width + height programmatically
-                )
-            ),
+            // // Chart
+            // state.showChart && (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
+            //     m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
+            //         (() => {
+            //             const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
+            //             return [
+            //                 m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
+            //                 // Currently you can't select a zone and compare so
+            //                 // this is a little less useful than it could be
+            //                 m('iframe', {
+            //                     frameBorder:0,
+            //                     width: "100%",
+            //                     height: "160px",
+            //                     src: chartURL + "&width=320&height=160"
+            //                 }),
+            //             ]
+            //         })(),
+            //         // Todo: set width + height programmatically
+            //     )
+            // ),
 
         ])
     )
@@ -1417,14 +1415,14 @@ function getPalette(dir, bounds, {palette, bins}, compare, usesymlog=false) {
 }
 
 // Debugging tool: get data for a particular piece of geometry
-async function getDataFromId(id,domain){
-    const state = states()
-    const variable = state.layers[domain].variable
-    log("state is ", state)
-    const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
-    const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
-    return {absVal: absData[id], percVal: percData[id]}
-}
+// async function getDataFromId(id,domain){
+//     const state = states()
+//     const variable = state.layers[domain].variable
+//     log("state is ", state)
+//     const percData = await getData("data?domain=" + domain + "&year="+ state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=true")
+//     const absData = await getData("data?domain=" + domain + "&year=" + state.scenarioYear + "&variable=" + variable + "&scenario=" + state.scenario + "&percent=false")
+//     return {absVal: absData[id], percVal: percData[id]}
+// }
 
 // Copy text to the system clipboard.
 function toClipboard(str) {
@@ -1466,7 +1464,7 @@ if (DEBUG)
 
         mapboxgl,
 
-        getDataFromId,
+        // getDataFromId,
 
         stateFromSearch,
         merge,
