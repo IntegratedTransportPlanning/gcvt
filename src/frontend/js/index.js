@@ -203,7 +203,15 @@ const DEFAULTS = {
         // The locations to hover-over.
         popup: null,
         hover: null,
-    }
+    },
+
+    // New stuff here V
+
+    // TODO: swap scenarioYear, compareYear, scenario, compareWith etc. for
+    //       these objects
+    // map ind. variable names to selected values
+    selectedvars: {dependent_variable: null, independent_variables: {}},
+    selectedbasevars: {dependent_variable: null, independent_variables: {}},
 }
 
 
@@ -509,6 +517,13 @@ const app = {
                         getData("scenarios"),
                     ])
 
+                const independent_variables = Object.fromEntries(allmeta.newmeta.independent_variables.map(iv => [iv.id, null]))
+
+                // TODO: stop this from clobbering stuff picked in URL
+                //       (which it doesn't do yet but it will do soon)
+                const selectedbasevars = merge({dependent_variable: null, independent_variables}, allmeta.newmeta.project.defaults)
+                const selectedvars = selectedbasevars
+
                 // TODO: read default from yaml properties
                 // TODO: split setting from defaults away from getting metadata
                 update({
@@ -519,6 +534,8 @@ const app = {
                         },
                     },
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
+                    selectedvars,
+                    selectedbasevars,
                 })
 
 
@@ -914,8 +931,8 @@ const scenarioSelector = async state => {
     try {
         const ivs = state.meta.newmeta["independent_variables"]
         const iv = ivs.find(v=>v.id == "scenario")
-        // TODO: Obviously stop hardcoding the year here, once we have stored the other IVs in state
-        const valid = await getDomain(state.layers.od_matrices.variable, {year: Number(state.scenarioYear)}, iv["id"])
+        const otherIndVars = R.pickBy((val, key) => key !== "scenario", state.selectedvars.independent_variables)
+        const valid = await getDomain(state.layers.od_matrices.variable, otherIndVars, iv["id"])
         return [
             m('label', { for: iv["id"], class: 'header' }, iv["description"] || 'Scenario'),
             m(UI.Select, {
