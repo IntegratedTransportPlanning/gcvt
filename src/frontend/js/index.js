@@ -969,7 +969,12 @@ const ivSelector = async (state, id) => {
                 
                 value: state[iv["id"]],
                 onchange: e => {
-                    const newSelection = merge(state.selectedvars, {independent_variables:{[iv["id"]]: e.currentTarget.value}})
+
+                    // Not sure I like this
+                    // Convert the label to a number if the metadata tells us to
+                    const value = iv.type == "numerical" ? Number(e.currentTarget.value) : e.currentTarget.value
+
+                    const newSelection = merge(state.selectedvars, {independent_variables:{[iv["id"]]: value}})
                     update({selectedvars: newSelection})
                     actions.fetchAllLayers()
                 },
