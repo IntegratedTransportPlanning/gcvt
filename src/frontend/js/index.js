@@ -967,7 +967,7 @@ const ivSelector = async (state, id) => {
                     return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name}
                 }),
                 
-                value: state[iv["id"]],
+                value: state[base][iv["id"]],
                 onchange: e => {
 
                     // Not sure I like this
