@@ -168,6 +168,43 @@ data = load_pct_data()
 metadata = load_pct_metadata(data)
 zone_centroids = load_pct_centroids()
 
+##### TODO
+
+# Tidy this up
+# (maybe cache it if it's slow?)
+
+## Want to work out how to replicate scenarios_with from JS
+## Should _probably_ offload it to Julia? Don't want to care about files/columns here
+##
+## So want a set of valid combinations of dependent variables (always 1: it's the colour on the map) and IVs
+## then hold dependent value & all but one IV fixed and see what other IVs fixed
+
+DEPS_TO_DOMAIN = Dict{String,Array{Any,1}}()
+for arr in metadata["newmeta"]["files"]
+    for d in arr["columns"]
+        if haskey(DEPS_TO_DOMAIN,d["dependent_variable"])
+            push!(DEPS_TO_DOMAIN[d["dependent_variable"]],d["independent_variables"])
+        else
+            DEPS_TO_DOMAIN[d["dependent_variable"]] = [d["independent_variables"]]
+        end
+    end
+end
+
+function valid_ivs(dependent, independent_variables)
+    filter(d -> issuperdict(d,independent_variables), DEPS_TO_DOMAIN[dependent]) 
+end
+
+function issuperdict(maybesuper, maybemini)
+    for (k,v) in maybemini
+        haskey(maybesuper, k) || return false
+        maybesuper[k] == v || return false
+    end
+    return true
+end
+
+#########
+
+
 QUANTILES = (0.1, 0.9)
 
 # APP
