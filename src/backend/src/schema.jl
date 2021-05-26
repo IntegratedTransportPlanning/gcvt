@@ -97,7 +97,22 @@ variables_without_scenario = [
 function oldmeta2newschema(metadata)
     newmeta = Dict()
 
-    newmeta["project"] = Dict("name" => "Bikes and stuff", "description" => "something to do with bikes", "map_origin" => Dict("lat" => 53.231, "lon" => -1.129, "zoom" => 8))
+    newmeta["project"] = Dict(
+        "name" => "Bikes and stuff",
+        "description" => "something to do with bikes",
+        "map_origin" => Dict(
+            "lat" => 53.231,
+            "lon" => -1.129,
+            "zoom" => 8,
+        ),
+        "defaults" => Dict(
+            "dependent_variable" => "slc",
+            "independent_variables" => Dict(
+                "year" => 2010,
+                "scenario" => "dutch",
+            ),
+        ),
+    )
 
     newmeta["geometries"] = [Dict("filename" => "processed/zones.geojson", "id" => "zones", "feature_id" => "ESOA", "feature_name" => "NAME")]
 
@@ -136,6 +151,6 @@ function oldmeta2newschema(metadata)
     newmeta
 end
 
-# open("pct_meta.toml", "w") do io
-#     TOML.print(io, oldmeta2newschema(metadata))
-# end
+open("pct_meta.toml", "w") do io
+    TOML.print(io, oldmeta2newschema(metadata))
+end
