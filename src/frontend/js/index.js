@@ -913,9 +913,9 @@ const scenarioSelector = async state => {
     // TODO: make less dumb
     try {
         const ivs = state.meta.newmeta["independent_variables"]
-        const iv = ivs[0]
+        const iv = ivs.find(v=>v.id == "scenario")
         // TODO: Obviously stop hardcoding the year here, once we have stored the other IVs in state
-        const valid = await getDomain(state.layers.od_matrices.variable, {year: 2010}, iv["id"])
+        const valid = await getDomain(state.layers.od_matrices.variable, {year: Number(state.scenarioYear)}, iv["id"])
         return [
             m('label', { for: iv["id"], class: 'header' }, iv["description"] || 'Scenario'),
             m(UI.Select, {
