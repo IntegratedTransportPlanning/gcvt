@@ -926,8 +926,12 @@ const scenarioSelector = async state => {
                 // switches and displays the wrong one
                 //
                 // :/
+
+                // TODO: improve formatting
                 //
-                options: iv["values"].map(o => { return {id: o.id, label: o.name}}).filter(o => valid.includes(o.id)),
+                //       whole page needs to be rewritten to allow for "invalid" choices to be displayed nicely
+                //       (if invalid can't be selected you can't "tunnel" between distant parts of the domain)
+                options: iv["values"].map(o => { return {id: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name}}),
                 
                 value: state[iv["id"]],
                 onchange: e => actions.updateIndependentVariables({[iv["id"]]: e.currentTarget.value, scenarioYear: state.scenarioYear}),
