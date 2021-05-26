@@ -930,6 +930,15 @@ const variableSelector = state => {
     ]
 }
 
+async function ivSelectors(state) {
+    // Dumb graceful failure
+    // TODO: make less dumb
+    try {
+        return Promise.all(state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id)))
+    } catch(e) {
+        return []
+    }
+}
 const ivSelector = async (state, id) => {
     // Dumb graceful failure
     // TODO: make less dumb
@@ -1112,7 +1121,7 @@ const menuView = async state => {
                     state.showctrl && state.meta.scenarios && [
                         variableSelector(state),
                         state.layers.od_matrices.variable && [
-                            await Promise.all(state.meta &&  state.meta.newmeta && state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id) || [])),
+                            await ivSelectors(state),
 
                             // Show compare with button if there's more than one scenario featuring this variable
                             R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 && m(UI.Switch, {
