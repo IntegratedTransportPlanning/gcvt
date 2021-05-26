@@ -13,7 +13,7 @@ const DATA_ROOT = joinpath(@__DIR__, "../data/")
 using .Ogr2Ogr: ogr2ogr
 
 function load_pct_data()
-    meta = TOML.parsefile("pct_meta.toml")
+    meta = TOML.parsefile(SCHEMA_PATH)
 
     # TODO: support multiple files
     df = CSV.read(
@@ -73,7 +73,7 @@ end
 
 # Minimum metadata
 function load_pct_metadata(data)
-    meta = TOML.parsefile("pct_meta.toml")
+    meta = TOML.parsefile(SCHEMA_PATH)
     # Problems:
     # Software expects that every scenario contains every column
     # Solution:
@@ -105,7 +105,7 @@ import GeoJSON
 import Turf
 
 function load_pct_centroids()
-    meta = TOML.parsefile("pct_meta.toml")
+    meta = TOML.parsefile(SCHEMA_PATH)
     # TODO: support multiple geometries
     zones = GeoJSON.parsefile(joinpath(DATA_ROOT,meta["geometries"][1]["filename"]))
     zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))

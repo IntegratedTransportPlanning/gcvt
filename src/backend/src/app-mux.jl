@@ -7,7 +7,11 @@ using Statistics
 # JSON3.read puts it in a weird Dict rather than the bog standard Dict{String}
 using JSON
 
+
+# Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
+const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
+const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
 
 # Change this to invalidate HTTP cache
 const API_VERSION = IN_PRODUCTION ? "0.0.2" : rand(['a':'z'..., string.(0:9)...], 4) |> join
@@ -279,4 +283,4 @@ end
     Mux.notfound()
 )
 
-IN_PRODUCTION && wait(serve(app, 2017))
+IN_PRODUCTION && wait(serve(app, PORT))
