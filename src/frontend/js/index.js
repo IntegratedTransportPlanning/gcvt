@@ -617,7 +617,12 @@ const app = {
                 }
 
                 // Else fetch data
-                const {compare, compareYear, scenario, scenarioYear: year, meta} = state
+                const {compare, compareYear, meta} = state
+
+                // TODO: Stop hard coding these two independent variables
+                // We need to iterate over all of them
+                const {scenario, year} = state.selectedvars.independent_variables
+
                 const compareWith = compare ? state.compareWith : "none"
                 const percent = compare && state.percent
                 let bounds, values, basevalues
@@ -925,16 +930,16 @@ const variableSelector = state => {
     ]
 }
 
-const scenarioSelector = async state => {
+const ivSelector = async (state, id) => {
     // Dumb graceful failure
     // TODO: make less dumb
     try {
         const ivs = state.meta.newmeta["independent_variables"]
-        const iv = ivs.find(v=>v.id == "scenario")
-        const otherIndVars = R.pickBy((val, key) => key !== "scenario", state.selectedvars.independent_variables)
+        const iv = ivs.find(v=>v.id == id)
+        const otherIndVars = R.pickBy((val, key) => key !== id, state.selectedvars.independent_variables)
         const valid = await getDomain(state.layers.od_matrices.variable, otherIndVars, iv["id"])
         return [
-            m('label', { for: iv["id"], class: 'header' }, iv["description"] || 'Scenario'),
+            m('label', { for: iv["id"], class: 'header' }, iv["name"] || iv["id"]),
             m(UI.Select, {
                 name: iv["id"],
                 fluid: true,
@@ -948,10 +953,17 @@ const scenarioSelector = async state => {
                 //
                 //       whole page needs to be rewritten to allow for "invalid" choices to be displayed nicely
                 //       (if invalid can't be selected you can't "tunnel" between distant parts of the domain)
-                options: iv["values"].map(o => { return {id: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name}}),
+                options: iv["values"].map(o => { 
+                    o = typeof(o) == "object" ? o : {id: o, name: o}
+                    return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name}
+                }),
                 
                 value: state[iv["id"]],
-                onchange: e => actions.updateIndependentVariables({[iv["id"]]: e.currentTarget.value, scenarioYear: state.scenarioYear}),
+                onchange: e => {
+                    const newSelection = merge(state.selectedvars, {independent_variables:{[iv["id"]]: e.currentTarget.value}})
+                    update({selectedvars: newSelection})
+                    actions.fetchAllLayers()
+                },
             }),
         ]
     } catch(e) {
@@ -1100,7 +1112,7 @@ const menuView = async state => {
                     state.showctrl && state.meta.scenarios && [
                         variableSelector(state),
                         state.layers.od_matrices.variable && [
-                            await scenarioSelector(state),
+                            await Promise.all(state.meta &&  state.meta.newmeta && state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id) || [])),
 
                             // Show compare with button if there's more than one scenario featuring this variable
                             R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 && m(UI.Switch, {
