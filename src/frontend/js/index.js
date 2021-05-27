@@ -872,7 +872,7 @@ const variableSelector = state => {
     const options = [{
         label: 'None',
         value: '',
-    }].concat(meta2options(state.meta.od_matrices))
+    }].concat(meta2options(Object.fromEntries(state?.meta?.newmeta?.dependent_variables?.map(o => [o.id, o]) || [])))
 
     return [
         m('label', { for: 'matrix_variable', class: 'header' }, 'Variable'),
@@ -1110,8 +1110,7 @@ const menuView = async state => {
 
                             // Summary statistics for zones
                             state.selectedvars.dependent_variable !== ""
-                            && state.meta.od_matrices[state.selectedvars.dependent_variable]
-                            && state.meta.od_matrices[state.selectedvars.dependent_variable].statistics == "show"
+                            && state.meta?.newmeta?.dependent_variables.find(o => o.id == state.selectedvars?.dependent_variable)?.show_stats == "show"
                             && state.layers.od_matrices.basevalues
                             && [
                                 m('p',
