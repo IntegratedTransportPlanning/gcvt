@@ -3,22 +3,20 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "parcel build js/index.html --out-dir www --public-url /map/",
-    "devbuild": "parcel build js/index.html --no-minify --out-dir www --public-url /map/",
-    "watch": "parcel watch js/index.html --out-dir www --public-url /map/"
+    "build": "scripts/build.sh --minify",
+    "devbuild": "scripts/build.sh",
+    "watch": "scripts/build.sh --watch"
   },
-  "browserslist": [
-    "Firefox >= 60"
-  ],
   "dependencies": {
     "@turf/turf": "^5.1.6",
     "construct-ui": "^0.3.1",
     "d3": "^5.12.0",
+    "esbuild": "^0.12.4",
     "mapbox-gl": "^1.5.0",
     "meiosis-setup": "^3.1.0",
     "mergerino": "^0.4.0",
     "mithril": "^2.0.4",
-    "parcel": "^1.12.4",
-    "ramda": "^0.26.1"
+    "ramda": "^0.26.1",
+    "util": "^0.12.3"
   }
 }
