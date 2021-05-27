@@ -941,7 +941,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
                 //       (if invalid can't be selected you can't "tunnel" between distant parts of the domain)
                 options: iv["values"].map(o => { 
                     o = typeof(o) == "object" ? o : {id: o, name: o}
-                    return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name}
+                    return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name, style: (valid.includes(o.id) ? "" : "background:lightgrey;")}
                 }),
                 
                 value: state[base][iv["id"]],
