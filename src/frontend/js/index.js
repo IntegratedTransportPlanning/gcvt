@@ -163,7 +163,7 @@ function zones2summary(summariser, state) {
         ) :
         state.layers.od_matrices.basevalues
     ) +
-        (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
+        (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.selectedvars.dependent_variable, state.compare && state.percent)
 }
 
 // Just used for initial load
@@ -605,15 +605,15 @@ const app = {
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     ;[values, basevalues] = await Promise.all([
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
-                        getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
+                        getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
 
                     // TODO: make bounds consistent across all scenarios (currently it makes them all look about the same!)
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.99) ]
 
-                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
+                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
 
                     const palette = getPalette(dir, bounds, meta[domain][variable], compare, true)
 
@@ -645,8 +645,8 @@ const app = {
                     ;[bounds, values, basevalues] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
                         (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
-                        getData("data?domain=" + domain + "&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
-                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&variable=" + variable + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        getData("data?domain=" + domain + "&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
+                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
                     ])
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
@@ -685,7 +685,7 @@ const app = {
 
             const updateQS = () => {
                 const queryItems = [
-                    `matVar=${state.layers.od_matrices.variable}`,
+                    `matVar=${state.selectedvars.dependent_variable}`,
                     ...strings_in_query.map(key => `${key}=${state[key]}`),
                     ...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`),
                     ...arrays_in_query.map(k => `${k}=${JSON.stringify(state[k])}`),
@@ -734,10 +734,11 @@ const app = {
                 }
             }
 
-            if (state.layers.od_matrices !== previousState.layers.od_matrices ||
+            // probably need to compare selectedbasevars here too
+            if (state.selectedvars !== previousState.selectedvars ||
                 state.centroidLineWeights !== previousState.centroidLineWeights ||
                 state.showClines !== previousState.showClines) {
-                if (!state.layers.od_matrices.variable || !state.centroidLineWeights || !state.showClines) {
+                if (!state.selectedvars.dependent_variable || !state.centroidLineWeights || !state.showClines) {
                     hideCentroids(state)
                 } else {
                     paintCentroids(state)
@@ -880,10 +881,13 @@ const variableSelector = state => {
                 name: 'matrix_variable',
                 fluid: true,
                 options: options,
-                value: state.layers.od_matrices.variable,
-                onchange: e => actions.changeLayerVariable('od_matrices', e.currentTarget.value),
+                value: state.selectedvars.dependent_variable,
+                onchange: e => {
+                    update({selectedvars: merge(state.selectedvars, {dependent_variable: e.currentTarget.value})})
+                    actions.fetchAllLayers()
+                },
             }),
-            false && (state.layers.od_matrices.variable !== "") && [
+            false && (state.selectedvars.dependent_variable !== "") && [
                 " ",
                 m(UI.Button, {
                     name: 'showChart',
@@ -919,7 +923,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
         const base = opts.base ? "selectedbasevars" : "selectedvars"
         const iv = ivs.find(v=>v.id == id)
         const otherIndVars = R.pickBy((val, key) => key !== id, state[base].independent_variables)
-        const valid = await getDomain(state.layers.od_matrices.variable, otherIndVars, iv["id"])
+        const valid = await getDomain(state.selectedvars.dependent_variable, otherIndVars, iv["id"])
         return [
             m('label', { for: iv["id"], class: 'header' }, iv["name"] || iv["id"]),
             m(UI.Select, {
@@ -966,7 +970,7 @@ async function getDomain(dependent_variable, independent_variables = {}, pick = 
 
 const flowLineControls = state => {
     return [
-        state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
+        state.selectedvars.dependent_variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
@@ -1050,7 +1054,7 @@ const menuView = async state => {
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
                         m(Legend, {
-                            title: state.layers.od_matrices.variable,
+                            title: state.selectedvars.dependent_variable,
                             percent: state.compare && state.percent,
                             ...state.layers.od_matrices
                         }),
@@ -1085,7 +1089,7 @@ const menuView = async state => {
                     }),
                     state.showctrl && state.meta.scenarios && [
                         variableSelector(state),
-                        state.layers.od_matrices.variable && [
+                        state.selectedvars.dependent_variable && [
                             await ivSelectors(state),
 
                             m(UI.Switch, {
@@ -1105,9 +1109,9 @@ const menuView = async state => {
                             flowLineControls(state),
 
                             // Summary statistics for zones
-                            state.layers.od_matrices.variable !== ""
-                            && state.meta.od_matrices[state.layers.od_matrices.variable]
-                            && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show"
+                            state.selectedvars.dependent_variable !== ""
+                            && state.meta.od_matrices[state.selectedvars.dependent_variable]
+                            && state.meta.od_matrices[state.selectedvars.dependent_variable].statistics == "show"
                             && state.layers.od_matrices.basevalues
                             && [
                                 m('p',
@@ -1140,7 +1144,7 @@ const menuView = async state => {
             //         onDismiss: _ => update({showDesc: false}),
             //         content: [
             //             state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
-            //             state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
+            //             state.meta.od_matrices && state.meta.od_matrices[state.selectedvars.dependent_variable] && m('p', state.meta.od_matrices[state.selectedvars.dependent_variable].name + ": " + (state.meta.od_matrices[state.selectedvars.dependent_variable].description || "")),
             //         ],
             //     },
 
@@ -1153,10 +1157,10 @@ const menuView = async state => {
             // ),
 
             // // Chart
-            // state.showChart && (state.layers.od_matrices.variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
+            // state.showChart && (state.selectedvars.dependent_variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
             //     m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
             //         (() => {
-            //             const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.layers.od_matrices.variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
+            //             const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.selectedvars.dependent_variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
             //             return [
             //                 m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
             //                 // Currently you can't select a zone and compare so
