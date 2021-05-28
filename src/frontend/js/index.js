@@ -188,10 +188,6 @@ const DEFAULTS = {
     },
     percent: true,
     compare: false,
-    scenario: "",
-    compareWith: "none",
-    scenarioYear: 2010,
-    compareYear: "auto",
     showctrl: true,
     mapReady: false,
     showDesc: true,
@@ -439,34 +435,6 @@ const app = {
 
     Actions: update => {
         return {
-            // Everything that mentions scenario / year instead needs to iterate over independent variables
-            // Compare with -> compare with a different set of independent variables
-            changeLayerVariable: (domain, variable) => {
-                update(state => {
-                    let scens = R.keys(scenarios_with(state.meta, variable))
-
-                    // TODO: stop hardcoding this
-                    // (we were probably going to remove this "handholding" anyway, right?
-                    //
-                    // or maybe for the dependent variable it's OK to do some handholding
-                    let scenario = state.selectedvars.independent_variables.scenario
-
-                    if (!R.contains(scenario, scens)) {
-                        scenario = scens[0]
-                    }
-                    let compareWith = state.compareWith
-                    if (!R.contains(compareWith, scens)) {
-                        compareWith = scens[0]
-                    }
-
-                    return merge(state, {
-                        scenario,
-                        compareWith,
-                        layers: { [domain]: { variable }}}
-                    )
-                })
-                actions.fetchLayerData(domain)
-            },
             setCompare: compare => {
                 update({
                     compare,
@@ -676,7 +644,11 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
+
+            // TODO: update this for new schema
+            // (NB: now have lots of JSON objects in querystring)
             const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
+
             const arrays_in_query = ["selectedZones"]
 
             const updateQS = () => {
