@@ -209,6 +209,7 @@ end
 #########
 
 
+# This should probably be set from metadata?
 QUANTILES = (0.1, 0.9)
 
 # APP
@@ -254,8 +255,19 @@ end
     end,
     route("/stats") do req
         d = queryparams(req)
-        comparewith = d["comparewith"]
-        variable = d["variable"]
+
+        # Legacy-compat
+        comparewith = get(d, "comparewith", "")
+        variable = get(d, "variable", "")
+
+        # New bits
+        selectedvars = JSON.parse(get(d,"selectedvars","{}"))
+        selectedbasevars = JSON.parse(get(d,"selectedbasevars","{}"))
+        variable = get(selectedvars,"dependent_variable",variable)
+
+        # Legacy-compat
+        comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
+
         if comparewith == "none"
             jsonresp(get_aggregate_quantiles(data, variable, QUANTILES, :incoming))
         else
