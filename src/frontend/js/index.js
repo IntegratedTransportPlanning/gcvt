@@ -233,22 +233,12 @@ function stateFromSearch(search) {
         }
     }
 
-    // Arrays in the querty string
-    for (let k of ["selectedZones"]) {
+    // Arrays / objects in the querty string
+    for (let k of ["selectedZones", "selectedbasevars", "selectedvars"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
         }
     }
-
-    // Aliased variables
-    if (qsObj.hasOwnProperty("matVar"))
-        qsObj = merge(qsObj, {
-            layers: {
-                od_matrices: {
-                    variable: qsObj.matVar
-                }
-            }
-        })
 
     return qsObj
 }
@@ -647,9 +637,9 @@ const app = {
 
             // TODO: update this for new schema
             // (NB: now have lots of JSON objects in querystring)
-            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
+            const strings_in_query = [ "percent", "compare", "showctrl", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
 
-            const arrays_in_query = ["selectedZones"]
+            const arrays_in_query = ["selectedZones", "selectedbasevars", "selectedvars"]
 
             const updateQS = () => {
                 const queryItems = [
