@@ -912,6 +912,7 @@ async function ivSelectors(state, opts = {base: false}) {
     try {
         return Promise.all(state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id, opts)))
     } catch(e) {
+        console.error(e)
         return []
     }
 }
@@ -958,6 +959,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
             }),
         ]
     } catch(e) {
+        console.error(e)
         return []
     }
 }
