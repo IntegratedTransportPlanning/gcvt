@@ -273,10 +273,12 @@ end
 
         # New bits
         selectedvars = JSON.parse(get(d,"selectedvars","{}"))
+        selectedbasevars = JSON.parse(get(d,"selectedbasevars","{}"))
         variable = get(selectedvars,"dependent_variable",variable)
 
         # Legacy-compat
         scenario = get(get(selectedvars, "independent_variables", Dict()), "scenario", scenario)
+        comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
 
         if haskey(d, "row")
             vs = get_aggregate_flows(data, variable, scenario, :incoming, parse.(Int, split(d["row"], ',')))
