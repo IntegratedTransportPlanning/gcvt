@@ -594,6 +594,7 @@ const app = {
                 // We need to iterate over all of them
                 const compareYear = base.year
                 const compareWith = compare ? base.scenario : "none"
+                base.scenario  = compare ? base.scenario : "none" 
                 const {scenario, year} = state.selectedvars.independent_variables
 
                 const percent = compare && state.percent
@@ -605,15 +606,21 @@ const app = {
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     ;[values, basevalues] = await Promise.all([
-                        getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + state.selectedZones), // Compare currently unused
-                        getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        getData(
+                            "data?domain=od_matrices&selectedvars=" + JSON.stringify(state.selectedvars) +
+                            "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + 
+                            "&row=" + state.selectedZones
+                        ), // Compare currently unused
+                        getData(
+                            "data?domain=od_matrices&selectedvars=" + JSON.stringify(state.selectedvars) +
+                            "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
                     ])
 
                     // TODO: make bounds consistent across all scenarios (currently it makes them all look about the same!)
                     const sortedValues = sort(values)
                     bounds = [ d3.quantile(sortedValues, 0.1), d3.quantile(sortedValues, 0.99) ]
 
-                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&row=" + zone))) // values, not weights any more
+                    const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + "&row=" + zone))) // values, not weights any more
 
                     const palette = getPalette(dir, bounds, meta[domain][variable], compare, true)
 
@@ -645,8 +652,8 @@ const app = {
                     ;[bounds, values, basevalues] = await Promise.all([
                         // Clamp at 99.99% and 0.01% quantiles
                         (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
-                        getData("data?domain=" + domain + "&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&comparewith=" + compareWith + "&compareyear=" + compareYear),
-                        domain == "od_matrices" && getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&comparewith=" + compareWith + "&compareyear=" + compareYear)
+                        getData("data?domain=" + domain + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
+                        domain == "od_matrices" && getData("data?domain=od_matrices&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
                     ])
                     if (compare) {
                         // For abs diffs, we want 0 to always be the midpoint.
