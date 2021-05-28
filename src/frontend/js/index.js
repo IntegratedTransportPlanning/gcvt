@@ -588,13 +588,13 @@ const app = {
 
                 // Else fetch data
                 const {compare, meta} = state
+                const base = state.selectedbasevars.independent_variables
 
                 // TODO: Stop hard coding these two independent variables
                 // We need to iterate over all of them
-                const {scenario, year} = state.selectedvars.independent_variables
-                const base = state.selectedbasevars.independent_variables
                 const compareYear = base.year
                 const compareWith = compare ? base.scenario : "none"
+                const {scenario, year} = state.selectedvars.independent_variables
 
                 const percent = compare && state.percent
                 let bounds, values, basevalues
