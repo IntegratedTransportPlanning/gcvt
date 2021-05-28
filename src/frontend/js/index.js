@@ -639,19 +639,8 @@ const app = {
                         }
                     })
                 } else {
-                    // TODO: We should probably not be defining default quantile assumptions on both server and client.
-                    const qs = domain == "od_matrices" ? 
-                        percent ?
-                            [0.05,0.95] :
-                            [0.0001,0.9999] :
-                        percent ?
-                            [0.05,0.95] :
-                            [0.1,0.9]
-
-                    // Quantiles should be overridden by metadata
                     ;[bounds, values, basevalues] = await Promise.all([
-                        // Clamp at 99.99% and 0.01% quantiles
-                        (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&variable=" + variable + `&quantiles=${qs[0]},${qs[1]}` + "&comparewith=" + compareWith + "&compareyear=" + compareYear + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
+                        (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
                         getData("data?domain=" + domain + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
                         domain == "od_matrices" && getData("data?domain=od_matrices&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
                     ])
