@@ -1,3 +1,11 @@
+# We use Caddy v1, available here:
+# https://github.com/caddyserver/caddy/releases/tag/v1.0.4
+#
+# With docs available here:
+#
+# https://web.archive.org/web/20200505225041/https://caddyserver.com/v1/docs
+
+
 # This doesn't always work right due to hostname or routing difficulties.
 # If you use a real host rather than localhost it is more likely to work correctly.
 # Will fix this ;)
@@ -6,19 +14,23 @@
 	root src/backend/data/processed/tiles/
     header Cache-Control max-age={$ITP_CADDY_CACHE_TIME:0}
 	browse
+    log stdout
 }
 
 :2016/map/ {
 	root src/frontend/www/
+    log stdout
 }
 
 :2016/api/ {
 	proxy / :2017 {
 		websocket
 	}
+    log stdout
 }
 
 :2016 {
 	# Temporarily redirect root to /map
 	redir / /map/ 307
+    log stdout
 }

@@ -12,7 +12,7 @@ This project primarily uses two programming languages: Julia and JavaScript.
 ```sh
 # install julia v1.x
 # install yarn
-# install caddy (or some other webserver)
+# install caddy v1 - not v2 - see top of Caddyfile for help
 
 # install Julia and JS dependencies
 make setup
