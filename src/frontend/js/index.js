@@ -532,7 +532,7 @@ const app = {
                         }
                     })
 
-                const variable = state.layers[domain].variable
+                const variable = state?.selectedvars?.dependent_variable
 
                 if (!variable) {
                     return updateLayer({
@@ -546,20 +546,20 @@ const app = {
 
                 // Else fetch data
                 const {compare, meta} = state
-                const base = state.selectedbasevars.independent_variables
+                const base = state?.selectedbasevars?.independent_variables
 
                 // TODO: Stop hard coding these two independent variables
                 // We need to iterate over all of them
                 const compareYear = base.year
                 const compareWith = compare ? base.scenario : "none"
                 base.scenario  = compare ? base.scenario : "none" 
-                const {scenario, year} = state.selectedvars.independent_variables
+                const {scenario, year} = base
 
                 const percent = compare && state.percent
                 let bounds, values, basevalues
 
-                const dir = state.compare ? meta[domain][variable]["good"] :
-                    meta[domain][variable]["reverse_palette"] ? "smaller" : "bigger"
+                const dir = state?.meta?.newmeta?.dependent_variables?.find(v => v.id == variable).bigger_is_better
+
                 const unit = getUnit(meta, domain, variable, percent)
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
@@ -868,7 +868,7 @@ async function ivSelectors(state, opts = {base: false}) {
     // Dumb graceful failure
     // TODO: make less dumb
     try {
-        return Promise.all(state.meta.newmeta.independent_variables.map(v => ivSelector(state, v.id, opts)))
+        return Promise.all(state.meta?.newmeta?.independent_variables?.map(v => ivSelector(state, v.id, opts)) || [])
     } catch(e) {
         console.error(e)
         return []
