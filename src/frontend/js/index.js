@@ -897,6 +897,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
                     return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + o.name, style: (valid.includes(o.id) ? "" : "background:lightgrey;")}
                 }),
                 
+                // TODO: investigate why this doesn't get set on initial map load
                 value: state[base][iv["id"]],
                 onchange: e => {
 
@@ -1301,6 +1302,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
     }
     if (!variable || !values) {
         // If we don't have data to paint, hide the geometry.
+        // TODO: might be nicer to make it grey?
         map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
         if (domain == "od_matrices"){
