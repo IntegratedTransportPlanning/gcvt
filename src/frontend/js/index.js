@@ -682,7 +682,7 @@ const app = {
 
             for (let layer of Object.keys(state.layers)) {
                 if (state.layers[layer] !== previousState.layers[layer]) {
-                    paint(layer, state.layers[layer])
+                    paint(layer, {...state.layers[layer], variable: state.selectedvars.dependent_variable})
                 }
             }
 
