@@ -413,7 +413,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
     return map
 }
 
-// Not in the state because it's it's own state-managing thing.
+// Not in the state because it's its own state-managing thing.
 const map = mapboxInit(merge(DEFAULT_POSITION, initial))
 
 
