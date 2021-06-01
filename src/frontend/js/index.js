@@ -394,7 +394,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         actions.getCentres().catch(e => console.error("Failed to get centroids?", e))
         await actions.getMeta()
         update({mapReady: true})
-        actions.fetchAllLayers()
+        actions.fetchZonesData()
     }
 
     map.on('load', loadLayers)
@@ -431,11 +431,11 @@ const app = {
                     centroidLineWeights: null,
                     selectedZones: [],
                 })
-                actions.fetchAllLayers()
+                actions.fetchZonesData()
             },
             setPercent: percent => {
                 update({percent})
-                actions.fetchAllLayers()
+                actions.fetchZonesData()
             },
             getMeta: async () => {
                 const [allmeta, od_matrices, scenarios] =
@@ -454,6 +454,7 @@ const app = {
 
                 // TODO: read default from yaml properties
                 // TODO: split setting from defaults away from getting metadata
+                // TODO: investigate `old`, isn't it always `undefined`?
                 update({
                     meta: {project: allmeta.newmeta["project"], od_matrices, scenarios, newmeta: allmeta.newmeta},
                     layers: {
@@ -485,44 +486,8 @@ const app = {
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
             }),
-            fetchAllLayers: () => {
-                actions.fetchLayerData("od_matrices")
-            },
-            toggleCentroids: showness => {
-                update({showClines: showness})
-            },
-            clickZone: event => {
-                const state = states()
-                const fid = event.features[0].properties.fid
-                const ctrlPressed = event.originalEvent.ctrlKey
-
-                let selectedZones = state.selectedZones.slice()
-
-                if (selectedZones.includes(fid)) {
-                    selectedZones = ctrlPressed ? selectedZones.filter(x => x !== fid) : []
-                } else {
-                    selectedZones = ctrlPressed ? [...state.selectedZones, fid]: [fid]
-                }
-
-                let oldcompare
-                update(
-                {
-                    selectedZones,
-                    compare: old => {
-                        oldcompare = old
-                        return false
-                    },
-                    // Clear existing centroids
-                    centroidLineWeights: null,
-                })
-                if (oldcompare) {
-                    actions.fetchAllLayers()
-                } else {
-                    actions.fetchLayerData("od_matrices")
-                }
-            },
-            fetchLayerData: async domain => {
-
+            fetchZonesData: async () => {
+                const domain = "od_matrices"
                 const state = states()
 
                 const updateLayer = patch =>
@@ -622,6 +587,35 @@ const app = {
                     palette: [palette],
                     unit,
                 }, basevalues ? {basevalues} : {}))
+            },
+            toggleCentroids: showness => {
+                update({showClines: showness})
+            },
+            clickZone: event => {
+                const state = states()
+                const fid = event.features[0].properties.fid
+                const ctrlPressed = event.originalEvent.ctrlKey
+
+                let selectedZones = state.selectedZones.slice()
+
+                if (selectedZones.includes(fid)) {
+                    selectedZones = ctrlPressed ? selectedZones.filter(x => x !== fid) : []
+                } else {
+                    selectedZones = ctrlPressed ? [...state.selectedZones, fid]: [fid]
+                }
+
+                let oldcompare
+                update(
+                {
+                    selectedZones,
+                    compare: old => {
+                        oldcompare = old
+                        return false
+                    },
+                    // Clear existing centroids
+                    centroidLineWeights: null,
+                })
+                actions.fetchZonesData()
             },
         }
     },
@@ -842,7 +836,7 @@ const variableSelector = state => {
                 value: state.selectedvars.dependent_variable,
                 onchange: e => {
                     update({selectedvars: merge(state.selectedvars, {dependent_variable: e.currentTarget.value})})
-                    actions.fetchAllLayers()
+                    actions.fetchZonesData()
                 },
             }),
             false && (state.selectedvars.dependent_variable !== "") && [
@@ -912,7 +906,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
 
                     const newSelection = merge(state[base], {independent_variables:{[iv["id"]]: value}})
                     update({[base]: newSelection})
-                    actions.fetchAllLayers()
+                    actions.fetchZonesData()
                 },
             }),
         ]
@@ -947,7 +941,7 @@ const flowLineControls = state => {
                             update({
                                 selectedZones: state.selectedZones.filter(x => x != id),
                             })
-                            actions.fetchLayerData('od_matrices')
+                            actions.fetchZonesData()
                         },
                     }),
                 )))
@@ -972,7 +966,7 @@ const flowLineControls = state => {
                             selectedZones: [],
                             centroidLineWeights: null,
                         })
-                        actions.fetchLayerData("od_matrices")
+                        actions.fetchZonesData()
                     },
                 }),
             ),
