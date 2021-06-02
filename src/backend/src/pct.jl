@@ -68,7 +68,7 @@ function load_pct_data()
         isnothing(scen) ? "base" : scenario_prefixes[scen]
     end
 
-    return ODData(df, column_vars, column_scens)
+    return ODData(df, column_vars, column_scens, meta)
 end
 
 # Minimum metadata

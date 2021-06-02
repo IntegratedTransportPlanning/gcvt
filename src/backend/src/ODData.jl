@@ -33,6 +33,7 @@ struct ODData{T <: AbstractDataFrame, U, V, W, X}
     # These are views, we're not triplicating the data.
     grouped_by_origin::W
     grouped_by_destination::X
+    meta::Dict{String, Any} # yeah this is a bad idea
 end
 
 """
@@ -45,11 +46,11 @@ Wrap a dataframe (`data`) whose first two columns are origin and destination and
 `getindex` methods are provided for the wrapped data, but beware that they don't densify the data and only return 1-D vectors.
 
 """
-function ODData(d, v, s)
+function ODData(d, v, s, meta)
     d = sort(d, [1, 2])
     by_origin = groupby(d, 1)
     by_destination = groupby(d, 2)
-    ODData(d, v, s, by_origin, by_destination)
+    ODData(d, v, s, by_origin, by_destination, meta)
 end
 
 # Get some metadata
@@ -77,15 +78,31 @@ function original_column_names(d)
     names(d.data)[3:end]
 end
 
-# Internal helper function
-function column_index(d::ODData, var, scen)
-    col_idx = findfirst(==( (var, scen) ), collect(zip(d.column_vars, d.column_scens)))
-    if isnothing(col_idx)
-        throw(BoundsError(d, [var, scen]))
-    else
-        # + 2 to skip the origin and destination columns
-        col_idx + 2
+function issuperdict(maybesuper::Dict{A,B}, maybemini::Dict{A,C}) where {A, B, C}
+    for (k,v) in maybemini
+        haskey(maybesuper, k) || return false
+        issuperdict(maybesuper[k], v) || return false
     end
+    return true
+end
+
+issuperdict(l,r) = l == r
+
+# Internal helper function
+function column_name(d::ODData, dependent_variable, independent_variables)
+    files = d.meta["files"]
+
+    for f in files
+        index = findfirst(c -> issuperdict(c, Dict("dependent_variable" => dependent_variable, "independent_variables" => independent_variables)), f["columns"])
+        if !(isnothing(index))
+            return f["columns"][index]["name"]
+        end
+    end
+    throw(BoundsError(d, [dependent_variable, independent_variables]))
+end
+
+function column_index(d::ODData, var, scen)
+    return column_name(d, var, Dict("scenario" => scen))
 end
 
 # Tensor-ish getindex methods.

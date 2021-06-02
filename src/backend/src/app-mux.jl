@@ -83,7 +83,8 @@ If `zones` is not `:`, only sum flows from/to those zones.
 
 Motivation: chloropleth once you've selected one or more zones.
 """
-function get_aggregate_flows(data, variable, scenario, direction, zones)
+function get_aggregate_flows(data, variable, independent_variables, direction, zones)
+    scenario = independent_variables["scenario"]
     col_idx = column_index(data, variable, scenario)
     (grouptype, sourcecol) = direction == :incoming ? (:grouped_by_destination, :origin) : (:grouped_by_origin, :destination)
     return map(getfield(data, grouptype)) do grp
@@ -94,7 +95,8 @@ function get_aggregate_flows(data, variable, scenario, direction, zones)
     end
 end
 
-function get_aggregate_flows(data, variable, scenario, direction, ::Colon)
+function get_aggregate_flows(data, variable, independent_variables, direction, ::Colon)
+    scenario = independent_variables["scenario"]
     sum.(get_grouped(data, variable, scenario, direction))
 end
 
@@ -198,14 +200,6 @@ function valid_ivs(dependent, independent_variables)
     filter(d -> issuperdict(d,independent_variables), DEPS_TO_DOMAIN[dependent]) 
 end
 
-function issuperdict(maybesuper, maybemini)
-    for (k,v) in maybemini
-        haskey(maybesuper, k) || return false
-        maybesuper[k] == v || return false
-    end
-    return true
-end
-
 #########
 
 
@@ -287,18 +281,19 @@ end
         selectedvars = JSON.parse(get(d,"selectedvars","{}"))
         selectedbasevars = JSON.parse(get(d,"selectedbasevars","{}"))
         variable = get(selectedvars,"dependent_variable",variable)
+        independent_variables = get(selectedvars,"independent_variables",Dict("scenario"=>scenario))
+        base_independent_variables = get(selectedbasevars,"independent_variables",Dict("scenario"=>comparewith))
 
         # Legacy-compat
-        scenario = get(get(selectedvars, "independent_variables", Dict()), "scenario", scenario)
         comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
 
         if haskey(d, "row")
-            vs = get_aggregate_flows(data, variable, scenario, :incoming, parse.(Int, split(d["row"], ',')))
+            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, parse.(Int, split(d["row"], ',')))
         elseif comparewith == "none"
-            vs = get_aggregate_flows(data, variable, scenario, :incoming, :)
+            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
         else
-            main = get_aggregate_flows(data, variable, scenario, :incoming, :)
-            comparator = get_aggregate_flows(data, variable, comparewith, :incoming, :)
+            main = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
+            comparator = get_aggregate_flows(data, variable, base_independent_variables, :incoming, :)
             vs = main .- comparator
         end
         # Ordered for debugging reasons.
