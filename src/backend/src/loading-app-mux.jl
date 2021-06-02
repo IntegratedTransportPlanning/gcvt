@@ -1,9 +1,7 @@
 const API_VERSION = "0.0.1"
 const IN_PRODUCTION = false
 
-PROJECTS_DIR = "/home/mark/julia/muxtesting"
-
-include("parsemultipart.jl")
+PROJECTS_DIR = "projects"
 
 
 function upload_file(req) #(project, file, uploadtype, filename)
@@ -20,8 +18,9 @@ function upload_file(req) #(project, file, uploadtype, filename)
     # in the meantime...
     project = ["project_one","project_2","project_3","project_4"][rand(1:end)]
     filename = ["oddata.csv","blah.tab","foo.xls"][rand(1:end)]
-    filedata = readdir("/home/mark/julia/testproj")[rand(1:end)]
-    println("Project is " * project * "; file is " * filename * "; ex file data from " * filedata)
+    # projects/junk-data can be deleted as soon as we get multipart working
+    filedata = readdir("projects/junk-data")[rand(1:end)]
+    println("Project is " * project * "; file is " * filename * "; (rubbish) file data from " * filedata)
     ##############################
 
     if occursin("/", project)
