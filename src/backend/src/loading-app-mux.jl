@@ -3,6 +3,9 @@ const IN_PRODUCTION = false
 
 PROJECTS_DIR = "projects"
 
+using CSV
+using DataFrames
+
 
 function upload_file(req) #(project, file, uploadtype, filename)
     ## TODO nightmare getting multipart form parsing working
@@ -51,7 +54,38 @@ function upload_file(req) #(project, file, uploadtype, filename)
         cp("/home/mark/julia/testproj/" * filedata, proj_files_loc * "/" * filename)
     end  
 
+    # TODO list
+
+    # What formats are supported? 
+    #  - OD data: CSV, TXT, (xls... one day). 
+    #  - Geometries: shapefile, geojson
+    #  - Anything else - fails.  
+    # What are the zone id columns? Defaults to orig / dest
+    # Branching to handle the two different types of files here
+    # Write info to the schema, which we may need to create
+    # Return something to the UI - success / fail 
+
     return jsonresp(0)
+end
+
+
+function headers(project, filename, separator = "_")
+    proj_files_loc = PROJECTS_DIR * "/" * project * "/files"
+
+    ## Testing junk
+    proj_files_loc = "/home/mark/gcvt/src/backend/data/raw"
+    filename = "PCT example data commute-msoa-nottinghamshire-od_attributes.csv"
+    ##
+
+    # Wait, should this have been done already, and saved in the schema?     
+    df = CSV.read(proj_files_loc * "/" * filename, DataFrame; missingstring="")
+
+    # TODO tricky bit here: the PCT dataset had underscores in its zone ID column names. 
+    # If we know them by this point, we can just filter them out before getting header 'chunks'.
+    # But in Colin's design I can't remember when the user tells wizard about a zone id columns
+    chunks = unique(reduce(vcat, split.(names(df), separator)))
+
+    return chunks
 end
 
 function get_projects()
@@ -81,6 +115,7 @@ jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :heade
         )
     )),
     route("/oddata", req -> upload_file(req)),
+    route("/headers", req -> jsonresp(headers)
     route("/projects",  req -> jsonresp(get_projects())),
     Mux.notfound()
 )
