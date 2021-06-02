@@ -115,7 +115,7 @@ jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :heade
         )
     )),
     route("/oddata", req -> upload_file(req)),
-    route("/headers", req -> jsonresp(headers)
+    route("/headers", req -> jsonresp(headers)),
     route("/projects",  req -> jsonresp(get_projects())),
     Mux.notfound()
 )
