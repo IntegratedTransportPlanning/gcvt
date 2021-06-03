@@ -66,6 +66,11 @@ function scenarios_with(d::ODData, var)
     unique(@view d.column_scens[findall(==(var), d.column_vars)])
 end
 
+# All columns that have are of some dependent variable
+function columns_with(d::ODData, var)
+    Iterators.flatten(Iterators.map(x->x["name"], Iterators.filter(col -> get(col, "dependent_variable", "") == var, f["columns"])) for f in d.meta["files"])
+end
+
 function origins(d::ODData)
     unique(d.data[!, 1])
 end
@@ -138,13 +143,11 @@ function getindex(d::ODData, var, scen, ::Colon, destination)
 end
 
 # Get data grouped by origin or destination
-function get_grouped(d::ODData, var, scen, direction)
-    (dependent_variable, independent_variables) = varscen2depinds(var, scen)
-    col_idx = column_name(d, dependent_variable, independent_variables)
+function get_grouped(d::ODData, var, column, direction)
     if direction == :outgoing
-        (skipmissing(row[!, col_idx]) for row in d.grouped_by_origin)
+        (skipmissing(row[!, column]) for row in d.grouped_by_origin)
     elseif direction == :incoming
-        (skipmissing(row[!, col_idx]) for row in d.grouped_by_destination)
+        (skipmissing(row[!, column]) for row in d.grouped_by_destination)
     else
         throw(DomainError("direction must be :incoming or :outgoing"))
     end

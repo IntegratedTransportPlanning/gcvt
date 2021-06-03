@@ -26,8 +26,8 @@ Compute the aggregated flows in `direction` for `variable` and compute the quant
 Motivation: chloropleth view.
 """
 function get_aggregate_quantiles(data, variable, p, direction)
-    vars = mapreduce(vcat, scenarios_with(data, variable)) do scen
-        sum.(get_grouped(data, variable, scen, direction))
+    vars = mapreduce(vcat, columns_with(data, variable)) do column
+        sum.(get_grouped(data, variable, column, direction))
     end
     return quantile(vars, p)
 end
@@ -41,8 +41,8 @@ Sample the pairwise comparisons between all scenarios featuring `variable` and c
 Motivation: comparison chloropleth view.
 """
 function get_aggregate_comparison_quantiles(data, variable, p, direction, percent)
-    vars = map(scenarios_with(data, variable)) do scen
-        sum.(get_grouped(data, variable, scen, direction))
+    vars = map(columns_with(data, variable)) do column
+        sum.(get_grouped(data, variable, column, direction))
     end
 
     function percent_diff(a, b)
@@ -96,8 +96,8 @@ function get_aggregate_flows(data, variable, independent_variables, direction, z
 end
 
 function get_aggregate_flows(data, variable, independent_variables, direction, ::Colon)
-    scenario = independent_variables["scenario"]
-    sum.(get_grouped(data, variable, scenario, direction))
+    column = column_name(data, variable, independent_variables)
+    sum.(get_grouped(data, variable, column, direction))
 end
 
 """
