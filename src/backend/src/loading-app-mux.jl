@@ -5,6 +5,7 @@ PROJECTS_DIR = "data/projects"
 
 using CSV
 using DataFrames
+using Dates
 
 import HTTP
 
@@ -22,20 +23,20 @@ function parse_multipart_form(muxreq::Dict)
     return HTTP.parse_multipart_body(muxreq[:data], boundary_delimiter)
 end
 
-# Get stringified version of form payload from a request
-const formreq2data(req) = String(read(parse_multipart_form(req)[1].data))
+# Get form payload from a request
+## TODO we probably need to be able to read binary (eg. zip files for large OD data) 
+const formreq2data(req, pos) = String(read(parse_multipart_form(req)[pos].data))
 
-
-
-function upload_od_file(req) #(project, file, uploadtype, filename)
-    println(req)
-
-    # That tempfile will need a better name...
-    open(PROJECTS_DIR * "/tempfile.bin", "w") do f
-        write(f, read(parse_multipart_form(req)[1].data))
+function upload_od_file(req) 
+    temp_file = PROJECTS_DIR * "/Uploaded file - " * Dates.format(now(), "dd u yyyy HH:MM:SS")
+    open(temp_file, "w") do f
+        write(f, formreq2data(req,1))
     end
     
-    return jsonresp(0)
+    project = formreq2data(req, 2) 
+    filename = formreq2data(req, 3)
+
+    println("Project is " * project * " and filename is " * filename)
 
     if occursin("/", project)
         # TODO this whole block is here just to remind me to ask someone about security!
@@ -55,22 +56,21 @@ function upload_od_file(req) #(project, file, uploadtype, filename)
     # Does file exist? 
     proj_files_loc = PROJECTS_DIR * "/" * project * "/files"
 
-    if filename ∉ readdir(proj_files_loc)
-        # TODO take 'file' and put it in dir, having processed
-        println("Copying to " * proj_files_loc * "/" * filename) 
-        cp("/home/mark/julia/testproj/" * filedata, proj_files_loc * "/" * filename)
-    else 
-        # TODO is there anything different about overwriting? maybe include a warning eventually? 
+    println("Copying to " * proj_files_loc * "/" * filename)
+
+    if filename in readdir(proj_files_loc)
+        # Just warn or something if we already have this file 
         println("** Overwriting at " * proj_files_loc * "/" * filename)
-        cp("/home/mark/julia/testproj/" * filedata, proj_files_loc * "/" * filename)
     end  
+
+    cp(temp_file, proj_files_loc * "/" * filename, force=true) 
 
     # Supported formats
     # OD data: CSV, TXT, (xls... one day). Any of those zipped might be useful too.
 
     # Probably better to actually look at the file, but...
     if sum(endswith.(filename, [".csv",".txt"])) == 0
-        return failed
+        #return failed
     end
 
     # Zone id column defaults: 
@@ -78,8 +78,14 @@ function upload_od_file(req) #(project, file, uploadtype, filename)
     dest = "dest"
 
     # Get zone columns from form data (plus whatever)
-    # TODO 
-    
+    ## TODO the messy design of the frontend needs tidying up/sanitising per what CC/MD discussed,
+    ## at moment the file info is stored in state but not schema (or wait... is that ok?)
+    orig = formreq2data(req, 4) 
+    dest = formreq2data(req, 5)
+
+    println("Orig and dest are " * orig * ", " * dest)
+    colnames = []
+
     # Check that orig, dest are in the file
     if orig ∉  colnames || dest ∉ colnames
         return failed
@@ -136,9 +142,8 @@ jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :heade
     "Cache-Control" => IN_PRODUCTION ? "public, max-age=$(365 * 24 * 60 * 60)" : "max-age=0", # cache for a year (max recommended). Change API_VERSION to invalidate
 ), headers))
 
-# Will status() work like this? let's see...
-# TODO that'd be a no.... 
-# failed = jsonresp("Processing error", status(400))   
+# Better ideas welcome...
+failed = jsonresp(-1) # respond(Response(400, "Processing error")) 
 
 @app app = (
     Mux.defaults,
