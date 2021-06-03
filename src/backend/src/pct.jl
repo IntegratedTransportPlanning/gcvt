@@ -86,17 +86,12 @@ function load_pct_metadata(data)
         "force_bounds" => [],
     )
 
-    vars = OrderedDict(var => merge(var_defaults, Dict("scenarios_with" => scenarios_with(data, var))) for var in variables(data))
-
     scens = OrderedDict(name => Dict("name" => name, "at" => [2010]) for name in scenarios(data))
 
     OrderedDict(
         "newmeta" => meta,
         "name" => "PCT stuff",
         "description" => "blah",
-        "od_matrices" => Dict(
-             "columns" => vars
-        ),
         "scenarios" => scens,
     )
 end

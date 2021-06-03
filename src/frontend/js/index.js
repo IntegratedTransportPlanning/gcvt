@@ -527,6 +527,8 @@ const app = {
 
                 const unit = getUnit(meta, domain, variable, percent)
 
+                const var_meta = state.meta?.newmeta?.dependent_variables?.find(v => v.id == variable) || {bins: []}
+
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     ;[values, basevalues] = await Promise.all([
                         getData(
@@ -545,7 +547,7 @@ const app = {
 
                     const centroidLineWeights = await Promise.all(state.selectedZones.map(async zone => getData("data?domain=od_matrices&year=" + year + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + "&row=" + zone))) // values, not weights any more
 
-                    const palette = getPalette(dir, bounds, meta[domain][variable], compare, true)
+                    const palette = getPalette(dir, bounds, var_meta, compare, true)
 
                     return update({
                         centroidLineWeights,
@@ -563,7 +565,7 @@ const app = {
                     })
                 } else {
                     ;[bounds, values, basevalues] = await Promise.all([
-                        (state.compare || R.equals(state.meta[domain][variable].force_bounds,[])) ? getData("stats?domain=" + domain + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + "&percent=" + percent) : state.meta[domain][variable].force_bounds,
+                        (state.compare || !(var_meta?.force_bounds?.length > 0)) ? getData("stats?domain=" + domain + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + "&percent=" + percent) : var_meta.force_bounds,
                         getData("data?domain=" + domain + "&selectedvars=" + JSON.stringify(state.selectedvars) + "&percent=" + percent + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
                         domain == "od_matrices" && getData("data?domain=od_matrices&selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars)),
                     ])
@@ -576,7 +578,7 @@ const app = {
                     }
                 }
 
-                const palette = getPalette(dir, bounds, meta[domain][variable], compare)
+                const palette = getPalette(dir, bounds, var_meta, compare)
 
                 // Race warning: This can race. Don't worry about it for now.
                 return updateLayer(R.merge({
@@ -1321,7 +1323,7 @@ function getPalette(dir, bounds, {palette, bins}, compare, usesymlog=false) {
         console.warn(variable + " has an invalid colour scheme set in the metadata.")
         pal = continuousPalette()
     }
-    if (compare || bins === undefined) {
+    if (compare || bins === undefined || !(bins?.length > 0)) {
         if (compare) {
             pal = divergingPalette()
         }
