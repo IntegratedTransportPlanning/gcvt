@@ -1,30 +1,41 @@
 const API_VERSION = "0.0.1"
 const IN_PRODUCTION = false
 
-PROJECTS_DIR = "projects"
+PROJECTS_DIR = "data/projects"
 
 using CSV
 using DataFrames
 
+import HTTP
 
-function upload_file(req) #(project, file, uploadtype, filename)
-    ## TODO nightmare getting multipart form parsing working
-    # 
-    # HTTP.parse_multipart_form() 
-    #       - seems to expect a proper Request or something other than the Vector of bytes that Mux provides
-    # Solution from https://discourse.julialang.org/t/http-multipart-form-data-processing-by-server/24076/6 - which uses an older version
-    #       of the above doesn't work - seems to not find any data at all, even though we know it's there. 
-    # HTTP.Multipart seems to be for creating forms for sending (tho no real docs) 
-    # 
-    # ...so gotta make our own? Does the UI really even need to use a FormData() ?
+# Lightly adapted from HTTP.parse_multipart_form
+function parse_multipart_form(muxreq::Dict)
+    # parse boundary from Content-Type
+    m = match(r"multipart/form-data; boundary=(.*)$", first(Iterators.filter(p -> p.first == "Content-Type", muxreq[:headers])).second)
+    m === nothing && return nothing
+
+    boundary_delimiter = m[1]
+
+    # [RFC2046 5.1.1](https://tools.ietf.org/html/rfc2046#section-5.1.1)
+    length(boundary_delimiter) > 70 && error("boundary delimiter must not be greater than 70 characters")
+
+    return HTTP.parse_multipart_body(muxreq[:data], boundary_delimiter)
+end
+
+# Get stringified version of form payload from a request
+const formreq2data(req) = String(read(parse_multipart_form(req)[1].data))
+
+
+
+function upload_od_file(req) #(project, file, uploadtype, filename)
+    println(req)
+
+    # That tempfile will need a better name...
+    open(PROJECTS_DIR * "/tempfile.bin", "w") do f
+        write(f, read(parse_multipart_form(req)[1].data))
+    end
     
-    # in the meantime...
-    project = ["project_one","project_2","project_3","project_4"][rand(1:end)]
-    filename = ["oddata.csv","blah.tab","foo.xls"][rand(1:end)]
-    # projects/junk-data can be deleted as soon as we get multipart working
-    filedata = readdir("projects/junk-data")[rand(1:end)]
-    println("Project is " * project * "; file is " * filename * "; (rubbish) file data from " * filedata)
-    ##############################
+    return jsonresp(0)
 
     if occursin("/", project)
         # TODO this whole block is here just to remind me to ask someone about security!
@@ -54,18 +65,38 @@ function upload_file(req) #(project, file, uploadtype, filename)
         cp("/home/mark/julia/testproj/" * filedata, proj_files_loc * "/" * filename)
     end  
 
-    # TODO list
+    # Supported formats
+    # OD data: CSV, TXT, (xls... one day). Any of those zipped might be useful too.
 
-    # What formats are supported? 
-    #  - OD data: CSV, TXT, (xls... one day). 
-    #  - Geometries: shapefile, geojson
-    #  - Anything else - fails.  
-    # What are the zone id columns? Defaults to orig / dest
-    # Branching to handle the two different types of files here
+    # Probably better to actually look at the file, but...
+    if sum(endswith.(filename, [".csv",".txt"])) == 0
+        return failed
+    end
+
+    # Zone id column defaults: 
+    orig = "orig"
+    dest = "dest"
+
+    # Get zone columns from form data (plus whatever)
+    # TODO 
+    
+    # Check that orig, dest are in the file
+    if orig ∉  colnames || dest ∉ colnames
+        return failed
+    end
+
+
     # Write info to the schema, which we may need to create
+    # What does it look like if it's created? 
+    # What does it look like if it exists? 
+    
     # Return something to the UI - success / fail 
 
     return jsonresp(0)
+end
+
+function upload_geom_file()
+    #  - Geometries: shapefile, geojson
 end
 
 
@@ -88,6 +119,8 @@ function headers(project, filename, separator = "_")
     return chunks
 end
 
+
+
 function get_projects()
     return readdir(PROJECTS_DIR)
 end
@@ -103,7 +136,9 @@ jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :heade
     "Cache-Control" => IN_PRODUCTION ? "public, max-age=$(365 * 24 * 60 * 60)" : "max-age=0", # cache for a year (max recommended). Change API_VERSION to invalidate
 ), headers))
 
-   
+# Will status() work like this? let's see...
+# TODO that'd be a no.... 
+# failed = jsonresp("Processing error", status(400))   
 
 @app app = (
     Mux.defaults,
@@ -114,7 +149,8 @@ jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :heade
             "Cache-Control" => "max-age=0",
         )
     )),
-    route("/oddata", req -> upload_file(req)),
+    route("/oddata", req -> upload_od_file(req)),
+    route("/geometry", req -> upload_geom_file(req)),
     route("/headers", req -> jsonresp(headers)),
     route("/projects",  req -> jsonresp(get_projects())),
     Mux.notfound()
