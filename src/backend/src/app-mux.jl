@@ -85,7 +85,7 @@ Motivation: chloropleth once you've selected one or more zones.
 """
 function get_aggregate_flows(data, variable, independent_variables, direction, zones)
     scenario = independent_variables["scenario"]
-    col_idx = column_index(data, variable, scenario)
+    col_idx = column_name(data, variable, independent_variables)
     (grouptype, sourcecol) = direction == :incoming ? (:grouped_by_destination, :origin) : (:grouped_by_origin, :destination)
     return map(getfield(data, grouptype)) do grp
         sources = grp[!, sourcecol]

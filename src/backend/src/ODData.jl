@@ -101,10 +101,6 @@ function column_name(d::ODData, dependent_variable, independent_variables)
     throw(BoundsError(d, [dependent_variable, independent_variables]))
 end
 
-function column_index(d::ODData, var, scen)
-    return column_name(d, var, Dict("scenario" => scen))
-end
-
 # Tensor-ish getindex methods.
 function getindex(d::ODData, var)
     col_idxs = findall(==(var), d.column_vars)
@@ -116,13 +112,19 @@ function getindex(d::ODData, var)
     end
 end
 
+function varscen2depinds(var, scen)
+    return (var, Dict("scenario" => scen))
+end
+
 function getindex(d::ODData, var, scen)
-    col_idx = column_index(d, var, scen)
+    (dependent_variable, independent_variables) = varscen2depinds(var, scen)
+    col_idx = column_name(d, dependent_variable, independent_variables)
     d.data[!, col_idx]
 end
 
 function getindex(d::ODData, var, scen, origin)
-    col_idx = column_index(d, var, scen)
+    (dependent_variable, independent_variables) = varscen2depinds(var, scen)
+    col_idx = column_name(d, dependent_variable, independent_variables)
     # filter(:origin => ==(origin), d.data; view=true)[!, col_idx]
     # This is a 2x sped-up version of the above filter.
     # If we need to go faster, we can do CSC with a grouped data frame or otherwise.
@@ -130,13 +132,15 @@ function getindex(d::ODData, var, scen, origin)
 end
 
 function getindex(d::ODData, var, scen, ::Colon, destination)
-    col_idx = column_index(d, var, scen)
+    (dependent_variable, independent_variables) = varscen2depinds(var, scen)
+    col_idx = column_name(d, dependent_variable, independent_variables)
     filter(:destination => ==(destination), d.data)[!, col_idx]
 end
 
 # Get data grouped by origin or destination
 function get_grouped(d::ODData, var, scen, direction)
-    col_idx = column_index(d, var, scen)
+    (dependent_variable, independent_variables) = varscen2depinds(var, scen)
+    col_idx = column_name(d, dependent_variable, independent_variables)
     if direction == :outgoing
         (skipmissing(row[!, col_idx]) for row in d.grouped_by_origin)
     elseif direction == :incoming
