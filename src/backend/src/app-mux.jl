@@ -238,11 +238,11 @@ end
         )
     )),
     route("/centroids", req -> jsonresp(get_centroids())),
-    route("/scenarios", req -> jsonresp(metadata["scenarios"])),
     route("/meta", req -> jsonresp(metadata)),
 
     # Dead
     route("/variables/od_matrices", req -> jsonresp(Dict())),
+    route("/scenarios", req -> jsonresp(Dict())),
 
     route("/domain") do req
         d = queryparams(req)

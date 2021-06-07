@@ -438,11 +438,10 @@ const app = {
                 actions.fetchZonesData()
             },
             getMeta: async () => {
-                const [allmeta, od_matrices, scenarios] =
+                const [allmeta, od_matrices] =
                     await Promise.all([
                         getData("meta"),
                         getData("variables/od_matrices"),
-                        getData("scenarios"),
                     ])
 
                 const independent_variables = Object.fromEntries(allmeta.newmeta.independent_variables.map(iv => [iv.id, null]))
@@ -456,13 +455,12 @@ const app = {
                 // TODO: split setting from defaults away from getting metadata
                 // TODO: investigate `old`, isn't it always `undefined`?
                 update({
-                    meta: {project: allmeta.newmeta["project"], od_matrices, scenarios, newmeta: allmeta.newmeta},
+                    meta: {project: allmeta.newmeta["project"], od_matrices, newmeta: allmeta.newmeta},
                     layers: {
                         od_matrices: {
                             variable: old => old === null ? Object.keys(od_matrices)[0] : old,
                         },
                     },
-                    scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                     selectedvars,
                     selectedbasevars,
                 })
@@ -1044,7 +1042,7 @@ const menuView = async state => {
                         iconRight: state.showctrl ? UI.Icons.CHEVRON_UP : UI.Icons.CHEVRON_DOWN,
                         onclick: e => update({ showctrl: !state.showctrl }),
                     }),
-                    state.showctrl && state.meta.scenarios && [
+                    state.showctrl && [
                         variableSelector(state),
                         state.selectedvars.dependent_variable && [
                             await ivSelectors(state),
@@ -1055,7 +1053,7 @@ const menuView = async state => {
                                 onchange: e => actions.setCompare(e.target.checked),
                             }),
 
-                            state.meta.scenarios && state.compare && [m("br"), await ivSelectors(state, {base: true})],
+                            state.compare && [m("br"), await ivSelectors(state, {base: true})],
 
                             state.compare && m(UI.Switch, {
                                 label: 'Show As Percentage',
