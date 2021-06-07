@@ -26,10 +26,8 @@ get(d, :cycle, :govtarget, 1, 1)
 using DataFrames
 import Base: getindex
 
-struct ODData{T <: AbstractDataFrame, U, V, W, X}
+struct ODData{T <: AbstractDataFrame, W, X}
     data::T
-    column_vars::U
-    column_scens::V
     # These are views, we're not triplicating the data.
     grouped_by_origin::W
     grouped_by_destination::X
@@ -37,33 +35,18 @@ struct ODData{T <: AbstractDataFrame, U, V, W, X}
 end
 
 """
-    ODData(data, column_vars, column_scens)
+    ODData(data)
 
 Wrap a dataframe (`data`) whose first two columns are origin and destination and later columns are observations of some kind.
-
-`column_vars[i]` and `column_scens[i]` give the variable and scenario (if any) of column i.
 
 `getindex` methods are provided for the wrapped data, but beware that they don't densify the data and only return 1-D vectors.
 
 """
-function ODData(d, v, s, meta)
+function ODData(d, meta)
     d = sort(d, [1, 2])
     by_origin = groupby(d, 1)
     by_destination = groupby(d, 2)
-    ODData(d, v, s, by_origin, by_destination, meta)
-end
-
-# Get some metadata
-function scenarios(d::ODData)
-    unique(d.column_scens)
-end
-
-function variables(d::ODData)
-    unique(d.column_vars)
-end
-
-function scenarios_with(d::ODData, var)
-    unique(@view d.column_scens[findall(==(var), d.column_vars)])
+    ODData(d, by_origin, by_destination, meta)
 end
 
 # All columns that have are of some dependent variable
@@ -104,17 +87,6 @@ function column_name(d::ODData, dependent_variable, independent_variables)
         end
     end
     throw(BoundsError(d, [dependent_variable, independent_variables]))
-end
-
-# Tensor-ish getindex methods.
-function getindex(d::ODData, var)
-    col_idxs = findall(==(var), d.column_vars)
-    if isempty(col_idxs)
-        throw(BoundsError(d, [var]))
-    else
-        # + 2 to skip the origin and destination columns
-        Iterators.flatten(d.data[!, idx + 2] for idx in col_idxs)
-    end
 end
 
 function varscen2depinds(var, scen)

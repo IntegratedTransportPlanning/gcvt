@@ -2,12 +2,15 @@
 
 using Base.Iterators: product
 using Statistics
+using OrderedCollections: OrderedDict
 
 # Yes I know we have JSON3 too but programmer time is valuable
 # JSON3.read puts it in a weird Dict rather than the bog standard Dict{String}
 using JSON
 using TOML
 
+
+const DATA_ROOT = joinpath(@__DIR__, "../data/")
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
@@ -168,12 +171,78 @@ Motivation:
 """
 function get_metadata end
 
-# DATA
-include("pct.jl")
+import Turf
+import GeoJSON
 
-data = load_pct_data()
+function load_centroids(meta)
+    # TODO: support multiple geometries
+    #           (a fairly big job - would need another rewrite of the frontend)
+    #           (presumably fairly low priority as we can just have multiple projects?)
+    zones = GeoJSON.parsefile(joinpath(DATA_ROOT,meta["geometries"][1]["filename"]))
+    zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
+    for f in zones.features
+        zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
+    end
+    return zone_centroids
+end
+
+include("ODData.jl")
+using CSV
+function load_data(meta)
+    for f in meta["files"]
+        # TODO: support multiple files
+        df = CSV.read(
+            joinpath(DATA_ROOT, f["filename"]),
+            DataFrame; missingstring="NA",
+        )
+        column_names = map(d->d["name"], f["columns"])
+
+        df = df[!, ["geo_code1", "geo_code2", column_names...]]
+
+        # This seems pretty magic
+        # How are we sure this will correspond with e.g. GeoJSON fids?
+        zones = sort(unique(vcat(df[:, 1], df[:, 2])))
+        zone_id(code) = findfirst(==(code), zones)
+
+        df[!, :origin] = zone_id.(df[!, 1])
+        df[!, :destination] = zone_id.(df[!, 2])
+
+        df = df[!, ["origin", "destination", column_names...]]
+        # TODO: support multiple files
+        return ODData(df, meta)
+    end
+    # using Test
+
+    # function tests()
+    #     # Some simple regression tests.
+    #     # Data was manually checked against the CSV, too.
+    #     pct_odd = load_data(meta) # PCT stuff
+
+    #     @test pct_odd["all"] |> collect == pct_odd["all", nothing]
+    #     @test pct_odd["all", nothing, 3] == [4, 1]
+    #     @test pct_odd["all", nothing, :, 202] == [1, 1, 3, 1, 3, 4, 2, 5, 4, 1, 133]
+
+    #     # Get an empty vector when asking for missing data
+    #     @test isempty(pct_odd["all", nothing, 500])
+    #     @test isempty(pct_odd["all", nothing, :, 1])
+
+    #     # Works for a variable with a named scenario
+    #     @test length(collect(pct_odd["slc"])) ÷ length(pct_odd["slc", "govtarget"]) == 5
+    #     pct_odd["slc", "govtarget"]
+    #     @test pct_odd["slc", "govtarget", 3] == [0.03, 0.01]
+    #     @test pct_odd["slc", "govtarget", :, 202] == [0.01, 0.01, 0.02, 0.01, 0.03, 0.03, 0.02, 0.04, 0.03, 0.01, 5.24]
+    # end
+end
+
+# DATA
+# TODO: consider squashing the files array
+#       (currently the frontend deals with it which is kinda strange)
 metadata = TOML.parsefile(SCHEMA_PATH)
-zone_centroids = load_pct_centroids()
+
+data = load_data(metadata)
+# Slightly slow V
+zone_centroids = load_centroids(metadata)
+
 
 ##### TODO
 
@@ -187,7 +256,7 @@ zone_centroids = load_pct_centroids()
 ## then hold dependent value & all but one IV fixed and see what other IVs fixed
 
 DEPS_TO_DOMAIN = Dict{String,Array{Any,1}}()
-for arr in metadata["newmeta"]["files"]
+for arr in metadata["files"]
     for d in arr["columns"]
         if haskey(DEPS_TO_DOMAIN,d["dependent_variable"])
             push!(DEPS_TO_DOMAIN[d["dependent_variable"]],d["independent_variables"])
