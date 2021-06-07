@@ -159,9 +159,9 @@ function zones2summary(summariser, state) {
     return R.pipe(summariser,x=>numberToHuman(x, state))(
         state.selectedZones.length > 0 ?
         R.pipe(R.pickAll,R.values)(
-            R.map(R.add(-1),state.selectedZones), state.layers.od_matrices.basevalues
+            R.map(R.add(-1),state.selectedZones), state.data.basevalues
         ) :
-        state.layers.od_matrices.basevalues
+        state.data.basevalues
     ) +
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.selectedvars.dependent_variable, state.compare && state.percent)
 }
@@ -181,10 +181,8 @@ const DEFAULTS = {
         od_matrices: {},
         scenarios: {},
     },
-    layers: {
-        od_matrices: {
-            variable: "",
-        },
+    data: {
+        variable: "",
     },
     percent: true,
     compare: false,
@@ -480,9 +478,7 @@ const app = {
 
                 const updateLayer = patch =>
                     update({
-                        layers: {
-                            [domain] : patch
-                        }
+                        data: patch,
                     })
 
                 const variable = state?.selectedvars?.dependent_variable
@@ -539,16 +535,14 @@ const app = {
 
                     return update({
                         centroidLineWeights,
-                        layers: {
-                            [domain]: {
-                                values,
-                                basevalues,
-                                bounds,
-                                dir,
-                                // In an array otherwise it gets executed by the patch func
-                                palette: [palette],
-                                unit,
-                            }
+                        data: {
+                            values,
+                            basevalues,
+                            bounds,
+                            dir,
+                            // In an array otherwise it gets executed by the patch func
+                            palette: [palette],
+                            unit,
                         }
                     })
                 } else {
@@ -654,10 +648,8 @@ const app = {
                 }
             }
 
-            for (let key of Object.keys(state.layers)) {
-                if (state.layers[key].variable !== previousState.layers[key].variable) {
-                    return updateQS()
-                }
+            if (state.data.variable !== previousState.data.variable) {
+                return updateQS()
             }
         },
 
@@ -670,10 +662,8 @@ const app = {
             // Race: if we get layer data before the map is ready, we won't draw it.
             // Will probably never happen.
 
-            for (let layer of Object.keys(state.layers)) {
-                if (state.layers[layer] !== previousState.layers[layer]) {
-                    paint(layer, {...state.layers[layer], variable: state.selectedvars.dependent_variable})
-                }
+            if (state.data !== previousState.data) {
+                paint("od_matrices", {...state.data, variable: state.selectedvars.dependent_variable})
             }
 
             // probably need to compare selectedbasevars here too
@@ -704,7 +694,7 @@ const { update, states, actions } =
 
     map.on('mousemove', 'zones', event => {
         update(state => {
-            const layer = state.layers.od_matrices
+            const layer = state.data
             const {MSOA11NM: NAME, fid} = event.features[0].properties
             const value =
                 numberToHuman(layer.values[fid - 1], state) +
@@ -994,14 +984,14 @@ const menuView = async state => {
             ),
 
             // Legend
-            state.layers.od_matrices.bounds &&
+            state.data.bounds &&
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
                         m(Legend, {
                             title: state.selectedvars.dependent_variable,
                             percent: state.compare && state.percent,
-                            ...state.layers.od_matrices
+                            ...state.data,
                         }),
                     ]
                 )
@@ -1056,7 +1046,7 @@ const menuView = async state => {
                             // Summary statistics for zones
                             state.selectedvars.dependent_variable !== ""
                             && state.meta?.dependent_variables?.find(o => o.id == state.selectedvars?.dependent_variable)?.show_stats == "show"
-                            && state.layers.od_matrices.basevalues
+                            && state.data.basevalues
                             && [
                                 m('p',
                                     (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
