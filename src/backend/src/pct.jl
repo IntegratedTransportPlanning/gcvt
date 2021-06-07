@@ -88,12 +88,13 @@ function load_pct_metadata(data)
 
     scens = OrderedDict(name => Dict("name" => name, "at" => [2010]) for name in scenarios(data))
 
-    OrderedDict(
-        "newmeta" => meta,
-        "name" => "PCT stuff",
-        "description" => "blah",
-        "scenarios" => scens,
-    )
+   #OrderedDict(
+   #    meta...,
+   #    "name" => "PCT stuff",
+   #    "description" => "blah",
+   #)
+
+    return meta
 end
 
 import GeoJSON

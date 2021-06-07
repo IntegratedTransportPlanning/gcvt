@@ -440,18 +440,18 @@ const app = {
             getMeta: async () => {
                 const allmeta = await getData("meta")
 
-                const independent_variables = Object.fromEntries(allmeta.newmeta.independent_variables.map(iv => [iv.id, null]))
+                const independent_variables = Object.fromEntries(allmeta.independent_variables.map(iv => [iv.id, null]))
 
                 // TODO: stop this from clobbering stuff picked in URL
                 //       (which it doesn't do yet but it will do soon)
-                const selectedbasevars = merge({dependent_variable: null, independent_variables}, allmeta.newmeta.project.defaults)
+                const selectedbasevars = merge({dependent_variable: null, independent_variables}, allmeta.project.defaults)
                 const selectedvars = selectedbasevars
 
                 // TODO: read default from yaml properties
                 // TODO: split setting from defaults away from getting metadata
                 // TODO: investigate `old`, isn't it always `undefined`?
                 update({
-                    meta: {project: allmeta.newmeta["project"], newmeta: allmeta.newmeta},
+                    meta: allmeta,
                     selectedvars,
                     selectedbasevars,
                 })
@@ -461,10 +461,9 @@ const app = {
                 // This should _really_ go somewhere else
                 if (INITIAL_HASH === "")  {
                     try {
-                        const newmeta = allmeta.newmeta
-                        const lat = newmeta["project"]["map_origin"]["lat"]
-                        const lng = newmeta["project"]["map_origin"]["lon"]
-                        const zoom = newmeta["project"]["map_origin"]["zoom"]
+                        const lat = allmeta["project"]["map_origin"]["lat"]
+                        const lng = allmeta["project"]["map_origin"]["lon"]
+                        const zoom = allmeta["project"]["map_origin"]["zoom"]
 
                         map.flyTo({center: [lng, lat], zoom})
                     } catch (e) {
@@ -512,11 +511,11 @@ const app = {
                 const percent = compare && state.percent
                 let bounds, values, basevalues
 
-                const dir = state?.meta?.newmeta?.dependent_variables?.find(v => v.id == variable).bigger_is_better
+                const dir = state?.meta?.dependent_variables?.find(v => v.id == variable).bigger_is_better
 
                 const unit = getUnit(meta, domain, variable, percent)
 
-                const var_meta = state.meta?.newmeta?.dependent_variables?.find(v => v.id == variable) || {bins: []}
+                const var_meta = state.meta?.dependent_variables?.find(v => v.id == variable) || {bins: []}
 
                 if (domain === "od_matrices" && state.selectedZones.length !== 0) {
                     ;[values, basevalues] = await Promise.all([
@@ -815,7 +814,7 @@ const variableSelector = state => {
     const options = [{
         label: 'None',
         value: '',
-    }].concat(meta2options(Object.fromEntries(state?.meta?.newmeta?.dependent_variables?.map(o => [o.id, o]) || [])))
+    }].concat(meta2options(Object.fromEntries(state?.meta?.dependent_variables?.map(o => [o.id, o]) || [])))
 
     return [
         m('label', { for: 'matrix_variable', class: 'header' }, 'Variable'),
@@ -853,7 +852,7 @@ async function ivSelectors(state, opts = {base: false}) {
     // Dumb graceful failure
     // TODO: make less dumb
     try {
-        return Promise.all(state.meta?.newmeta?.independent_variables?.map(v => ivSelector(state, v.id, opts)) || [])
+        return Promise.all(state.meta?.independent_variables?.map(v => ivSelector(state, v.id, opts)) || [])
     } catch(e) {
         console.error(e)
         return []
@@ -863,7 +862,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
     // Dumb graceful failure
     // TODO: make less dumb
     try {
-        const ivs = state.meta.newmeta["independent_variables"]
+        const ivs = state?.meta?.independent_variables
         const base = opts.base ? "selectedbasevars" : "selectedvars"
         const iv = ivs.find(v=>v.id == id)
         const otherIndVars = R.pickBy((val, key) => key !== id, state[base].independent_variables)
@@ -1056,7 +1055,7 @@ const menuView = async state => {
 
                             // Summary statistics for zones
                             state.selectedvars.dependent_variable !== ""
-                            && state.meta?.newmeta?.dependent_variables.find(o => o.id == state.selectedvars?.dependent_variable)?.show_stats == "show"
+                            && state.meta?.dependent_variables?.find(o => o.id == state.selectedvars?.dependent_variable)?.show_stats == "show"
                             && state.layers.od_matrices.basevalues
                             && [
                                 m('p',
