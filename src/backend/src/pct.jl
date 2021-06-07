@@ -71,32 +71,6 @@ function load_pct_data()
     return ODData(df, column_vars, column_scens, meta)
 end
 
-# Minimum metadata
-function load_pct_metadata(data)
-    meta = TOML.parsefile(SCHEMA_PATH)
-    # Problems:
-    # Software expects that every scenario contains every column
-    # Solution:
-    # scenarios_with(variable_name)
-    # variables_in(scenario_name)
-    var_defaults = Dict(
-        "good" => "smaller",
-        "thickness" => "variable",
-        "statistics" => "hide",
-        "force_bounds" => [],
-    )
-
-    scens = OrderedDict(name => Dict("name" => name, "at" => [2010]) for name in scenarios(data))
-
-   #OrderedDict(
-   #    meta...,
-   #    "name" => "PCT stuff",
-   #    "description" => "blah",
-   #)
-
-    return meta
-end
-
 import GeoJSON
 import Turf
 

@@ -6,6 +6,7 @@ using Statistics
 # Yes I know we have JSON3 too but programmer time is valuable
 # JSON3.read puts it in a weird Dict rather than the bog standard Dict{String}
 using JSON
+using TOML
 
 
 # Environment variables
@@ -171,7 +172,7 @@ function get_metadata end
 include("pct.jl")
 
 data = load_pct_data()
-metadata = load_pct_metadata(data)
+metadata = TOML.parsefile(SCHEMA_PATH)
 zone_centroids = load_pct_centroids()
 
 ##### TODO
