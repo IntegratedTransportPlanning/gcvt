@@ -438,11 +438,7 @@ const app = {
                 actions.fetchZonesData()
             },
             getMeta: async () => {
-                const [allmeta, od_matrices] =
-                    await Promise.all([
-                        getData("meta"),
-                        getData("variables/od_matrices"),
-                    ])
+                const allmeta = await getData("meta")
 
                 const independent_variables = Object.fromEntries(allmeta.newmeta.independent_variables.map(iv => [iv.id, null]))
 
@@ -455,12 +451,7 @@ const app = {
                 // TODO: split setting from defaults away from getting metadata
                 // TODO: investigate `old`, isn't it always `undefined`?
                 update({
-                    meta: {project: allmeta.newmeta["project"], od_matrices, newmeta: allmeta.newmeta},
-                    layers: {
-                        od_matrices: {
-                            variable: old => old === null ? Object.keys(od_matrices)[0] : old,
-                        },
-                    },
+                    meta: {project: allmeta.newmeta["project"], newmeta: allmeta.newmeta},
                     selectedvars,
                     selectedbasevars,
                 })
