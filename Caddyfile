@@ -4,6 +4,7 @@
 
 :2016/tiles/ {
 	root src/backend/data/processed/tiles/
+    header Cache-Control max-age={$ITP_CADDY_CACHE_TIME:0}
 	browse
 }
 
@@ -12,7 +13,7 @@
 }
 
 :2016/api/ {
-	proxy / :8000 {
+	proxy / :2017 {
 		websocket
 	}
 }

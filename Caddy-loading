@@ -1,0 +1,14 @@
+# This needs integrating with the existing caddyfile, I was just experimenting
+# We also need to bring the loading UI into this repo or pull it all together
+# somewhere
+
+:2016/ {
+	root src/frontend/loading/www/
+}
+
+:2016/api/ {
+	proxy / :2018 {
+		websocket
+	}
+}
+

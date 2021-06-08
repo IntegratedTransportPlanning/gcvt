@@ -58,6 +58,7 @@ import * as R from "ramda"
 import ITPLOGO from "../../resources/itp.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
+import ARROWHEAD from "../../resources/arrowhead.png"
 
 
 // UTILITY FUNCS
@@ -118,14 +119,6 @@ const divergingPalette = _ => d3.interpolateRdYlGn
 const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateViridis
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
-// TODO: This is a cludge: we should get this data from the meta.yaml somehow.
-const LTYPE_LOOKUP = {
-    1: "Inland waterway",
-    2: "Maritime",
-    3: "Rail",
-    4: "Road",
-}
-
 // e.g. [1,2] == [2,1]
 const setEqual = R.compose(R.isEmpty,R.symmetricDifference)
 
@@ -170,38 +163,32 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
-
 // INITIAL STATE
 
 const DEFAULTS = {
-    lng: 29.6,
-    lat: 50.57,
-    zoom: 4.21,
+    lng: -1.129,
+    lat: 53.231,
+    zoom: 8,
     meta: {
-        links: {},
         od_matrices: {},
         scenarios: {},
     },
     layers: {
-        links: {
-            variable: "V_total_pax",
-        },
         od_matrices: {
             variable: "",
         },
     },
     percent: true,
     compare: false,
-    scenario: "FleetElectric",
-    compareWith: "DoMin",
-    scenarioYear: 2030,
+    scenario: "",
+    compareWith: "none",
+    scenarioYear: 2010,
     compareYear: "auto",
     showctrl: true,
     mapReady: false,
     showDesc: true,
     showClines: true,
     showChart: false,
-    desiredLTypes: [],
     selectedZones: [],
     zoneNames: [],
     mapUI: {
@@ -234,21 +221,13 @@ function stateFromSearch(search) {
     }
 
     // Arrays in the querty string
-    for (let k of ["selectedZones","desiredLTypes"]) {
+    for (let k of ["selectedZones"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
         }
     }
 
     // Aliased variables
-    if (qsObj.hasOwnProperty("linkVar"))
-        qsObj = merge(qsObj, {
-            layers: {
-                links: {
-                    variable: qsObj.linkVar
-                }
-            }
-        })
     if (qsObj.hasOwnProperty("matVar"))
         qsObj = merge(qsObj, {
             layers: {
@@ -266,6 +245,8 @@ function stateFromSearch(search) {
  * Construct the initial app state.
  */
 const initial = merge(DEFAULTS, stateFromSearch(window.location.search))
+
+window.onunhandledrejection = (...args) => console.error("Some promise error happened: ", ...args)
 
 
 const mapboxInit = ({lng, lat, zoom}) => {
@@ -294,7 +275,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'fill',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + '/tiles/2/zones/{z}/{x}/{y}.pbf',],
+                tiles: [BASEURL + `/tiles/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`,],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
@@ -315,7 +296,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'line',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + '/tiles/2/zones/{z}/{x}/{y}.pbf',],
+                tiles: [BASEURL + `/tiles/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`,],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
@@ -328,29 +309,6 @@ const mapboxInit = ({lng, lat, zoom}) => {
             layout: {
                 visibility: 'none'
             }
-        })
-
-        map.addLayer({
-            id: 'links',
-            type: 'line',
-            source: {
-                type: 'vector',
-                tiles: [BASEURL + '/tiles/2/links/{z}/{x}/{y}.pbf',],
-                // If you don't have this, mapbox doesn't show tiles beyond the
-                // zoom level of the tiles, which is not what we want.
-                maxzoom: 6,
-            },
-            "source-layer": "links",
-            layout: {
-                'line-cap': 'round',
-                'line-join': 'round',
-                visibility: 'none',
-            },
-            paint: {
-                'line-opacity': .8,
-                'line-color': 'gray',
-                'line-width': 1.5,
-            },
         })
 
         map.addLayer({
@@ -374,14 +332,63 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-join': 'round',
                 visibility: 'none',
             },
-            paint: {
-                'line-opacity': .8,
-                'line-color': 'red',
+        })
+
+        map.addLayer({
+            id: "zoneHalos",
+            type: "line",
+            source: {
+                type: "geojson",
+                data: {
+                    "type": "Feature",
+                    "geometry": {
+                        type: "LineString",
+                        coordinates: [[0,0],[1,1]],
+                    },
+                    "properties": {
+                        "name": "Dummy line",
+                    },
+                },
+            },
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                visibility: 'none',
             },
         })
 
-        actions.getLTypes()
-        actions.getCentres()
+        map.loadImage(ARROWHEAD, (error, image) => {
+            if (error) return
+            map.addImage('arrowhead', image)
+            map.addLayer({
+                id: "flow_arrowheads",
+                type: "symbol",
+                source: {
+                    type: "geojson",
+                    data: {
+                        "type": "Feature",
+                        "geometry": {
+                            type: "LineString",
+                            coordinates: [[0,0],[1,1]],
+                        },
+                        "properties": {
+                            "name": "Dummy line",
+                        },
+                    },
+                },
+                layout: {
+                    "symbol-placement": "line",
+                    "symbol-spacing": 100,
+                    "icon-allow-overlap": true,
+                    "icon-image": "arrowhead",
+                    "icon-size": 1,
+                    "icon-rotate": 90, // 50% chance this is right. Switch to 270 if not
+                    "visibility": "none",
+                },
+            })
+        })
+
+        actions.getCentres().catch(e => console.error("Failed to get centroids?", e))
         await actions.getMeta()
         update({mapReady: true})
         actions.fetchAllLayers()
@@ -393,7 +400,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         // be in the scenario pack and provided by the api instead.
         if (map.getSource('zones') && map.isSourceLoaded('zones')) {
             const a = []
-            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.NAME})
+            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.MSOA11NM})
             update({
                 zoneNames: a,
             })
@@ -451,7 +458,23 @@ const app = {
                 actions.fetchAllLayers()
             },
             changeLayerVariable: (domain, variable) => {
-                update({layers: { [domain]: { variable }}})
+                update(state => {
+                    let scens = R.keys(scenarios_with(state.meta, variable))
+                    let scenario = state.scenario
+                    if (!R.contains(scenario, scens)) {
+                        scenario = scens[0]
+                    }
+                    let compareWith = state.compareWith
+                    if (!R.contains(compareWith, scens)) {
+                        compareWith = scens[0]
+                    }
+
+                    return merge(state, {
+                        scenario,
+                        compareWith,
+                        layers: { [domain]: { variable }}}
+                    )
+                })
                 actions.fetchLayerData(domain)
             },
             setCompare: compare => {
@@ -466,25 +489,17 @@ const app = {
                 update({percent})
                 actions.fetchAllLayers()
             },
-            setLTypes: LTypes => {
-                update({desiredLTypes: LTypes})
-                actions.fetchLayerData("links")
-            },
             getMeta: async () => {
-                const [links, od_matrices, scenarios] =
+                const [od_matrices, scenarios] =
                     await Promise.all([
-                        getData("variables/links"),
                         getData("variables/od_matrices"),
                         getData("scenarios"),
                     ])
 
                 // TODO: read default from yaml properties
                 update({
-                    meta: {links, od_matrices, scenarios},
+                    meta: {od_matrices, scenarios},
                     layers: {
-                        links: {
-                            variable: old => old === null ? Object.keys(links)[0] : old,
-                        },
                         od_matrices: {
                             variable: old => old === null ? Object.keys(od_matrices)[0] : old,
                         },
@@ -492,14 +507,10 @@ const app = {
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                 })
             },
-            getLTypes: async () => update({
-                LTypes: await getData("data?domain=links&variable=LType&comparewith=none")
-            }),
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
             }),
             fetchAllLayers: () => {
-                actions.fetchLayerData("links")
                 actions.fetchLayerData("od_matrices")
             },
             toggleCentroids: showness => {
@@ -646,11 +657,10 @@ const app = {
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
             const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
-            const arrays_in_query = ["selectedZones", "desiredLTypes"]
+            const arrays_in_query = ["selectedZones"]
 
             const updateQS = () => {
                 const queryItems = [
-                    `linkVar=${state.layers.links.variable}`,
                     `matVar=${state.layers.od_matrices.variable}`,
                     ...strings_in_query.map(key => `${key}=${state[key]}`),
                     ...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`),
@@ -717,7 +727,6 @@ const app = {
 const { update, states, actions } =
     meiosisMergerino({ stream: simpleStream, merge, app })
 
-
 // VIEWS
 
 
@@ -733,51 +742,14 @@ const { update, states, actions } =
 
     map.on('click', 'zones', actions.clickZone)
 
-    map.on('click', 'links', async event => update(state =>
-        merge(state, {
-            mapUI: {
-                popup: oldpopup => {
-                    if (oldpopup) {
-                        oldpopup.remove()
-                    }
-                    // TODO: fix so that the zone clicker doesn't shadow this
-                    let id = event.features[0].id
-                    let ltype = LTYPE_LOOKUP[state.LTypes[id]]
-                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
-                    let str = ""
-                    let value = state.layers.links.values[id]
-                    if (value === null)
-                        str = "No data"
-                    else
-                        str = numberToHuman(value, state) +
-                            (state.compare && state.percent ? "" : " ") +
-                            getUnit(state.meta, "links", state.layers.links.variable, state.compare && state.percent)
-                    const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&domain=links&variable=${state.layers.links.variable}&rows=${id+1}`
-                    const maxWidth = 400
-                    //TODO: consider adding link to open chart in new tab
-                    //m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
-                    return new mapboxgl.Popup({closeButton: false, maxWidth: maxWidth +"px"})
-                        .setLngLat(event.lngLat)
-                        .setHTML(
-                            `Link type: ${ltype}<br>
-                            ${str}
-                            <iframe frameBorder=0 width="100%" height="90%" src=${chartURL + "&width=" + Math.round(maxWidth * 7/9) + "&height=160"}>
-                            `
-                        )
-                        .addTo(map)
-                },
-            }
-        })
-    ))
-
     map.on('mousemove', 'zones', event => {
         update(state => {
             const layer = state.layers.od_matrices
-            const {NAME, fid} = event.features[0].properties
+            const {MSOA11NM: NAME, fid} = event.features[0].properties
             const value =
                 numberToHuman(layer.values[fid - 1], state) +
                 (state.compare && state.percent ? "" : " ") +
-                layer.unit
+                (layer.unit || "")
 
             return merge(state, {
                     mapUI: {
@@ -801,57 +773,24 @@ const { update, states, actions } =
         hover && hover.remove()
     })
 
-    map.on('mouseleave', 'links', async event => {
-        const hover = states().mapUI.hover
-        // Problem: The links are very narrow, so it's difficult to get the cursor right on them
-        // Cludgy solution: Delay removing the popup so that you only need to pass the cursor over the link.
-        // Our previous cludge was, IMO, even worse: the popup just hung around forever.
-        //
-        // Possibly a better way to do this would be to define a transparent layer
-        // using the same geometry but a bit wider, but that also has issues.
-        hover && setTimeout(_ => hover.remove(), 1000)
-    })
-
-    map.on('mousemove', 'links', async event => update(state =>
-        merge(state, {
-            mapUI: {
-                hover: oldpopup => {
-                    if (oldpopup) {
-                        oldpopup.remove()
-                    }
-                    let id = event.features[0].id
-                    let ltype = LTYPE_LOOKUP[state.LTypes[id]]
-                    if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
-                    let value = state.layers.links.values[id]
-                    let str
-                    if (value === null)
-                        str = "No data"
-                    else
-                        str = numberToHuman(value, state) +
-                            (state.compare && state.percent ? "" : " ") +
-                            state.layers.links.unit
-                    return new mapboxgl.Popup({closeButton: false})
-                        .setLngLat(event.lngLat)
-                        .setHTML(
-                            `Link type: ${ltype}<br>
-                            ${str}`
-                        )
-                        .addTo(map)
-                },
-            }
-        })
-    ))
-
 }
 
 
 // HTML Views
 
-// Create an array of `option` elements for use in a `select` element.
-function meta2options(metadata, selected) {
+// Create an array of `option` objects for use in a `UI.Select` element.
+function meta2options(metadata) {
     return Object.entries(metadata)
         .filter(([k, v]) => v["use"] !== false)
-        .map(([k, v]) => m('option', {value: k, selected: selected === k}, v.name || k))
+        .map(([k, v]) => { return { value: k, label: v.name || k } })
+}
+
+function scenarios_with(meta, variable) {
+    const v = meta.od_matrices[variable]
+    if (v === undefined)
+        return {}
+    else
+        return R.pickBy((_, key) => R.contains(key, v.scenarios_with), meta.scenarios)
 }
 
 const Legend = () => {
@@ -872,7 +811,7 @@ const Legend = () => {
         legendelem && legendelem.remove()
         legendelem = legend({
             color: palette,
-            title: vnode.attrs.title + ` (${unit})`,
+            title: vnode.attrs.title + (unit ? ` (${unit})` : ""),
             tickFormat,
         })
         legendelem.classList.add("colourbar")
@@ -893,7 +832,7 @@ function getUnit(meta, domain, variable, percent=false){
         if (domain == "od_matrices") {
             return meta.od_matrices[variable].unit
         } else {
-            return meta.links[variable].unit
+            throw new Error("unreachable")
         }
     } catch (e){
         return "Units"
@@ -903,6 +842,121 @@ function getUnit(meta, domain, variable, percent=false){
 
 const mountpoint = document.createElement('div')
 document.body.appendChild(mountpoint)
+
+// MENU FUNCTIONS
+
+const variableSelector = state => {
+    const options = [{
+        label: 'None',
+        value: '',
+    }].concat(meta2options(state.meta.od_matrices))
+
+    return [
+        m('label', { for: 'matrix_variable', class: 'header' }, 'Variable'),
+        m('div[style=display:flex;align-items:center]', [
+            m(UI.Select, {
+                name: 'matrix_variable',
+                fluid: true,
+                options: options,
+                value: state.layers.od_matrices.variable,
+                onchange: e => actions.changeLayerVariable('od_matrices', e.currentTarget.value),
+            }),
+            false && (state.layers.od_matrices.variable !== "") && [
+                " ",
+                m(UI.Button, {
+                    name: 'showChart',
+                    iconLeft: UI.Icons.BAR_CHART_2,
+                    active: state.showChart,
+                    compact: true,
+                    size: "xs",
+                    style: "margin: 0.5em;",
+                    onclick: e => {
+                        e.target.active = !e.target.active;
+                        return update({showChart: e.target.active})
+                    }
+                }),
+            ],
+        ]),
+    ]
+}
+
+const scenarioSelector = state => {
+    return [
+        m('label', { for: 'scenario', class: 'header' }, 'Scenario'),
+        m(UI.Select, {
+            name: 'scenario',
+            fluid: true,
+            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
+            value: state.scenario,
+            onchange: e => actions.updateScenario(e.currentTarget.value, state.scenarioYear),
+        }),
+    ]
+}
+
+const comparisonSelector = state => {
+    return [
+        m('label', { for: 'scenario', class: 'header' }, 'Base scenario'),
+        m(UI.Select, {
+            name: 'scenario',
+            fluid: true,
+            options: meta2options(scenarios_with(state.meta, state.layers.od_matrices.variable)),
+            value: state.compareWith,
+            onchange: e => actions.updateBaseScenario({ scenario: e.currentTarget.value })
+        }),
+    ]
+}
+
+const flowLineControls = state => {
+    return [
+        state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
+
+        state.selectedZones.length !== 0 && [
+            m('div', { class: 'flowlistholder' },
+                m('span', { class: 'header' }, 'Showing absolute flows for:'),
+                m('ul', state.selectedZones.map(id => m('li',
+                    m(UI.Button, {
+                        label: zoneToHuman(id,state),
+                        size: 'xs',
+                        fluid: true,
+                        align: 'left',
+                        basic: true,
+                        iconLeft: UI.Icons.X,
+                        onclick: e => {
+                            update({
+                                selectedZones: state.selectedZones.filter(x => x != id),
+                            })
+                            actions.fetchLayerData('od_matrices')
+                        },
+                    }),
+                )))
+            ),
+            m('div',
+                m(UI.Button, {
+                    label: 'Toggle Flow Lines',
+                    fluid: true,
+                    align: 'left',
+                    outlined: true,
+                    onclick: e => {
+                        actions.toggleCentroids(!state.showClines)
+                    },
+                }),
+                m(UI.Button, {
+                    label: 'Deselect All',
+                    fluid: true,
+                    align: 'left',
+                    outlined: true,
+                    onclick: e => {
+                        update({
+                            selectedZones: [],
+                            centroidLineWeights: null,
+                        })
+                        actions.fetchLayerData("od_matrices")
+                    },
+                }),
+            ),
+        ],
+    ]
+}
 
 const menuView = state => {
     // let popup = state.mapUI.popup
@@ -933,16 +987,12 @@ const menuView = state => {
             ),
 
             // Legend
+            state.layers.od_matrices.bounds &&
             m('div', {style: 'position: absolute; bottom: 0'},
                 m(UI.Card, {style: 'margin: 5px', fluid: true},
                     [
-                        state.layers.links.bounds && m(Legend, {
-                            title: 'Links',
-                            percent: state.compare && state.percent,
-                            ...state.layers.links
-                        }),
-                        state.layers.od_matrices.bounds && m(Legend, {
-                            title: 'Zones',
+                        m(Legend, {
+                            title: state.layers.od_matrices.variable,
                             percent: state.compare && state.percent,
                             ...state.layers.od_matrices
                         }),
@@ -953,209 +1003,65 @@ const menuView = state => {
             // Main menu panel
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
-                    m('label', {for: 'showctrls'}, 'Show controls: ',
-                        m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
-                    ),
-                    " ",
-                    m('a', {href: document.location.href, onclick: e => {
-                        toClipboard(e.target.href)
-
-                        // Provide feedback to user
-                        e.target.innerText = "Link copied!";
-                        setTimeout(_ => e.target.innerText = "Copy link", 3000)
-
-                    }}, "Copy link"),
-                    state.showctrl && [
-                        m('br'),
-
-                        m('label', {for: 'scenario'}, "Scenario"),
-                        m('select', {
-                            name: 'scenario',
-                            onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
+                    m(UI.Button, {
+                        label: 'Copy link',
+                        fluid: true,
+                        align: 'left',
+                        outlined: true,
+                        iconLeft: UI.Icons.LINK,
+                        onclick: e => {
+                            toClipboard(document.location.href)
+                            // Provide feedback to user
+                            e.target.innerText = "Link copied!";
+                            setTimeout(_ => e.target.innerText = "Copy link", 3000)
                         },
-                            meta2options(state.meta.scenarios, state.scenario)
-                        ),
+                    }),
+                    m(UI.Button, {
+                        label: (state.showctrl ? 'Hide' : 'Show') + ' Controls',
+                        fluid: true,
+                        align: 'left',
+                        outlined: true,
+                        iconLeft: UI.Icons.SETTINGS,
+                        iconRight: state.showctrl ? UI.Icons.CHEVRON_UP : UI.Icons.CHEVRON_DOWN,
+                        onclick: e => update({ showctrl: !state.showctrl }),
+                    }),
+                    state.showctrl && state.meta.scenarios && [
+                        variableSelector(state),
+                        state.layers.od_matrices.variable && [
+                            scenarioSelector(state),
 
-                        state.meta.scenarios && [
-                            m('label', {for: 'year'}, 'Year: ' + state.scenarioYear),
-                            state.meta.scenarios[state.scenario] &&
-                            state.meta.scenarios[state.scenario].at.length > 1 &&
-                            m('select', {
-                                name: 'year',
-                                onchange: e => actions.updateScenario(state.scenario, e.target.value)
-                            },
-                                sort(state.compare ?
-                                    R.intersection(
-                                        state.meta.scenarios[state.scenario].at,
-                                        state.meta.scenarios[state.compareWith].at
-                                    ) :
-                                        state.meta.scenarios[state.scenario].at
-                                ).map(
-                                    year =>
-                                        m('option', {value: year, selected: year == state.scenarioYear}, year)
-                                ),
-                            ),
-                            // m(UI.InputSelect, {
-                            //     items: state.meta.scenarios[state.scenario].at.sort(),
-                            //     itemRender: year => m(UI.ListItem, { label: year, selected: year == state.scenarioYear }),
-                            //     onSelect: year => actions.updateScenario(state.scenario, year),
-                            // }),
-                            // m('input', {
-                            //     name: 'year',
-                            //     type:"range",
-                            //     ...getScenMinMaxStep(state.meta.scenarios[state.scenario]),
-                            //     // ...state.meta.scenarios[state.scenario].at.sort(),
-                            //     value: state.scenarioYear,
-                            //     onchange: e =>
-                            //         actions.updateScenario(state.scenario, e.target.value)
-                            // }),
-                        ],
-
-                        m('label', {for: 'compare'}, 'Compare with: ',
-                            m('input', {
-                                name: 'compare',
-                                type:"checkbox",
+                            // Show compare with button if there's more than one scenario featuring this variable
+                            R.length(R.keys(scenarios_with(state.meta, state.layers.od_matrices.variable))) > 1 && m(UI.Switch, {
+                                label: 'Compare Scenarios',
                                 checked: state.compare,
                                 onchange: e => actions.setCompare(e.target.checked),
                             }),
-                        ),
 
-                        state.meta.scenarios && state.compare && [
-                            m('br'),
-                            m('label', {for: 'scenario'}, "Base scenario"),
-                            m('select', {
-                                name: 'scenario',
-                                onchange: e =>
-                                    actions.updateBaseScenario({scenario: e.target.value})
-                            },
-                                meta2options(
-                                    R.filter(scen => scen.at.includes(parseInt(state.scenarioYear, 10)), state.meta.scenarios),
-                                    state.compareWith
-                                )
-                            ),
+                            state.meta.scenarios && state.compare && comparisonSelector(state),
 
-                            m('label', {for: 'basetracksactive'},
-                                'Base year: ' + (state.compareYear == "auto" ? state.scenarioYear : state.compareYear) + " (edit: ",
-                                m('input', {
-                                    name: 'basetracksactive',
-                                    type:"checkbox",
-                                    checked: state.compareYear !== "auto",
-                                    onchange: e => {
-                                        if (!e.target.checked) {
-                                            actions.updateBaseScenario({
-                                                year: "auto",
-                                            })
-                                        } else {
-                                            actions.updateBaseScenario({
-                                                year: state.scenarioYear,
-                                            })
-                                        }
-                                    }}),
-                            " )"),
-
-                            state.compareYear !== "auto" && [
-                                m('br'),
-                                state.meta.scenarios[state.compareWith] &&
-                                (state.meta.scenarios[state.compareWith].at.length > 1) &&
-                                m('select', {
-                                    name: 'year',
-                                    onchange: e => actions.updateBaseScenario({year: e.target.value})
-                                },
-                                    sort(state.meta.scenarios[state.compareWith].at).map(
-                                        year =>
-                                            m('option', {value: year, selected: year == state.compareYear}, year)
-                                    ),
-                                ),
-                            ],
-                        ],
-
-                        state.compare && m('label', {for: 'percent'}, 'Percentage difference: ',
-                            m('input', {
-                                name: 'percent',
-                                type:"checkbox",
+                            state.compare && m(UI.Switch, {
+                                label: 'Show As Percentage',
                                 checked: state.percent,
                                 onchange: e => actions.setPercent(e.target.checked),
                             }),
-                        ),
 
-                        m('br'),
-                        m('label', {for: 'link_variable'}, "Links"),
-                        m('select', {
-                            name: 'link_variable',
-                            onchange: e => actions.changeLayerVariable("links", e.target.value),
-                        },
-                            m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
-                            meta2options(state.meta.links, state.layers.links.variable)
-                        ),
-                        state.layers.links.variable && m('select', {
-                            name: 'link_type',
-                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
-                        },
-                            m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
-                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k]), Object.keys(LTYPE_LOOKUP))
-                        ),
+                            flowLineControls(state),
 
-                        m('label', {for: 'matrix_variable'}, "Zones"),
-                        m('div[style=display:flex;align-items:center]', [
-                            m('select', {
-                                name: 'matrix_variable',
-                                onchange: e => actions.changeLayerVariable("od_matrices", e.target.value),
-                            },
-                                m('option', {value: '', selected: state.layers.od_matrices.variable === null}, 'None'),
-                                meta2options(state.meta.od_matrices, state.layers.od_matrices.variable)
-                            ),
-                            (state.layers.od_matrices.variable !== "") && [
-                                " ",
-                                m(UI.Button, {
-                                    name: 'showChart',
-                                    iconLeft: UI.Icons.BAR_CHART_2,
-                                    active:state.showChart,
-                                    compact: true,
-                                    size: "xs",
-                                    style: "margin: 0.5em;",
-                                    onclick: e => {
-                                        e.target.active = !e.target.active;
-                                        return update({showChart: e.target.active})
-                                    }
-                                }),
+                            // Summary statistics for zones
+                            state.layers.od_matrices.variable !== ""
+                            && state.meta.od_matrices[state.layers.od_matrices.variable]
+                            && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show"
+                            && state.layers.od_matrices.basevalues
+                            && [
+                                m('p',
+                                    (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
+                                ),
+                                !(state.compare && state.percent)
+                                && state.selectedZones.length !== 1
+                                && m('p',
+                                    "Total value: " + zones2summary(R.sum,state)
+                                )
                             ],
-                        ]),
-
-                        state.layers.od_matrices.variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
-
-                        state.selectedZones.length !== 0 && [
-                            m('label', {for: 'deselect_zone'}, 'Showing absolute flows to ', arrayToHumanList(state.selectedZones.map(id => zoneToHuman(id,state))), ' (deselect? ',
-                                m('input', {
-                                    name: 'deselect_zone',
-                                    type:"checkbox",
-                                    checked: state.selectedZones.length == 0,
-                                    onchange: e => {
-                                        update({
-                                            selectedZones: [],
-                                            centroidLineWeights: null,
-                                        })
-                                        actions.fetchLayerData("od_matrices")
-                                    }}),
-                            ')'),
-                            m('label', {for: 'show_clines'}, 'Flow lines: ',
-                                m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => actions.toggleCentroids(e.target.checked)}),
-                            ),
-                        ],
-
-                        // Summary statistics for zones
-                        state.layers.od_matrices.variable !== ""
-                        && state.meta.od_matrices[state.layers.od_matrices.variable]
-                        && state.meta.od_matrices[state.layers.od_matrices.variable].statistics == "show"
-                        && state.layers.od_matrices.basevalues
-                        && [
-                            m('p',
-                                (state.selectedZones.length !== 1 ? "Average z" : "Z") + "one value: " + zones2summary(R.mean,state)
-                            ),
-                            !(state.compare && state.percent)
-                            && state.selectedZones.length !== 1
-                            && m('p',
-                                "Total value: " + zones2summary(R.sum,state)
-                            )
                         ],
 
                     ],
@@ -1166,14 +1072,13 @@ const menuView = state => {
             Object.keys(state.meta.scenarios).length > 0 && m('div', {
                 style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
             },
-                (state.showDesc
+                (state.showDesc && false // TODO: turn this back on with better defaults when there aren't descriptions, etc.
                 ?  m(UI.Callout, {
                     style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
                     fluid: true,
                     onDismiss: _ => update({showDesc: false}),
                     content: [
                         state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
-                        state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
                         state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
                     ],
                 },
@@ -1262,7 +1167,7 @@ const atId = data => ['at', ['id'], ["literal", data]]
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 function setZoneColours(nums, colour) {
-    const colours = nums.map(colour)
+    const colours = R.map(colour)(nums)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
     // Quick proof of concept.
@@ -1275,83 +1180,6 @@ function setZoneColours(nums, colour) {
     map.setPaintProperty('zones', 'fill-color',
         ['to-color', atFid(colours)])
 }
-
-function setLinkColours(nums, colour,weights) {
-    const colours = nums.map(colour)
-    const state = states() // This is not kosher
-
-    const COMPARE_MODE = state.compare
-    const percent = state.percent && COMPARE_MODE
-
-    const magic_multiplier = 0.1 // Multiplier to make tuning thickness of all lines together easier
-    if (!percent && state.meta.links[state.layers.links.variable].thickness !== "const") { // TODO: fix this so it looks good enough to use for percentages (10x decrease should be about as obvious as 10x increase)
-        let [q1, q2] = COMPARE_MODE ? [0.01, 0.99] : [0.001, 0.999]
-        let bounds = [d3.quantile(sort(weights),q1),d3.quantile(sort(weights),q2)]
-
-        if (COMPARE_MODE) {
-            const maxb = Math.max(...(bounds.map(Math.abs)))
-            bounds = [-maxb,maxb]
-        }
-
-        // TODO: make this optional
-        weights = weights ? normalise(weights,bounds,"bigger").map(x=>
-            Math.max( // Set minimum width
-                0.1*magic_multiplier,
-                nerf( // Squash outliers into [0,1]
-                    COMPARE_MODE ? Math.abs(x-0.5) : x // if comparison, x=0.5 is boring, want to see x=0,1; otherwise x=0 is dull, want to see x=1
-                )*5*magic_multiplier
-            )
-        ) : nums.map(x=>1.5) // if weights isn't given, default to 1.5 for everything
-        // Adapted from https://github.com/mapbox/mapbox-gl-js/issues/5861#issuecomment-352033339
-        map.setPaintProperty("links", "line-width", [
-            'interpolate',
-            ['exponential', 1.3],  // Higher base -> thickness is concentrated at higher zoom levels
-            ['zoom'],
-            1, ["*", atId(weights), ["^", 2, -6]], // At zoom level 1, links should be weight[id]*2^-6 thick
-            14, ["*", atId(weights), ["^", 2, 8]]
-        ])
-        map.setPaintProperty('links','line-offset', ['interpolate',
-            ['exponential', 1.3],
-            ['zoom'],
-            5, ["*", atId(weights), ["^", 2, -6]],
-            14, ["*", .75, atId(weights), ["^", 2, 8]]
-        ])
-    } else {
-        map.setPaintProperty("links", "line-width", [
-            'interpolate',
-            ['exponential', 1.4],  // Higher base -> thickness is concentrated at higher zoom levels
-            ['zoom'],
-            1, ["*", 1*magic_multiplier, ["^", 2, -6]],
-            14, ["*", 1*magic_multiplier, ["^", 2, 8]]
-        ])
-        map.setPaintProperty('links','line-offset', ['interpolate',
-            ['exponential', 1.4],
-            ['zoom'],
-            5, ["*", .5 * magic_multiplier, ["^", 2, -6]],
-            14, ["*", .75 * magic_multiplier, ["^", 2, 8]]
-        ])
-    }
-
-    // This doesn't work for some reason.
-    // map.setPaintProperty("links", "line-opacity", [
-    //     "match", atId(nums),
-    //     0, 0,
-    //     /* fallback */ .8
-    // ])
-
-    if (!R.equals(state.desiredLTypes, [])) {
-        const opacities = state.LTypes.map(x => {
-            return R.includes(x, state.desiredLTypes.map(y => parseInt(y, 10))) ? 1 : 0
-        })
-        map.setPaintProperty("links", "line-opacity", atId(opacities))
-    } else {
-        map.setPaintProperty("links", "line-opacity", 1)
-    }
-
-    map.setPaintProperty('links', 'line-color',
-        ['to-color', atId(colours)])
-}
-
 
 // Scale data to 0..1 between the bounds.
 // If good == "smaller", the data will be inverted s.t.
@@ -1373,8 +1201,11 @@ function normalise(v, bounds, good) {
     })
 }
 
+const hideLayer = id => map.setLayoutProperty(id, "visibility", "none")
+const showLayer = id => map.setLayoutProperty(id, "visibility", "visible")
+
 function hideCentroids({selectedZones}) {
-    map.setLayoutProperty("centroidLines","visibility","none")
+    R.forEach(hideLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
     if (selectedZones.length) {
         // Currently looks a bit too shit to use, but maybe we'll want something like it
         // in the future.
@@ -1382,9 +1213,9 @@ function hideCentroids({selectedZones}) {
         selectedZones.forEach(id => lookup[id] = true)
         map.setPaintProperty("zoneBorders", "line-opacity",
             ["to-number", ["has", ["to-string", ["get", "fid"]], ["literal", lookup]]])
-        map.setLayoutProperty("zoneBorders", "visibility", "visible")
+        showLayer("zoneBorders")
     } else {
-        map.setLayoutProperty("zoneBorders", "visibility", "none")
+        hideLayer("zoneBorders")
     }
 
 }
@@ -1397,6 +1228,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
     const weights = centroidLineWeights.map(x=>x.map(
         d3.scaleLinear(centroidBounds, [0, 1]).clamp(true)))
+    const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
 
     const centroidLines = []
 
@@ -1406,8 +1238,9 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
             const getPos = x => x.geometry.coordinates
 
             let props = {
-                opacity: Math.min(5 * weights[origIndex][index],1),
+                opacity: weights[origIndex][index] * .6,
                 weight: 10 * weights[origIndex][index],
+                color: weightToColor(weights[origIndex][index]),
             }
             if (props.weight > 20) props.weight = 20
 
@@ -1421,16 +1254,18 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
         })
     }
 
+    const zoneHalos = []
+
     // Draw little circles on selected zones
-    // This should really be another layer but I'm feeling lazy
     selectedZones.length > 1 && originPoints.forEach(origin => {
-        centroidLines.push(turf.circle(
+        zoneHalos.push(turf.circle(
             origin,
             10,
             {
                 properties: {
                     weight: 2,
                     opacity: 1,
+                    color: weightToColor(1),
                 },
             },
         ))
@@ -1439,16 +1274,35 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.setLayoutProperty("zoneBorders", "visibility", "none")
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
+    map.getSource("zoneHalos").setData(turf.featureCollection(zoneHalos))
+    map.getSource("flow_arrowheads").setData(turf.featureCollection(centroidLines))
+
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
+    map.setPaintProperty("zoneHalos", "line-width", ["get", "weight"])
+    // This doesn't work V. FIXME
+    // map.setPaintProperty("flow_arrowheads", "icon-size", ["get", "weight"])
+
     map.setPaintProperty("centroidLines", "line-opacity", ["get", "opacity"])
+    map.setPaintProperty("zoneHalos", "line-opacity", ["get", "opacity"])
+    map.setPaintProperty("flow_arrowheads", "icon-opacity", ["get", "opacity"])
+
+    map.setPaintProperty("centroidLines", "line-color", ["get", "color"])
+    map.setPaintProperty("zoneHalos", "line-color", ["get", "color"])
+    // NB: V requires "SDF" format, not PNG. FIXME
+    // map.setPaintProperty("flow_arrowheads", "icon-color", ["get", "color"])
+
+    // This doesn't work. Magic?
+    //R.forEach(map.moveLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
     map.moveLayer("centroidLines")
-    map.setLayoutProperty("centroidLines", "visibility", "visible")
+    map.moveLayer("zoneHalos")
+    map.moveLayer("flow_arrowheads")
+
+    R.forEach(showLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
 }
 
 function paint(domain, {variable, values, bounds, dir, palette}) {
     const mapLayers = {
         "od_matrices": "zones",
-        "links": "links",
     }
     if (!variable || !values) {
         // If we don't have data to paint, hide the geometry.
@@ -1488,7 +1342,7 @@ function getPalette(dir, bounds, {palette, bins}, compare, usesymlog=false) {
 }
 
 // Debugging tool: get data for a particular piece of geometry
-async function getDataFromId(id,domain="links"){
+async function getDataFromId(id,domain){
     const state = states()
     const variable = state.layers[domain].variable
     log("state is ", state)
@@ -1542,8 +1396,9 @@ if (DEBUG)
         merge,
         continuousPalette,
         turf,
-        LTYPE_LOOKUP,
         R,
         setEqual,
-        nerf
+        nerf,
+
+        scenarios_with,
     })
