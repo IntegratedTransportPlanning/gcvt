@@ -6,6 +6,7 @@ PROJECTS_DIR = "data/projects"
 using CSV
 using DataFrames
 using Dates
+using TOML
 
 import HTTP
 
@@ -28,21 +29,51 @@ end
 const formreq2data(req, pos) = String(read(parse_multipart_form(req)[pos].data))
 
 function upload_od_file(req) 
+    # Lots of this will overlap with geom file handling, so we should refactor out the repeated bits
     temp_file = PROJECTS_DIR * "/Uploaded file - " * Dates.format(now(), "dd u yyyy HH:MM:SS")
     open(temp_file, "w") do f
         write(f, formreq2data(req,1))
     end
     
-    project = formreq2data(req, 2) 
-    filename = formreq2data(req, 3)
+    project     = formreq2data(req, 2) 
+    filename    = formreq2data(req, 3)    
 
     println("Project is " * project * " and filename is " * filename)
 
     if occursin("/", project)
         # TODO this whole block is here just to remind me to ask someone about security!
         println("That doesn't look like a sensible project name")
-        return
+        return failed
     end
+
+
+    # Supported formats
+    # OD data: CSV, TXT, (xls... one day). Any of those zipped might be useful too.
+    # Probably better to actually look at the file, but...
+    if sum(endswith.(filename, [".csv",".txt"])) == 0
+        #return failed
+    end
+    
+    # Get zone columns from form data (plus whatever)
+    # Zone id column defaults set in frontend
+    orig    = formreq2data(req, 4) 
+    dest    = formreq2data(req, 5)
+
+    println("Orig and dest are " * orig * ", " * dest)
+
+    # This will be slow, prob quicker to just get first row of file? 
+    df = CSV.read(temp_file, DataFrame; missingstring="")
+    colnames = names(df)
+
+    # Check that orig, dest are in the file
+    if orig ∉  colnames || dest ∉ colnames
+        println("Couldn't find header names")
+        return failed
+    end
+
+    var_cols    = filter(colname -> colname ∉  [orig, dest], colnames)
+    toml_loc    = PROJECTS_DIR * "/" * project * "/" * project * ".toml"
+    created_new = false # Better ideas welcome :) 
 
     # Does project exist? 
     if project ∉ readdir(PROJECTS_DIR)
@@ -50,7 +81,8 @@ function upload_od_file(req)
         println("Project " * project * " doesn't exist, creating...")
         mkdir(PROJECTS_DIR * "/" * project)
         mkdir(PROJECTS_DIR * "/" * project * "/files")
-        # TODO do we make the schema file... here? 
+        cp("minimal.toml", toml_loc)
+        created_new = true
     end
 
     # Does file exist? 
@@ -59,44 +91,61 @@ function upload_od_file(req)
     println("Copying to " * proj_files_loc * "/" * filename)
 
     if filename in readdir(proj_files_loc)
-        # Just warn or something if we already have this file 
+        # Just warn or something if we already have this file. 
         println("** Overwriting at " * proj_files_loc * "/" * filename)
     end  
 
-    cp(temp_file, proj_files_loc * "/" * filename, force=true) 
+    mv(temp_file, proj_files_loc * "/" * filename, force=true) 
 
-    # Supported formats
-    # OD data: CSV, TXT, (xls... one day). Any of those zipped might be useful too.
+    # Open the schema 
+    schema = TOML.parsefile(toml_loc)
 
-    # Probably better to actually look at the file, but...
-    if sum(endswith.(filename, [".csv",".txt"])) == 0
-        #return failed
+    # See if `filename` is listed
+    # If it isn't - add all the columns. Set orig and dest, which we know
+    # If it is listed - still replace the column list. 
+    #   - (Either it's changed - in which case we need to know, or it hasn't, 
+    #     and it doesn't matter). 
+    #   - Ditto orig and dest
+    # TODO there might (??) be a case where we reupload, and we want to remember most
+    # of the column settings, but I want to get this working for now.
+
+    # Just need to make sure we retain the rest of the TOML neatly 
+    ## TODO don't really understand what Julia/TOML.jl is doing here, 
+    ## think that it's just parsing something wrong and getting an erroneous empty entry? 
+    ## ...maybe we don't need the blank toml and could do it here? 
+    if schema["files"] == [Dict{Vector, Any}()]
+        otherfiles = []
+    else
+        otherfiles = filter(fileitem -> fileitem["filename"] != filename, schema["files"])   
     end
-
-    # Zone id column defaults: 
-    orig = "orig"
-    dest = "dest"
-
-    # Get zone columns from form data (plus whatever)
-    ## TODO the messy design of the frontend needs tidying up/sanitising per what CC/MD discussed,
-    ## at moment the file info is stored in state but not schema (or wait... is that ok?)
-    orig = formreq2data(req, 4) 
-    dest = formreq2data(req, 5)
-
-    println("Orig and dest are " * orig * ", " * dest)
-    colnames = []
-
-    # Check that orig, dest are in the file
-    if orig ∉  colnames || dest ∉ colnames
-        return failed
-    end
-
-
-    # Write info to the schema, which we may need to create
-    # What does it look like if it's created? 
-    # What does it look like if it exists? 
     
-    # Return something to the UI - success / fail 
+
+    thisfile = Dict(
+                    "filename" => filename, 
+                    "type" => "matrix", 
+                    # "for_geometry" => "zones", # TODO ? 
+                    "origins" => orig, 
+                    "destinations" => dest, 
+                    "columns" => []
+                )    
+    
+    for item in var_cols
+        column = Dict("name" => item)
+        push!(thisfile["columns"], column)
+    end
+    
+    schema["files"] = [thisfile, otherfiles...]
+
+    created_new && (schema["project"] = Dict(
+                                            "name"      => project, ## TODO
+                                            "description"=>"No description", ## TODO
+                                            "link"      => project
+                                        ))
+    # Thanks olie :) 
+    open(toml_loc, "w") do io
+        TOML.print(io, schema)
+        #println(TOML.print(schema))
+    end
 
     return jsonresp(0)
 end
