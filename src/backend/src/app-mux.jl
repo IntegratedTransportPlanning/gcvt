@@ -375,4 +375,5 @@ end
     Mux.notfound()
 )
 
+println("Serving $SCHEMA_PATH backend on port $PORT...")
 IN_PRODUCTION && wait(serve(app, PORT))
