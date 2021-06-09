@@ -101,16 +101,16 @@ const nerf = x => (1+erf(x*2-1))/2
 // get data from Julia:
 const getData = async endpoint =>
     (await fetch(
-        "/api/" + endpoint + (endpoint.includes("?") ? "&" : "?") + "v=" + await API_VERSION_PROMISE)
+        "../api/" + endpoint + (endpoint.includes("?") ? "&" : "?") + "v=" + await API_VERSION_PROMISE)
     ).json().catch(
         e => console.error(`Error getting data from:\n/api/${endpoint}\n\n`, e)
     )
 
 async function getApiVersion() {
     try {
-        return (await (await fetch("/api/version")).json())["version"]
+        return (await (await fetch("../api/version")).json())["version"]
     } catch (e) {
-        console.error(`Error getting data from:\n/api/version\n\n`, e)
+        console.error(`Error getting data from:\n../api/version\n\n`, e)
     }
 }
 
@@ -267,16 +267,16 @@ const mapboxInit = ({lng, lat, zoom}) => {
     // disable map rotation using touch rotation gesture
     map.touchZoomRotate.disableRotation()
 
-    const BASEURL = document.location.origin
-
     async function loadLayers() {
+
+        const TILE_URL_TEMPLATE = new URL("../tiles", document.location.href) + `/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`
 
         map.addLayer({
             id: 'zones',
             type: 'fill',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + `/tiles/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`,],
+                tiles: [TILE_URL_TEMPLATE],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
@@ -297,7 +297,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             type: 'line',
             source: {
                 type: 'vector',
-                tiles: [BASEURL + `/tiles/zones/{z}/{x}/{y}.pbf?v=${await getApiVersion()}`,],
+                tiles: [TILE_URL_TEMPLATE],
                 // If you don't have this, mapbox doesn't show tiles beyond the
                 // zoom level of the tiles, which is not what we want.
                 maxzoom: 6,
