@@ -838,6 +838,24 @@ const variableSelector = state => {
     ]
 }
 
+function getDescriptions(state) {
+    const depDesc = getDescription(state.selectedvars.dependent_variable, state.meta.dependent_variables)
+    const indDescs = Object.entries(state.selectedvars.independent_variables).map(
+        varandval => getDescription(
+            varandval[1],
+            state.meta.independent_variables?.find(x=>x.id == varandval[0]).values
+        )
+    )
+    return [depDesc, ...indDescs]
+}
+
+function getDescription(varname, meta) {
+    // TODO: use pretty names if they exist
+    const desc = meta?.find(el=>typeof(el) == "object" && el.name == varname)?.description
+    if (desc === undefined) return desc
+    return m('p', m('b', varname), ": " + desc)
+}
+
 async function ivSelectors(state, opts = {base: false}) {
     // Dumb graceful failure
     // TODO: make less dumb
@@ -848,6 +866,7 @@ async function ivSelectors(state, opts = {base: false}) {
         return []
     }
 }
+
 const ivSelector = async (state, id, opts = {base: false}) => {
     // Dumb graceful failure
     // TODO: make less dumb
@@ -1071,33 +1090,30 @@ const menuView = async state => {
                 ),
             ),
 
+            // Info / description window
+            state.selectedvars.dependent_variable && m('div', {
+                style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
+            },
+                (state.showDesc
+                ?  m(UI.Callout, {
+                    style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
+                    fluid: true,
+                    onDismiss: _ => update({showDesc: false}),
+                    content: getDescriptions(state),
+                },
+
+                    )
+                : m(UI.Button, {
+                    style: 'pointer-events: auto',
+                    iconLeft: UI.Icons.INFO,
+                    onclick: _ => update({showDesc: true}),
+                }))
+            ),
+
             // // TODO: un-nuke this
             //          (it all seemed a little too hardcoded for now)
             //
             //
-            // // Info / description window
-            // Object.keys(state.meta.scenarios).length > 0 && m('div', {
-            //     style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
-            // },
-            //     (state.showDesc && false // TODO: turn this back on with better defaults when there aren't descriptions, etc.
-            //     ?  m(UI.Callout, {
-            //         style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
-            //         fluid: true,
-            //         onDismiss: _ => update({showDesc: false}),
-            //         content: [
-            //             state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
-            //             state.meta.od_matrices && state.meta.od_matrices[state.selectedvars.dependent_variable] && m('p', state.meta.od_matrices[state.selectedvars.dependent_variable].name + ": " + (state.meta.od_matrices[state.selectedvars.dependent_variable].description || "")),
-            //         ],
-            //     },
-
-            //         )
-            //     : m(UI.Button, {
-            //         style: 'pointer-events: auto',
-            //         iconLeft: UI.Icons.INFO,
-            //         onclick: _ => update({showDesc: true}),
-            //     }))
-            // ),
-
             // // Chart
             // state.showChart && (state.selectedvars.dependent_variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
             //     m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
