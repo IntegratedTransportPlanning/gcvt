@@ -856,7 +856,10 @@ const ivSelector = async (state, id, opts = {base: false}) => {
         const base = opts.base ? "selectedbasevars" : "selectedvars"
         const iv = ivs.find(v=>v.id == id)
         const otherIndVars = R.pickBy((val, key) => key !== id, state[base].independent_variables)
+
+        // This makes a vast number of requests as you move the cursor around the map
         const valid = await getDomain(state.selectedvars.dependent_variable, otherIndVars, iv["id"])
+
         return [
             m('label', { for: iv["id"], class: 'header' }, iv["name"] || iv["id"]),
             m(UI.Select, {
@@ -897,10 +900,15 @@ const ivSelector = async (state, id, opts = {base: false}) => {
     }
 }
 
+// This gets called an awful lot, so let's cache it
+const DOMAIN_CACHE = new Map();
 async function getDomain(dependent_variable, independent_variables = {}, pick = "") {
-    const domain = await getData(`domain?dependent_variable=${dependent_variable}&independent_variables=${JSON.stringify(independent_variables)}`)
-    if (pick == "") return domain
-    return domain.map(o=>o[pick])
+    const mapkey = JSON.stringify([dependent_variable, independent_variables, pick])
+    if (!(DOMAIN_CACHE.has(mapkey))) {
+        const domain = await getData(`domain?dependent_variable=${dependent_variable}&independent_variables=${JSON.stringify(independent_variables)}`)
+        DOMAIN_CACHE.set(mapkey, pick == "" ? domain : domain.map(o=>o[pick])) 
+    }
+    return DOMAIN_CACHE.get(mapkey)
 }
 
 const flowLineControls = state => {
