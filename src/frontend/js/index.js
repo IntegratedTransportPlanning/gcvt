@@ -819,7 +819,7 @@ const variableSelector = state => {
                     actions.fetchZonesData()
                 },
             }),
-            false && (state.selectedvars.dependent_variable !== "") && [
+            (state.selectedvars.dependent_variable !== "") && [
                 " ",
                 m(UI.Button, {
                     name: 'showChart',
@@ -1115,25 +1115,26 @@ const menuView = async state => {
             //
             //
             // // Chart
-            // state.showChart && (state.selectedvars.dependent_variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
-            //     m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
-            //         (() => {
-            //             const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.selectedvars.dependent_variable}&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
-            //             return [
-            //                 m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
-            //                 // Currently you can't select a zone and compare so
-            //                 // this is a little less useful than it could be
-            //                 m('iframe', {
-            //                     frameBorder:0,
-            //                     width: "100%",
-            //                     height: "160px",
-            //                     src: chartURL + "&width=320&height=160"
-            //                 }),
-            //             ]
-            //         })(),
-            //         // Todo: set width + height programmatically
-            //     )
-            // ),
+            state.showChart && (state.selectedvars.dependent_variable != "") && m('div', {style: 'position: absolute; bottom: 0px; right: 10px; width:400px;',class:"mapboxgl-ctrl"},
+                m(UI.Card, {style: 'margin: 5px; padding-bottom: 0px; height:200px', fluid: true},
+                    (() => {
+                        // const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&variable=${state.selectedvars.dependent_variable
+                        const chartURL = "../api/charts?selectedvars=" + JSON.stringify(state.selectedvars) + "&selectedbasevars=" + JSON.stringify(state.selectedbasevars) + `&rows=${state.selectedZones.length > 0 ? state.selectedZones : "all"}`
+                        return [
+                            m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
+                            // Currently you can't select a zone and compare so
+                            // this is a little less useful than it could be
+                            m('iframe', {
+                                frameBorder:0,
+                                width: "100%",
+                                height: "160px",
+                                src: chartURL + "&width=320&height=160"
+                            }),
+                        ]
+                    })(),
+                    // Todo: set width + height programmatically
+                )
+            ),
 
         ])
     )
