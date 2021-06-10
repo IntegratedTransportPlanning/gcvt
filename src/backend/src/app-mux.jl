@@ -178,7 +178,10 @@ function load_centroids(meta)
     # TODO: support multiple geometries
     #           (a fairly big job - would need another rewrite of the frontend)
     #           (presumably fairly low priority as we can just have multiple projects?)
+    
+    # NB: most of the slowness is this call here V
     zones = GeoJSON.parsefile(joinpath(DATA_ROOT,meta["geometries"][1]["filename"]))
+
     zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
     for f in zones.features
         zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
