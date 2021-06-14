@@ -10,11 +10,11 @@ using JSON
 using TOML
 
 
-const DATA_ROOT = joinpath(@__DIR__, "../data/")
+const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
-const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
+const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
 const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
 
 # Change this to invalidate HTTP cache
@@ -434,91 +434,89 @@ end
         # Ordered for debugging reasons.
         fill_up(OrderedDict(zip(destinations(data), vs))) |> jsonresp
     end,
-    route("/charts", req -> begin
-        # TODO: consider whether this actually makes sense
-        # how can we stop it from being too magic?
-        #
-        # user needs to pick which IV is going to be plotted
-        # and fix all others
+    #route("/charts", req -> begin
+    #    # TODO: consider whether this actually makes sense
+    #    # how can we stop it from being too magic?
+    #    #
+    #    # user needs to pick which IV is going to be plotted
+    #    # and fix all others
 
-        d = queryparams(req)
+    #    d = queryparams(req)
 
-        # Legacy-compat
-        scenario = get(d, "scenario", "")
-        comparewith = get(d, "comparewith", "")
-        variable = get(d, "variable", "")
+    #    # Legacy-compat
+    #    scenario = get(d, "scenario", "")
+    #    comparewith = get(d, "comparewith", "")
+    #    variable = get(d, "variable", "")
 
-        # New bits
-        selectedvars = JSON.parse(get(d,"selectedvars","{}"))
-        selectedbasevars = JSON.parse(get(d,"selectedbasevars","{}"))
-        variable = get(selectedvars,"dependent_variable",variable)
-        independent_variables = get(selectedvars,"independent_variables",Dict("scenario"=>scenario))
-        base_independent_variables = get(selectedbasevars,"independent_variables",Dict("scenario"=>comparewith))
-        ivtoplot = get(d,"ivtoplot","year")
+    #    # New bits
+    #    selectedvars = JSON.parse(get(d,"selectedvars","{}"))
+    #    selectedbasevars = JSON.parse(get(d,"selectedbasevars","{}"))
+    #    variable = get(selectedvars,"dependent_variable",variable)
+    #    independent_variables = get(selectedvars,"independent_variables",Dict("scenario"=>scenario))
+    #    base_independent_variables = get(selectedbasevars,"independent_variables",Dict("scenario"=>comparewith))
+    #    ivtoplot = get(d,"ivtoplot","year")
 
-        # Legacy-compat
-        comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
+    #    # Legacy-compat
+    #    comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
 
-        d["rows"] = d["rows"] == "all" ? Colon() : parse.(Int, split(d["rows"], ","))
+    #    d["rows"] = d["rows"] == "all" ? Colon() : parse.(Int, split(d["rows"], ","))
 
-        scenarios = split(d[:scenarios], ",")
-        # All years that any selected scenario has data for
-        years = sort(unique(vcat((metadata["scenarios"][s]["at"] for s in scenarios)...)))
+    #    scenarios = split(d[:scenarios], ",")
+    #    # All years that any selected scenario has data for
+    #    years = sort(unique(vcat((metadata["scenarios"][s]["at"] for s in scenarios)...)))
 
+    #    datafnc = d[:domain] == "links" ? link_data : mat_data
+    #    df = DataFrame(year=String[], val=[], scenario=String[])
 
+    #    const x_axis = metadata["independent_variables"][#=find the right id=#]["values"] # might be numbers, might need mapping to ids
+    #    for year in years # for x in x_axis
+    #        for scenario in scenarios # for thingy in [selectedvars,selectedbasevars]
+    #            # something like this V
+    #            value = sum(datafnc(scenario, year, d[:variable])[d[:rows], :])
+    #            # ... don't bother with this V for now
+    #            scenario_name = get(metadata["scenarios"][scenario], "name", scenario)
 
-        datafnc = d[:domain] == "links" ? link_data : mat_data
-        df = DataFrame(year=String[], val=[], scenario=String[])
+    #            # year -> x, scenario -> ... dunno, like notbase / base. Base / Treatment?
+    #            push!(df, (year = string(year), val = value, scenario = scenario_name))
+    #        end
+    #    end
 
-        const x_axis = metadata["independent_variables"][#=find the right id=#]["values"] # might be numbers, might need mapping to ids
-        for year in years # for x in x_axis
-            for scenario in scenarios # for thingy in [selectedvars,selectedbasevars]
-                # something like this V
-                value = sum(datafnc(scenario, year, d[:variable])[d[:rows], :])
-                # ... don't bother with this V for now
-                scenario_name = get(metadata["scenarios"][scenario], "name", scenario)
+    #    width = parse(Int, d["width"])
+    #    height = parse(Int, d["height"])
+    #   #unit = get(metadata[d[:domain]]["columns"][d[:variable]], "unit", d[:variable])
+    #    vl = df |> VegaLite.@vlplot(
+    #        # Awful heuristic - these control size of plot excluding legend, labels etc
+    #        width = width * .8,
+    #        height = height * .5,
 
-                # year -> x, scenario -> ... dunno, like notbase / base. Base / Treatment?
-                push!(df, (year = string(year), val = value, scenario = scenario_name))
-            end
-        end
-
-        width = parse(Int, d["width"])
-        height = parse(Int, d["height"])
-       #unit = get(metadata[d[:domain]]["columns"][d[:variable]], "unit", d[:variable])
-        vl = df |> VegaLite.@vlplot(
-            # Awful heuristic - these control size of plot excluding legend, labels etc
-            width = width * .8,
-            height = height * .5,
-
-            mark = {
-                :line,
-                point = { filled = false,fill = :white },
-            },
-            color = {
-                :scenario,
-                legend = {
-                    title = nothing,
-                    orient = width < 500 ? :bottom : :right,
-                },
-            },
-            x = {
-                :year,
-                title = "Year",
-                type = "temporal"
-            },
-            y = {
-                :val,
-                title = "",#unit,
-                type = "quantitative",
-                axis = {
-                    formatType = "number",
-                    format = ".3~s",
-                },
-            },
-        )
-        vegalite_to_html(vl; width=width, height=height)
-    end,
+    #        mark = {
+    #            :line,
+    #            point = { filled = false,fill = :white },
+    #        },
+    #        color = {
+    #            :scenario,
+    #            legend = {
+    #                title = nothing,
+    #                orient = width < 500 ? :bottom : :right,
+    #            },
+    #        },
+    #        x = {
+    #            :year,
+    #            title = "Year",
+    #            type = "temporal"
+    #        },
+    #        y = {
+    #            :val,
+    #            title = "",#unit,
+    #            type = "quantitative",
+    #            axis = {
+    #                formatType = "number",
+    #                format = ".3~s",
+    #            },
+    #        },
+    #    )
+    #    vegalite_to_html(vl; width=width, height=height)
+    #end,
 
     Mux.notfound()
 )
