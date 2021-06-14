@@ -179,15 +179,27 @@ function load_centroids(meta)
     #           (a fairly big job - would need another rewrite of the frontend)
     #           (presumably fairly low priority as we can just have multiple projects?)
     
+    geo = meta["geometries"][1]
     # NB: most of the slowness is this call here V
-    zones = GeoJSON.parsefile(joinpath(DATA_ROOT,meta["geometries"][1]["filename"]))
+    zones = GeoJSON.parsefile(joinpath(DATA_ROOT, geo["filename"]))
 
-    zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
+    worst = map(f -> f.properties[geo["feature_id"]], zones.features) .|> numberplease |> maximum
+
+    
+    # TODO: worry about 0-based indexing? non-contiguous zones? non-numeric zones?
+    #       current fixes are very silly
+    
+    zone_centroids = [[0.,0.] for x in 1:worst]
+    #zone_centroids = Array{Array{Float64,1},1}(undef,worst)
     for f in zones.features
-        zone_centroids[f.properties["fid"]] = Turf.centroid(f.geometry).coordinates
+        zone_centroids[numberplease(f.properties[geo["feature_id"]])] = Turf.centroid(f.geometry).coordinates
     end
     return zone_centroids
 end
+
+# This feels dumb
+numberplease(s::T) where T <: AbstractString = parse(Int,s)
+numberplease(i::T) where T <: Number = identity(i)
 
 include("ODData.jl")
 using CSV
@@ -200,7 +212,7 @@ function load_data(meta)
         )
         column_names = map(d->d["name"], f["columns"])
 
-        df = df[!, ["geo_code1", "geo_code2", column_names...]]
+        df = df[!, [f["origins"], f["destinations"], column_names...]]
 
         # This seems pretty magic
         # How are we sure this will correspond with e.g. GeoJSON fids?

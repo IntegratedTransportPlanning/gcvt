@@ -1165,7 +1165,9 @@ function getScenMinMaxStep(scenario){
 // MapboxGL styling spec instructions for looking up an attribute in the array
 // `data` by id (links) or by the property `fid` (zones)
 const atId = data => ['at', ['id'], ["literal", data]]
+// TODO: "fid" needs to be set from metadata; the name varies (e.g. CODE in Kyiv)
 const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
+
 
 function setZoneColours(nums, colour) {
     const colours = R.map(colour)(nums)
