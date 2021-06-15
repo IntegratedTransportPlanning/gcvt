@@ -10,11 +10,13 @@ using JSON
 using TOML
 
 
-const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
+const DATA_ROOT = joinpath(@__DIR__, "../data/")
+#const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
-const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
+#const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
+const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
 const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
 
 # Change this to invalidate HTTP cache
@@ -183,22 +185,12 @@ function load_centroids(meta)
     # NB: most of the slowness is this call here V
     zones = GeoJSON.parsefile(joinpath(DATA_ROOT, geo["filename"]))
 
-    worst = map(f -> f.properties[geo["feature_id"]], zones.features) .|> numberplease |> maximum
-
-    
-    # TODO: worry about 0-based indexing? non-contiguous zones? non-numeric zones?
-    #       current fixes are very silly
-    
     zone_centroids = Dict()
     for f in zones.features
         zone_centroids[f.properties[geo["feature_id"]]] = Turf.centroid(f.geometry).coordinates
     end
     return zone_centroids
 end
-
-# This feels dumb
-numberplease(s::T) where T <: AbstractString = parse(Int,s)
-numberplease(i::T) where T <: Number = identity(i)
 
 include("ODData.jl")
 using CSV
@@ -213,13 +205,9 @@ function load_data(meta)
 
         df = df[!, [f["origins"], f["destinations"], column_names...]]
 
-        # This seems pretty magic
-        # How are we sure this will correspond with e.g. GeoJSON fids?
-        zones = sort(unique(vcat(df[:, 1], df[:, 2])))
-        zone_id(code) = findfirst(==(code), zones)
-
-        df[!, :origin] = zone_id.(df[!, 1])
-        df[!, :destination] = zone_id.(df[!, 2])
+        # TODO: rename columns rather than store duplicates
+        df[!, :origin] = df[!, 1]
+        df[!, :destination] = df[!, 2]
 
         df = df[!, ["origin", "destination", column_names...]]
         # TODO: support multiple files
@@ -422,7 +410,7 @@ end
         comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
 
         if haskey(d, "row")
-            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, parse.(Int, split(d["row"], ',')))
+            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, split(d["row"], ','))
         elseif comparewith == "none"
             vs = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
         else

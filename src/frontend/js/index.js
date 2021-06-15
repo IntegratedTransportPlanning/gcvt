@@ -577,7 +577,9 @@ const app = {
             },
             clickZone: event => {
                 const state = states()
-                const fid = event.features[0].properties.fid
+                // TODO: support multiple geometries
+                const fid_fieldname = state?.meta?.geometries?.[0]?.feature_id
+                const fid = event.features[0].properties[fid_fieldname]
                 const ctrlPressed = event.originalEvent.ctrlKey
 
                 let selectedZones = state.selectedZones.slice()
@@ -663,7 +665,8 @@ const app = {
             // Will probably never happen.
 
             if (state.data !== previousState.data) {
-                paint("od_matrices", {...state.data, variable: state.selectedvars.dependent_variable})
+                // TODO: support multiple geometries
+                paint("od_matrices", {...state.data, variable: state.selectedvars.dependent_variable, geometa: state.meta.geometries[0]})
             }
 
             // probably need to compare selectedbasevars here too
@@ -695,6 +698,7 @@ const { update, states, actions } =
     map.on('mousemove', 'zones', event => {
         update(state => {
             const layer = state.data
+            // MSOA11NM + fid field names should come from metadata; feature_name and feature_id
             const {MSOA11NM: NAME, fid} = event.features[0].properties
             const value =
                 numberToHuman(layer.values[fid - 1], state) +
@@ -1165,23 +1169,22 @@ function getScenMinMaxStep(scenario){
 // MapboxGL styling spec instructions for looking up an attribute in the array
 // `data` by id (links) or by the property `fid` (zones)
 const atId = data => ['at', ['id'], ["literal", data]]
-// TODO: "fid" needs to be set from metadata; the name varies (e.g. CODE in Kyiv)
-const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
+const atFid_generator = geometa => data => ['at', ["-", ['get', geometa?.feature_id ?? "fid"], 1], ["literal", data]]
 
 
-function setZoneColours(nums, colour) {
+function setZoneColours(nums, colour, geometa) {
     const colours = R.map(colour)(nums)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
     // Quick proof of concept.
     // TODO: Handle missings here.
     map.setPaintProperty("zones", "fill-opacity", [
-        "match", atFid(nums),
+        "match", atFid_generator(geometa)(nums),
         0, 0,
         /* fallback */ .5
     ])
     map.setPaintProperty('zones', 'fill-color',
-        ['to-color', atFid(colours)])
+        ['to-color', atFid_generator(geometa)(colours)])
 }
 
 // Scale data to 0..1 between the bounds.
@@ -1303,7 +1306,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     R.forEach(showLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
 }
 
-function paint(domain, {variable, values, bounds, dir, palette}) {
+function paint(domain, {variable, values, bounds, dir, palette, geometa}) {
     const mapLayers = {
         "od_matrices": "zones",
     }
@@ -1313,7 +1316,7 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
         map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
         if (domain == "od_matrices"){
-            setZoneColours(values, palette[0])
+            setZoneColours(values, palette[0], geometa)
         } else {
             setLinkColours(values, palette[0],values)
         }
