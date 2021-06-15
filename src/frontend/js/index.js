@@ -1224,8 +1224,8 @@ function hideCentroids({selectedZones}) {
 }
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
-    const id = selectedZones[0] - 1
-    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1]))
+    const id = selectedZones[0]
+    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x]))
     const sortedValues = sort(R.flatten(centroidLineWeights)) // This is quick and dirty. Probably want top 40% per zone rather than overall
     const centroidBounds =
         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]

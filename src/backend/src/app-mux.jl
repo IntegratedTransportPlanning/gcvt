@@ -189,10 +189,9 @@ function load_centroids(meta)
     # TODO: worry about 0-based indexing? non-contiguous zones? non-numeric zones?
     #       current fixes are very silly
     
-    zone_centroids = [[0.,0.] for x in 1:worst]
-    #zone_centroids = Array{Array{Float64,1},1}(undef,worst)
+    zone_centroids = Dict()
     for f in zones.features
-        zone_centroids[numberplease(f.properties[geo["feature_id"]])] = Turf.centroid(f.geometry).coordinates
+        zone_centroids[f.properties[geo["feature_id"]]] = Turf.centroid(f.geometry).coordinates
     end
     return zone_centroids
 end
