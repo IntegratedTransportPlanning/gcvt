@@ -401,7 +401,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         // be in the scenario pack and provided by the api instead.
         if (map.getSource('zones') && map.isSourceLoaded('zones')) {
             const a = []
-            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.fid] = x.properties.MSOA11NM})
+            map.querySourceFeatures("zones",{sourceLayer: "zones"}).forEach(x=>{a[x.properties.CORRIDOR_FEATID] = x.properties.MSOA11NM})
             update({
                 zoneNames: a,
             })
@@ -577,7 +577,7 @@ const app = {
             },
             clickZone: event => {
                 const state = states()
-                const fid = event.features[0].properties.fid
+                const fid = event.features[0].properties.CORRIDOR_FEATID
                 const ctrlPressed = event.originalEvent.ctrlKey
 
                 let selectedZones = state.selectedZones.slice()
@@ -695,7 +695,7 @@ const { update, states, actions } =
     map.on('mousemove', 'zones', event => {
         update(state => {
             const layer = state.data
-            const {MSOA11NM: NAME, fid} = event.features[0].properties
+            const {MSOA11NM: NAME, CORRIDOR_FEATID: fid} = event.features[0].properties
             const value =
                 numberToHuman(layer.values[fid - 1], state) +
                 (state.compare && state.percent ? "" : " ") +
@@ -1166,7 +1166,7 @@ function getScenMinMaxStep(scenario){
 // `data` by id (links) or by the property `fid` (zones)
 const atId = data => ['at', ['id'], ["literal", data]]
 // TODO: "fid" needs to be set from metadata; the name varies (e.g. CODE in Kyiv)
-const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
+const atFid = data => ['at', ["-", ['get', 'CORRIDOR_FEATID'], 1], ["literal", data]]
 
 
 function setZoneColours(nums, colour) {
@@ -1215,7 +1215,7 @@ function hideCentroids({selectedZones}) {
         const lookup = {}
         selectedZones.forEach(id => lookup[id] = true)
         map.setPaintProperty("zoneBorders", "line-opacity",
-            ["to-number", ["has", ["to-string", ["get", "fid"]], ["literal", lookup]]])
+            ["to-number", ["has", ["to-string", ["get", "CORRIDOR_FEATID"]], ["literal", lookup]]])
         showLayer("zoneBorders")
     } else {
         hideLayer("zoneBorders")

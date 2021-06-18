@@ -10,13 +10,13 @@ using JSON
 using TOML
 
 
-const DATA_ROOT = joinpath(@__DIR__, "../data/")
-#const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
+#const DATA_ROOT = joinpath(@__DIR__, "../data/")
+const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
-#const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
-const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
+const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
+#const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
 const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
 
 # Change this to invalidate HTTP cache
@@ -187,7 +187,7 @@ function load_centroids(meta)
 
     zone_centroids = Dict()
     for f in zones.features
-        zone_centroids[f.properties[geo["feature_id"]]] = Turf.centroid(f.geometry).coordinates
+        zone_centroids[f.properties["CORRIDOR_FEATID"]] = Turf.centroid(f.geometry).coordinates
     end
     return zone_centroids
 end
@@ -203,13 +203,14 @@ function load_data(meta)
         )
         column_names = map(d->d["name"], f["columns"])
 
-        df = df[!, [f["origins"], f["destinations"], column_names...]]
+        df = df[!, ["CORRIDOR_ORIGIN", "CORRIDOR_DESTINATION", column_names...]]
 
         # TODO: rename columns rather than store duplicates
         df[!, :origin] = df[!, 1]
         df[!, :destination] = df[!, 2]
 
         df = df[!, ["origin", "destination", column_names...]]
+
         # TODO: support multiple files
         return ODData(df, meta)
     end
