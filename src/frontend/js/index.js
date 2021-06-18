@@ -577,9 +577,7 @@ const app = {
             },
             clickZone: event => {
                 const state = states()
-                // TODO: support multiple geometries
-                const fid_fieldname = state?.meta?.geometries?.[0]?.feature_id
-                const fid = event.features[0].properties[fid_fieldname]
+                const fid = event.features[0].properties.fid
                 const ctrlPressed = event.originalEvent.ctrlKey
 
                 let selectedZones = state.selectedZones.slice()
@@ -665,8 +663,7 @@ const app = {
             // Will probably never happen.
 
             if (state.data !== previousState.data) {
-                // TODO: support multiple geometries
-                paint("od_matrices", {...state.data, variable: state.selectedvars.dependent_variable, geometa: state.meta.geometries[0]})
+                paint("od_matrices", {...state.data, variable: state.selectedvars.dependent_variable})
             }
 
             // probably need to compare selectedbasevars here too
@@ -698,7 +695,6 @@ const { update, states, actions } =
     map.on('mousemove', 'zones', event => {
         update(state => {
             const layer = state.data
-            // MSOA11NM + fid field names should come from metadata; feature_name and feature_id
             const {MSOA11NM: NAME, fid} = event.features[0].properties
             const value =
                 numberToHuman(layer.values[fid - 1], state) +
@@ -1169,22 +1165,23 @@ function getScenMinMaxStep(scenario){
 // MapboxGL styling spec instructions for looking up an attribute in the array
 // `data` by id (links) or by the property `fid` (zones)
 const atId = data => ['at', ['id'], ["literal", data]]
-const atFid_generator = geometa => data => ['at', ["-", ['get', geometa?.feature_id ?? "fid"], 1], ["literal", data]]
+// TODO: "fid" needs to be set from metadata; the name varies (e.g. CODE in Kyiv)
+const atFid = data => ['at', ["-", ['get', 'fid'], 1], ["literal", data]]
 
 
-function setZoneColours(nums, colour, geometa) {
+function setZoneColours(nums, colour) {
     const colours = R.map(colour)(nums)
     // const colours = nums.map(x => colour(nerf(x))) // This doesn't work as nums aren't 'normalised' any more - the palette does it
 
     // Quick proof of concept.
     // TODO: Handle missings here.
     map.setPaintProperty("zones", "fill-opacity", [
-        "match", atFid_generator(geometa)(nums),
+        "match", atFid(nums),
         0, 0,
         /* fallback */ .5
     ])
     map.setPaintProperty('zones', 'fill-color',
-        ['to-color', atFid_generator(geometa)(colours)])
+        ['to-color', atFid(colours)])
 }
 
 // Scale data to 0..1 between the bounds.
@@ -1227,8 +1224,8 @@ function hideCentroids({selectedZones}) {
 }
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
-    const id = selectedZones[0]
-    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x]))
+    const id = selectedZones[0] - 1
+    const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1]))
     const sortedValues = sort(R.flatten(centroidLineWeights)) // This is quick and dirty. Probably want top 40% per zone rather than overall
     const centroidBounds =
         [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
@@ -1306,7 +1303,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     R.forEach(showLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
 }
 
-function paint(domain, {variable, values, bounds, dir, palette, geometa}) {
+function paint(domain, {variable, values, bounds, dir, palette}) {
     const mapLayers = {
         "od_matrices": "zones",
     }
@@ -1316,7 +1313,7 @@ function paint(domain, {variable, values, bounds, dir, palette, geometa}) {
         map.setLayoutProperty(mapLayers[domain], "visibility", "none")
     } else {
         if (domain == "od_matrices"){
-            setZoneColours(values, palette[0], geometa)
+            setZoneColours(values, palette[0])
         } else {
             setLinkColours(values, palette[0],values)
         }
