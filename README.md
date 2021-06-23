@@ -1,8 +1,8 @@
-# ODVis (working title)
+# Corridors (working title)
 
 🚧 👷‍♀️ Work in progress 👷 🚧
 
-The goal of ODVis is to visualise origin-destination matrices from transport models or survey data.
+The goal of Corridors is to visualise origin-destination matrices from transport models or survey data.
 
 
 ## Installation
