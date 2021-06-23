@@ -11,12 +11,12 @@ using TOML
 
 
 #const DATA_ROOT = joinpath(@__DIR__, "../data/")
-const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
+const DATA_ROOT = joinpath(@__DIR__, "../testdata/processed")
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
 #const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
-const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
+const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/processed/TEST_PROJECT_PLEASE_IGNORE_KYIV/schema.toml")
 const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
 
 # Change this to invalidate HTTP cache
@@ -510,4 +510,6 @@ end
 )
 
 println("Serving $SCHEMA_PATH backend on port $PORT...")
-IN_PRODUCTION && wait(serve(app, PORT))
+IN_PRODUCTION && wait(
+    serve(app, PORT)
+)
