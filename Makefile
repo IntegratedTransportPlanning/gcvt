@@ -1,9 +1,5 @@
 .PHONY: front, back, pack, tiles, setup, setupR, http, watchfront, muxd, getcaddy
 
-tiles:
-	# TODO: These paths are pretty project-specific. Should specify the packdir better.
-	cd src/backend/src && julia --project -L "pct.jl" -E "process_pct_geometry()"
-
 setup:
 	cd src/backend && julia --project=. -e "import Pkg; Pkg.instantiate()"
 	cd src/frontend && yarn
