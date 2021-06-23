@@ -11,7 +11,7 @@
 # Will fix this ;)
 
 :2016/tiles/ {
-	root src/backend/data/processed/pct/tiles/
+	root src/backend/testdata/processed/TEST_PROJECT_PLEASE_IGNORE_KYIV/tiles/
     header Cache-Control max-age={$ITP_CADDY_CACHE_TIME:0}
 	browse
     log stdout

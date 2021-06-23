@@ -15,8 +15,8 @@ const DATA_ROOT = joinpath(@__DIR__, "../testdata/")
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
-const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
 #const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
+const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/Kyiv_schema.toml")
 const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
 
 # Change this to invalidate HTTP cache
