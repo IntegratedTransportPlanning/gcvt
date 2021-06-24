@@ -383,7 +383,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                     "icon-allow-overlap": true,
                     "icon-image": "arrowhead",
                     "icon-size": 1,
-                    "icon-rotate": 90, // 50% chance this is right. Switch to 270 if not
+                    "icon-rotate": 270, // 50% chance this is right. Switch to 90 if not
                     "visibility": "none",
                 },
             })
