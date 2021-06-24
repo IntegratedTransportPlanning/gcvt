@@ -93,12 +93,12 @@ function get_aggregate_flows(data, variable, independent_variables, direction, z
     scenario = independent_variables["scenario"]
     col_idx = column_name(data, variable, independent_variables)
     (grouptype, sourcecol) = direction == :incoming ? (:grouped_by_destination, :origin) : (:grouped_by_origin, :destination)
-    return map(getfield(data, grouptype)) do grp
+    return Iterators.map(getfield(data, grouptype)) do grp
         sources = grp[!, sourcecol]
         col = grp[!, col_idx]
         gen = (v for (o, v) in zip(sources, col) if o in zones)
         reduce(+, gen; init = zero(eltype(col))) # From Julia 1.6+ we can use sum(...; init = ...)
-    end
+    end |> collect
 end
 
 function get_aggregate_flows(data, variable, independent_variables, direction, ::Colon)
