@@ -415,7 +415,7 @@ end
         comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
 
         if haskey(d, "row")
-            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, split(d["row"], ','))
+            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, tryparse.(Int, split(d["row"], ',')))
         elseif comparewith == "none"
             vs = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
         else
