@@ -185,7 +185,11 @@ function load_centroids(meta)
     # NB: most of the slowness is this call here V
     zones = GeoJSON.parsefile(joinpath(DATA_ROOT, geo["filename"]))
 
-    zone_centroids = Dict()
+    #zone_centroids = Dict()
+    zone_centroids = Array{Array{Float64,1},1}(undef,length(
+        # Protect against duplicate features
+        [f.properties["CORRIDOR_FEATID"] for f in zones.features]|>unique)
+    )
     for f in zones.features
         zone_centroids[f.properties["CORRIDOR_FEATID"]] = Turf.centroid(f.geometry).coordinates
     end
