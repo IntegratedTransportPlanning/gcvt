@@ -617,14 +617,15 @@ const app = {
             // (NB: now have lots of JSON objects in querystring)
             const strings_in_query = [ "percent", "compare", "showctrl", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
 
-            const arrays_in_query = ["selectedZones", "selectedbasevars", "selectedvars"]
+            const arrays_in_query = ["selectedZones"]
+            const objs_in_query = ["selectedbasevars", "selectedvars"]
 
             const updateQS = () => {
                 const queryItems = [
                     `matVar=${state.selectedvars.dependent_variable}`,
                     ...strings_in_query.map(key => `${key}=${state[key]}`),
                     ...nums_in_query.map(key => `${key}=${state[key].toPrecision(5)}`),
-                    ...arrays_in_query.map(k => `${k}=${JSON.stringify(state[k])}`),
+                    ...[...arrays_in_query, ...objs_in_query].map(k => `${k}=${JSON.stringify(state[k])}`),
                     "z" // Fixes #132 - never end URL with a square bracket
                 ]
                 history.replaceState({},"", "?" + queryItems.join("&"))
@@ -638,6 +639,12 @@ const app = {
 
             for (let key of arrays_in_query) {
                 if (!setEqual(state[key], previousState[key])) {
+                    return updateQS()
+                }
+            }
+
+            for (let key of objs_in_query) {
+                if (!R.equals(state[key], previousState[key])) {
                     return updateQS()
                 }
             }
