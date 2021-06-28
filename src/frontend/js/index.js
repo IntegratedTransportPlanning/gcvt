@@ -791,7 +791,7 @@ function getUnit(meta, domain, variable, percent=false){
             throw new Error("unreachable")
         }
     } catch (e){
-        return "Units"
+        return "units"
     }
 }
 
