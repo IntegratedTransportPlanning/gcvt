@@ -414,6 +414,10 @@ end
         # Legacy-compat
         comparewith = get(get(selectedbasevars, "independent_variables", Dict()), "scenario", comparewith)
 
+        if comparewith == "none" && get(d,"percent", "false") == "true"
+            return jsonresp(0)
+        end
+
         if haskey(d, "row")
             vs = get_aggregate_flows(data, variable, independent_variables, :incoming, tryparse.(Int, split(d["row"], ',')))
         elseif comparewith == "none"
