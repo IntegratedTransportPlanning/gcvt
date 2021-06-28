@@ -951,6 +951,7 @@ const flowLineControls = state => {
                         onclick: e => {
                             update({
                                 selectedZones: state.selectedZones.filter(x => x != id),
+                                centroidLineWeights: null,
                             })
                             actions.fetchZonesData()
                         },
