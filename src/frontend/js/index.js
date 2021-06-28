@@ -900,7 +900,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
                 }),
                 
                 // TODO: investigate why this doesn't get set on initial map load
-                value: state[base][iv["id"]],
+                value: state[base]["independent_variables"][iv["id"]],
                 onchange: e => {
 
                     // Not sure I like this
