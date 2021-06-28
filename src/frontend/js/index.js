@@ -58,9 +58,7 @@ import * as turf from "@turf/turf"
 
 import * as R from "ramda"
 
-import ITPLOGO from "../../resources/itp.png"
-import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
-import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
+// import ITPLOGO from "../../resources/itp.png"
 import ARROWHEAD from "../../resources/arrowhead.png"
 
 
@@ -993,26 +991,28 @@ const menuView = async state => {
         // translate(0,0) is required to put it in front of mapbox.
         m('div', {style: 'pointer-events: none; height: 100vh; position: relative; transform: translate(0,0)'}, [
 
+            // TODO: un-nuke this
+            //          presumably for an internal tool this matters much less
             // Sponsor logos. Most important stuff first.
             // We create an invisible div the size of the screen, rotate it upside down, then float a smaller div left.
             // That puts us in the bottom right corner. There are other ways to do this, but this works.
-            m('div', {style: 'height: 100vh; width: 100%; position: absolute; transform: rotate(180deg)'},
-                m('div', {style: 'float: left; transform: rotate(180deg); margin: 5px'},
-                    m(UI.Card, {style: 'pointer-events: auto', fluid: true},
-                        [
-                            m('a', {href: "https://www.itpworld.net", target: "_blank"},
-                                m('img', {src: ITPLOGO, width: 60, style: 'margin-right: 5px'})
-                            ),
-                            m('a', {href: "https://www.worldbank.org", target: "_blank"},
-                                m('img', {src: WBLOGO, height: 60, style: 'padding: 8px; margin-right: 5px'})
-                            ),
-                            m('a', {href: "http://www.kgreengrowthpartnership.org/", target: "_blank"},
-                                m('img', {src: KGFLOGO, height: 60})
-                            ),
-                        ]
-                    )
-                ),
-            ),
+            // m('div', {style: 'height: 100vh; width: 100%; position: absolute; transform: rotate(180deg)'},
+            //     m('div', {style: 'float: left; transform: rotate(180deg); margin: 5px'},
+            //         m(UI.Card, {style: 'pointer-events: auto', fluid: true},
+            //             [
+            //                 m('a', {href: "https://www.itpworld.net", target: "_blank"},
+            //                     m('img', {src: ITPLOGO, width: 60, style: 'margin-right: 5px'})
+            //                 ),
+            //                 m('a', {href: "https://www.worldbank.org", target: "_blank"},
+            //                     m('img', {src: WBLOGO, height: 60, style: 'padding: 8px; margin-right: 5px'})
+            //                 ),
+            //                 m('a', {href: "http://www.kgreengrowthpartnership.org/", target: "_blank"},
+            //                     m('img', {src: KGFLOGO, height: 60})
+            //                 ),
+            //             ]
+            //         )
+            //     ),
+            // ),
 
             // Legend
             state.data.bounds &&
