@@ -440,18 +440,14 @@ const app = {
 
                 const independent_variables = Object.fromEntries(allmeta.independent_variables.map(iv => [iv.id, null]))
 
-                // TODO: stop this from clobbering stuff picked in URL
-                //       (which it doesn't do yet but it will do soon)
                 const selectedbasevars = merge({dependent_variable: null, independent_variables}, allmeta.project.defaults)
                 const selectedvars = selectedbasevars
 
-                // TODO: read default from yaml properties
                 // TODO: split setting from defaults away from getting metadata
-                // TODO: investigate `old`, isn't it always `undefined`?
                 update({
                     meta: allmeta,
-                    selectedvars,
-                    selectedbasevars,
+                    selectedvars: initial.selectedvars ?? selectedvars,
+                    selectedbasevars: initial.selectedbasevars ?? selectedbasevars,
                 })
 
 
