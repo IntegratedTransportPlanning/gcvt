@@ -11,7 +11,7 @@ using TOML
 
 
 #const DATA_ROOT = joinpath(@__DIR__, "../data/")
-const DATA_ROOT = get(ENV, "ITO_OD_DATA_ROOT", joinpath(@__DIR__, "../testdata/processed"))
+const DATA_ROOT = get(ENV, "ITP_OD_DATA_ROOT", joinpath(@__DIR__, "../testdata/processed"))
 
 # Environment variables
 const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
