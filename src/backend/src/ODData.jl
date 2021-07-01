@@ -66,7 +66,7 @@ function original_column_names(d)
     names(d.data)[3:end]
 end
 
-function issuperdict(maybesuper::Dict{A,B}, maybemini::Dict{A,C}) where {A, B, C}
+function issuperdict(maybesuper::Dict{A,B}, maybemini::Dict{C,D}) where {A, B, C, D}
     for (k,v) in maybemini
         haskey(maybesuper, k) || return false
         issuperdict(maybesuper[k], v) || return false
