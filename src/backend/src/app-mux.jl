@@ -1,3 +1,36 @@
+using Mux
+using JSON3
+
+# Turn off detailed error messages; tell browser to cache things
+const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
+
+# Whether to start the server
+const ITP_OD_SERVER_LAUNCH = get(ENV, "ITP_OD_SERVER_LAUNCH", "0") == "1"
+
+const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
+
+# Change this to invalidate HTTP cache
+const API_VERSION = IN_PRODUCTION ? "0.0.2" : rand(['a':'z'..., string.(0:9)...], 4) |> join
+
+jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :headers => merge(Dict(
+    "Content-Type" => "application/json",
+    "Cache-Control" => IN_PRODUCTION ? "public, max-age=$(365 * 24 * 60 * 60)" : "max-age=0", # cache for a year (max recommended). Change API_VERSION to invalidate
+), headers))
+
+@app app = (
+    IN_PRODUCTION ? Mux.prod_defaults : Mux.defaults,
+    page("/", req -> jsonresp(42)), # some kind of debug page or API help page
+    route("/status", req -> jsonresp(
+        Dict("status" => "loading");
+        headers = Dict(
+            "Cache-Control" => "max-age=0"
+        )
+    )),
+    Mux.notfound()
+)
+
+server_task = ITP_OD_SERVER_LAUNCH ? serve(app, PORT) : nothing 
+
 @enum FlowDirection Incoming Outgoing
 
 using Base.Iterators: product
@@ -14,13 +47,8 @@ using TOML
 const DATA_ROOT = get(ENV, "ITP_OD_DATA_ROOT", joinpath(@__DIR__, "../testdata/processed"))
 
 # Environment variables
-const IN_PRODUCTION = get(ENV, "ITP_OD_PROD", "0") == "1"
 #const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "pct_meta.toml")
 const SCHEMA_PATH = get(ENV, "ITP_OD_SCHEMA_PATH", "../testdata/processed/TEST_PROJECT_PLEASE_IGNORE_KYIV/schema.toml")
-const PORT = parse(Int,get(ENV, "ITP_OD_BACKEND_PORT", "2017"))
-
-# Change this to invalidate HTTP cache
-const API_VERSION = IN_PRODUCTION ? "0.0.2" : rand(['a':'z'..., string.(0:9)...], 4) |> join
 
 
 """
@@ -287,13 +315,6 @@ QUANTILES = (0.1, 0.9)
 
 import HTTP
 
-using Mux
-using JSON3
-
-jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :headers => merge(Dict(
-    "Content-Type" => "application/json",
-    "Cache-Control" => IN_PRODUCTION ? "public, max-age=$(365 * 24 * 60 * 60)" : "max-age=0", # cache for a year (max recommended). Change API_VERSION to invalidate
-), headers))
 
 queryparams(req) = HTTP.URIs.queryparams(req[:query])
 
@@ -305,6 +326,12 @@ end
 @app app = (
     IN_PRODUCTION ? Mux.prod_defaults : Mux.defaults,
     page("/", req -> jsonresp(42)), # some kind of debug page or API help page
+    route("/status", req -> jsonresp(
+        Dict("status" => "ready");
+        headers = Dict(
+            "Cache-Control" => "max-age=0"
+        )
+    )),
     # need to pick some route names
     #
     # Compatibility with GCVT:
@@ -387,6 +414,7 @@ end
 )
 
 println("Serving $SCHEMA_PATH backend on port $PORT...")
-IN_PRODUCTION && wait(
-    serve(app, PORT)
+ITP_OD_SERVER_LAUNCH && wait(
+    server_task
+    # serve(app, PORT)
 )
