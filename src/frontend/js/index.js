@@ -176,8 +176,6 @@ const DEFAULT_POSITION = {
 const DEFAULTS = {
     meta: {
         project: {},
-        od_matrices: {},
-        scenarios: {},
     },
     data: {
         variable: "",
