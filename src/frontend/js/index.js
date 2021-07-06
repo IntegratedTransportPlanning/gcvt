@@ -491,6 +491,7 @@ const app = {
 
                 // TODO: Stop hard coding these two independent variables
                 // We need to iterate over all of them
+                // I feel like these four lines aren't used but when I delete them everything breaks
                 const compareYear = base.year
                 const compareWith = compare ? base.scenario : "none"
                 base.scenario  = compare ? base.scenario : "none" 
