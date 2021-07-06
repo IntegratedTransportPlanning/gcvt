@@ -118,7 +118,6 @@ If `zones` is not `:`, only sum flows from/to those zones.
 Motivation: chloropleth once you've selected one or more zones.
 """
 function get_aggregate_flows(data, variable, independent_variables, direction, zones)
-    scenario = independent_variables["scenario"]
     col_idx = column_name(data, variable, independent_variables)
     (grouptype, sourcecol) = direction == :incoming ? (:grouped_by_destination, :origin) : (:grouped_by_origin, :destination)
     return Iterators.map(getfield(data, grouptype)) do grp
