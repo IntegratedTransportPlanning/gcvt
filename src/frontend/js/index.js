@@ -1154,13 +1154,6 @@ function arrayToHumanList(array){
     return array.slice(0,-1).reduce((l,r) => `${l}, ${r}`) + ` and ${array.slice(-1)}`
 }
 
-function getScenMinMaxStep(scenario){
-    const min = scenario ? Math.min(...scenario.at) : 2020
-    const max = scenario ? Math.max(...scenario.at) : 2030
-    const step = scenario ? (max - min) / (scenario.at.length - 1) : 5
-    return {min, max, step}
-}
-
 (async () => states.map(await menuView))()
 
 
