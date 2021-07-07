@@ -730,10 +730,11 @@ function meta2options(metadata) {
 // then hold dependent value & all but one IV fixed and see what other IVs fixed
 function scenarios_with(meta, variable) {
     const v = meta.od_matrices[variable]
-    if (v === undefined)
+    if (v === undefined) {
         return {}
-    else
+    } else {
         return R.pickBy((_, key) => R.contains(key, v.scenarios_with), meta.scenarios)
+    }
 }
 
 const Legend = () => {
