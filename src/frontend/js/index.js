@@ -773,11 +773,7 @@ const Legend = () => {
 function getUnit(meta, domain, variable, percent=false){
     if (percent) return "%"
     try {
-        if (domain == "od_matrices") {
-            return meta.od_matrices[variable].unit
-        } else {
-            throw new Error("unreachable")
-        }
+        return meta.dependent_variables.find(x=>x.id == variable)?.units
     } catch (e){
         return "units"
     }
