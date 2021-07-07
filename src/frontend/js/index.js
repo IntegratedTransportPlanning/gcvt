@@ -680,42 +680,38 @@ const { update, states, actions } =
 
 
 // Mapbox action callbacks
-{
+map.on('click', 'zones', actions.clickZone)
 
-    map.on('click', 'zones', actions.clickZone)
+map.on('mousemove', 'zones', event => {
+    update(state => {
+        const layer = state.data
+        const {CORRIDOR_FEATNAME: NAME, CORRIDOR_FEATID: fid} = event.features[0].properties
+        const value =
+            numberToHuman(layer.values[fid - 1], state) +
+            (state.compare && state.percent ? "" : " ") +
+            (layer.unit || "")
 
-    map.on('mousemove', 'zones', event => {
-        update(state => {
-            const layer = state.data
-            const {CORRIDOR_FEATNAME: NAME, CORRIDOR_FEATID: fid} = event.features[0].properties
-            const value =
-                numberToHuman(layer.values[fid - 1], state) +
-                (state.compare && state.percent ? "" : " ") +
-                (layer.unit || "")
-
-            return merge(state, {
-                    mapUI: {
-                        hover: oldhover => {
-                            if (oldhover) {
-                                oldhover.remove()
-                            }
-                            return new mapboxgl.Popup({closeButton: false})
-                                .setLngLat(event.lngLat)
-                                .setHTML(`${NAME}<br>${value}`)
-                                .addTo(map)
-                                .trackPointer()
-                        },
-                    }
-            })
+        return merge(state, {
+                mapUI: {
+                    hover: oldhover => {
+                        if (oldhover) {
+                            oldhover.remove()
+                        }
+                        return new mapboxgl.Popup({closeButton: false})
+                            .setLngLat(event.lngLat)
+                            .setHTML(`${NAME}<br>${value}`)
+                            .addTo(map)
+                            .trackPointer()
+                    },
+                }
         })
     })
+})
 
-    map.on('mouseleave', 'zones', event => {
-        const hover = states().mapUI.hover
-        hover && hover.remove()
-    })
-
-}
+map.on('mouseleave', 'zones', event => {
+    const hover = states().mapUI.hover
+    hover && hover.remove()
+})
 
 
 // HTML Views
