@@ -339,11 +339,6 @@ import HTTP
 
 queryparams(req) = HTTP.URIs.queryparams(req[:query])
 
-# Just a hack while the frontend still expects an array
-function fill_up(dict)
-    map(idx -> get(dict, idx, 0), 1:524)
-end
-
 @app app = (
     IN_PRODUCTION ? Mux.prod_defaults : Mux.defaults,
     page("/", req -> jsonresp(42)), # some kind of debug page or API help page
@@ -428,8 +423,7 @@ end
             comparator = get_aggregate_flows(data, variable, base_independent_variables, :incoming, :)
             vs = main .- comparator
         end
-        # Ordered for debugging reasons.
-        fill_up(OrderedDict(zip(destinations(data), vs))) |> jsonresp
+        vs |> jsonresp
     end,
     Mux.notfound()
 )
