@@ -836,9 +836,10 @@ function getDescriptions(state) {
 
 function getDescription(varname, meta) {
     // TODO: use pretty names if they exist
-    const desc = meta?.find(el=>typeof(el) == "object" && el.name == varname)?.description
+    const details = meta?.find(el=> el.id == varname)
+    const desc = details?.description
     if (desc === undefined) return desc
-    return m('p', m('b', varname), ": " + desc)
+    return m('p', m('b', details.name ?? varname), ": " + desc)
 }
 
 async function ivSelectors(state, opts = {base: false}) {
