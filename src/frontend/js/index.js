@@ -921,11 +921,11 @@ async function getDomain(dependent_variable, independent_variables = {}, pick = 
 
 const flowLineControls = state => {
     return [
-        state.selectedvars.dependent_variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
+        state.selectedvars.dependent_variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see incoming flows)")],
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
-                m('span', { class: 'header' }, 'Showing absolute flows for:'),
+                m('span', { class: 'header' }, 'Showing incoming flows for:'),
                 m('ul', state.selectedZones.map(id => m('li',
                     m(UI.Button, {
                         label: zoneToHuman(id,state),

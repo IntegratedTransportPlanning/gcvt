@@ -415,7 +415,7 @@ queryparams(req) = HTTP.URIs.queryparams(req[:query])
         end
 
         if haskey(d, "row")
-            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, tryparse.(Int, split(d["row"], ',')))
+            vs = get_aggregate_flows(data, variable, independent_variables, :outgoing, tryparse.(Int, split(d["row"], ',')))
         elseif comparewith == "none"
             vs = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
         else
