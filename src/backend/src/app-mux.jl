@@ -240,7 +240,29 @@ function load_data(meta)
         df[!, :origin] = df[!, 1]
         df[!, :destination] = df[!, 2]
 
+        # Data cleaning
+        # Ensure that every origin/destination has at least one destination/origin
         df = df[!, ["origin", "destination", column_names...]]
+
+        sources = df[!, :origin] |> unique |> sort
+        sinks = df[!, :destination] |> unique |> sort
+        places = vcat(sources, sinks) |> unique
+
+        missing_sources = setdiff(places, sources) # Places not used as sources
+        missing_sinks = setdiff(places, sinks) # Places not used as sources
+
+        arbitrary_place = first(places)
+
+        for source in missing_sources
+            push!(df, [source, arbitrary_place, zeros(length(column_names))...])
+        end
+
+        for sink in missing_sinks
+            push!(df, [arbitrary_place, sink, zeros(length(column_names))...])
+        end
+
+        sort!(df, :origin)
+        # Data cleaning ends
 
         # TODO: support multiple files
         return ODData(df, meta)
