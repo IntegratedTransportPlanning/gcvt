@@ -210,15 +210,7 @@ const DEFAULTS = {
  */
 function stateFromSearch(search) {
     const queryString = new URLSearchParams(search)
-    let qsObj = Object.fromEntries(queryString)
-
-    // Floats in the query string
-    // Used to be used for lat/lng/zoom but that's now in the anchor
-    for (let k of []) {
-        if (qsObj.hasOwnProperty(k)) {
-            qsObj[k] = parseFloat(qsObj[k])
-        }
-    }
+    const qsObj = Object.fromEntries(queryString)
 
     // Bools in the query string
     for (let k of ["percent","compare","showctrl","showDesc","showClines","showChart"]) {
@@ -227,7 +219,7 @@ function stateFromSearch(search) {
         }
     }
 
-    // Arrays / objects in the querty string
+    // Arrays / objects / numbers in the query string
     for (let k of ["selectedZones", "selectedbasevars", "selectedvars"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
