@@ -384,7 +384,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
     }
 
     map.on('load', loadLayers)
-    map.on('sourcedata', _ => {
+    map.on('sourcedata', () => {
         // Get the names of each zone from the geometry. Probably this should
         // be in the scenario pack and provided by the api instead.
         if (map.getSource('zones') && map.isSourceLoaded('zones')) {
