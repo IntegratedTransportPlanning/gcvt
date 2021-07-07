@@ -613,7 +613,7 @@ const app = {
                     ...[...arrays_in_query, ...objs_in_query].map(k => `${k}=${JSON.stringify(state[k])}`),
                     "z" // Fixes #132 - never end URL with a square bracket
                 ]
-                history.replaceState({},"", "?" + queryItems.join("&"))
+                history.replaceState({},"", "?" + queryItems.join("&") + window.location.hash)
             }
 
             for (let key of nums_in_query) {
