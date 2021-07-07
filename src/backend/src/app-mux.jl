@@ -421,7 +421,7 @@ queryparams(req) = HTTP.URIs.queryparams(req[:query])
         else
             main = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
             comparator = get_aggregate_flows(data, variable, base_independent_variables, :incoming, :)
-            vs = main .- comparator
+            vs = (main .- comparator) ./ ((get(d, "percent", "false") == "true") ? main : 1)
         end
         vs |> jsonresp
     end,
