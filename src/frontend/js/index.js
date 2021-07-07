@@ -1212,8 +1212,8 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     const id = selectedZones[0] - 1
     const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1]))
     const sortedValues = sort(R.flatten(centroidLineWeights)) // This is quick and dirty. Probably want top 40% per zone rather than overall
-    const centroidBounds =
-        [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+    const centroidBounds = [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+    if (R.equals(centroidBounds, [0, 0])) return
     const weights = centroidLineWeights.map(x=>x.map(
         d3.scaleLinear(centroidBounds, [0, 1]).clamp(true)))
     const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
