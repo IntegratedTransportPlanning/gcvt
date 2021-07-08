@@ -240,7 +240,29 @@ function load_data(meta)
         df[!, :origin] = df[!, 1]
         df[!, :destination] = df[!, 2]
 
+        # Data cleaning
+        # Ensure that every origin/destination has at least one destination/origin
         df = df[!, ["origin", "destination", column_names...]]
+
+        sources = df[!, :origin] |> unique |> sort
+        sinks = df[!, :destination] |> unique |> sort
+        places = vcat(sources, sinks) |> unique
+
+        missing_sources = setdiff(places, sources) # Places not used as sources
+        missing_sinks = setdiff(places, sinks) # Places not used as sources
+
+        arbitrary_place = first(places)
+
+        for source in missing_sources
+            push!(df, [source, arbitrary_place, zeros(length(column_names))...])
+        end
+
+        for sink in missing_sinks
+            push!(df, [arbitrary_place, sink, zeros(length(column_names))...])
+        end
+
+        sort!(df, :origin)
+        # Data cleaning ends
 
         # TODO: support multiple files
         return ODData(df, meta)
@@ -316,11 +338,6 @@ import HTTP
 
 
 queryparams(req) = HTTP.URIs.queryparams(req[:query])
-
-# Just a hack while the frontend still expects an array
-function fill_up(dict)
-    map(idx -> get(dict, idx, 0), 1:524)
-end
 
 @app app = (
     IN_PRODUCTION ? Mux.prod_defaults : Mux.defaults,
@@ -398,16 +415,15 @@ end
         end
 
         if haskey(d, "row")
-            vs = get_aggregate_flows(data, variable, independent_variables, :incoming, tryparse.(Int, split(d["row"], ',')))
+            vs = get_aggregate_flows(data, variable, independent_variables, :outgoing, tryparse.(Int, split(d["row"], ',')))
         elseif comparewith == "none"
             vs = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
         else
             main = get_aggregate_flows(data, variable, independent_variables, :incoming, :)
             comparator = get_aggregate_flows(data, variable, base_independent_variables, :incoming, :)
-            vs = main .- comparator
+            vs = (main .- comparator) ./ ((get(d, "percent", "false") == "true") ? main : 1)
         end
-        # Ordered for debugging reasons.
-        fill_up(OrderedDict(zip(destinations(data), vs))) |> jsonresp
+        vs |> jsonresp
     end,
     Mux.notfound()
 )

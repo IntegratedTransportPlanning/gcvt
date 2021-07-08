@@ -210,15 +210,7 @@ const DEFAULTS = {
  */
 function stateFromSearch(search) {
     const queryString = new URLSearchParams(search)
-    let qsObj = Object.fromEntries(queryString)
-
-    // Floats in the query string
-    // Used to be used for lat/lng/zoom but that's now in the anchor
-    for (let k of []) {
-        if (qsObj.hasOwnProperty(k)) {
-            qsObj[k] = parseFloat(qsObj[k])
-        }
-    }
+    const qsObj = Object.fromEntries(queryString)
 
     // Bools in the query string
     for (let k of ["percent","compare","showctrl","showDesc","showClines","showChart"]) {
@@ -227,7 +219,7 @@ function stateFromSearch(search) {
         }
     }
 
-    // Arrays / objects in the querty string
+    // Arrays / objects / numbers in the query string
     for (let k of ["selectedZones", "selectedbasevars", "selectedvars"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
@@ -392,7 +384,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
     }
 
     map.on('load', loadLayers)
-    map.on('sourcedata', _ => {
+    map.on('sourcedata', () => {
         // Get the names of each zone from the geometry. Probably this should
         // be in the scenario pack and provided by the api instead.
         if (map.getSource('zones') && map.isSourceLoaded('zones')) {
@@ -621,7 +613,7 @@ const app = {
                     ...[...arrays_in_query, ...objs_in_query].map(k => `${k}=${JSON.stringify(state[k])}`),
                     "z" // Fixes #132 - never end URL with a square bracket
                 ]
-                history.replaceState({},"", "?" + queryItems.join("&"))
+                history.replaceState({},"", "?" + queryItems.join("&") + window.location.hash)
             }
 
             for (let key of nums_in_query) {
@@ -688,42 +680,38 @@ const { update, states, actions } =
 
 
 // Mapbox action callbacks
-{
+map.on('click', 'zones', actions.clickZone)
 
-    map.on('click', 'zones', actions.clickZone)
+map.on('mousemove', 'zones', event => {
+    update(state => {
+        const layer = state.data
+        const {CORRIDOR_FEATNAME: NAME, CORRIDOR_FEATID: fid} = event.features[0].properties
+        const value =
+            numberToHuman(layer.values[fid - 1], state) +
+            (state.compare && state.percent ? "" : " ") +
+            (layer.unit || "")
 
-    map.on('mousemove', 'zones', event => {
-        update(state => {
-            const layer = state.data
-            const {CORRIDOR_FEATNAME: NAME, CORRIDOR_FEATID: fid} = event.features[0].properties
-            const value =
-                numberToHuman(layer.values[fid - 1], state) +
-                (state.compare && state.percent ? "" : " ") +
-                (layer.unit || "")
-
-            return merge(state, {
-                    mapUI: {
-                        hover: oldhover => {
-                            if (oldhover) {
-                                oldhover.remove()
-                            }
-                            return new mapboxgl.Popup({closeButton: false})
-                                .setLngLat(event.lngLat)
-                                .setHTML(`${NAME}<br>${value}`)
-                                .addTo(map)
-                                .trackPointer()
-                        },
-                    }
-            })
+        return merge(state, {
+                mapUI: {
+                    hover: oldhover => {
+                        if (oldhover) {
+                            oldhover.remove()
+                        }
+                        return new mapboxgl.Popup({closeButton: false})
+                            .setLngLat(event.lngLat)
+                            .setHTML(`${NAME}<br>${value}`)
+                            .addTo(map)
+                            .trackPointer()
+                    },
+                }
         })
     })
+})
 
-    map.on('mouseleave', 'zones', event => {
-        const hover = states().mapUI.hover
-        hover && hover.remove()
-    })
-
-}
+map.on('mouseleave', 'zones', event => {
+    const hover = states().mapUI.hover
+    hover && hover.remove()
+})
 
 
 // HTML Views
@@ -742,10 +730,11 @@ function meta2options(metadata) {
 // then hold dependent value & all but one IV fixed and see what other IVs fixed
 function scenarios_with(meta, variable) {
     const v = meta.od_matrices[variable]
-    if (v === undefined)
+    if (v === undefined) {
         return {}
-    else
+    } else {
         return R.pickBy((_, key) => R.contains(key, v.scenarios_with), meta.scenarios)
+    }
 }
 
 const Legend = () => {
@@ -784,11 +773,7 @@ const Legend = () => {
 function getUnit(meta, domain, variable, percent=false){
     if (percent) return "%"
     try {
-        if (domain == "od_matrices") {
-            return meta.od_matrices[variable].unit
-        } else {
-            throw new Error("unreachable")
-        }
+        return meta.dependent_variables.find(x=>x.id == variable)?.units
     } catch (e){
         return "units"
     }
@@ -851,9 +836,10 @@ function getDescriptions(state) {
 
 function getDescription(varname, meta) {
     // TODO: use pretty names if they exist
-    const desc = meta?.find(el=>typeof(el) == "object" && el.name == varname)?.description
+    const details = meta?.find(el=> el.id == varname)
+    const desc = details?.description
     if (desc === undefined) return desc
-    return m('p', m('b', varname), ": " + desc)
+    return m('p', m('b', details.name ?? varname), ": " + desc)
 }
 
 async function ivSelectors(state, opts = {base: false}) {
@@ -936,7 +922,7 @@ const flowLineControls = state => {
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
-                m('span', { class: 'header' }, 'Showing absolute flows for:'),
+                m('span', { class: 'header' }, 'Showing incoming flows for:'),
                 m('ul', state.selectedZones.map(id => m('li',
                     m(UI.Button, {
                         label: zoneToHuman(id,state),
@@ -1226,8 +1212,8 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     const id = selectedZones[0] - 1
     const originPoints = selectedZones.map(x => turf.point(zoneCentres[x-1]))
     const sortedValues = sort(R.flatten(centroidLineWeights)) // This is quick and dirty. Probably want top 40% per zone rather than overall
-    const centroidBounds =
-        [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+    const centroidBounds = [d3.quantile(sortedValues, 0.6), d3.quantile(sortedValues, 0.99)]
+    if (R.equals(centroidBounds, [0, 0])) return
     const weights = centroidLineWeights.map(x=>x.map(
         d3.scaleLinear(centroidBounds, [0, 1]).clamp(true)))
     const weightToColor = weight => `hsl(${230 + weight * 53}, ${20 + weight * 80}%, 32%)`
