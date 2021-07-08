@@ -662,6 +662,7 @@ const app = {
             if (state.selectedvars !== previousState.selectedvars ||
                 state.centroidLineWeights !== previousState.centroidLineWeights ||
                 state.showClines !== previousState.showClines) {
+                showZoneBorders(state)
                 if (!state.selectedvars.dependent_variable || !state.centroidLineWeights || !state.showClines) {
                     hideCentroids(state)
                 } else {
@@ -1193,8 +1194,7 @@ function normalise(v, bounds, good) {
 const hideLayer = id => map.setLayoutProperty(id, "visibility", "none")
 const showLayer = id => map.setLayoutProperty(id, "visibility", "visible")
 
-function hideCentroids({selectedZones}) {
-    R.forEach(hideLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
+function showZoneBorders({selectedZones}) {
     if (selectedZones.length) {
         // Currently looks a bit too shit to use, but maybe we'll want something like it
         // in the future.
@@ -1206,7 +1206,10 @@ function hideCentroids({selectedZones}) {
     } else {
         hideLayer("zoneBorders")
     }
+}
 
+function hideCentroids() {
+    R.forEach(hideLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
 }
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
@@ -1259,8 +1262,6 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
             },
         ))
     })
-
-    map.setLayoutProperty("zoneBorders", "visibility", "none")
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
     map.getSource("zoneHalos").setData(turf.featureCollection(zoneHalos))
