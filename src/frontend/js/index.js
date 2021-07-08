@@ -1032,6 +1032,7 @@ const menuView = async state => {
                 m('div', {class: 'gcvt-ctrl', },
                     m(UI.Button, {
                         label: state.linkCopied ? 'Link copied!' : 'Copy link',
+                        class: state.linkCopied ? 'fadeout' : (state.linkCopied !== undefined) && 'fadein',
                         fluid: true,
                         align: 'left',
                         outlined: true,

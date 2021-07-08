@@ -29,6 +29,14 @@ body { margin:0; padding:0; }
 .gcvt-ctrl button:first-child {
     margin-top: 0;
 }
+.gcvt-ctrl button.fadeout > span {
+    opacity: 0;
+    transition: opacity 1s ease 1s;
+}
+.gcvt-ctrl button.fadein > span {
+    opacity: 1;
+    transition: opacity 1s;
+}
 .gcvt-ctrl .header {
     font-size: 1rem;
     font-weight: 700;
