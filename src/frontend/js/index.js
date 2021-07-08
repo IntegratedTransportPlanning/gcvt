@@ -932,7 +932,7 @@ async function getDomain(dependent_variable, independent_variables = {}, pick = 
 
 const flowLineControls = state => {
     return [
-        state.selectedvars.dependent_variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
+        state.selectedvars.dependent_variable !== "" && state.selectedZones.length == 0 && !state.compare && [m('br'), m('p', "(Click a zone to see outgoing flows)")],
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
