@@ -23,7 +23,8 @@ jsonresp(obj; headers = Dict()) = Dict(:body => String(JSON3.write(obj)), :heade
     route("/status", req -> jsonresp(
         Dict("status" => "loading");
         headers = Dict(
-            "Cache-Control" => "max-age=0"
+            "Cache-Control" => "max-age=0",
+            "Access-Control-Allow-Origin" => "*",
         )
     )),
     Mux.notfound()
@@ -345,7 +346,8 @@ queryparams(req) = HTTP.URIs.queryparams(req[:query])
     route("/status", req -> jsonresp(
         Dict("status" => "ready");
         headers = Dict(
-            "Cache-Control" => "max-age=0"
+            "Cache-Control" => "max-age=0",
+            "Access-Control-Allow-Origin" => "*",
         )
     )),
     # need to pick some route names
