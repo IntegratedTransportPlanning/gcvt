@@ -1040,7 +1040,7 @@ const menuView = async state => {
                             toClipboard(document.location.href)
                             // Provide feedback to user
                             e.target.innerText = "Link copied!";
-                            setTimeout(_ => e.target.innerText = "Copy link", 3000)
+                            setTimeout(_ => e.target.innerText = "Copy link", 2000)
                         },
                     }),
                     m(UI.Button, {
