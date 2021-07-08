@@ -1031,7 +1031,7 @@ const menuView = async state => {
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
                     m(UI.Button, {
-                        label: 'Copy link',
+                        label: state.linkCopied ? 'Link copied!' : 'Copy link',
                         fluid: true,
                         align: 'left',
                         outlined: true,
@@ -1039,8 +1039,10 @@ const menuView = async state => {
                         onclick: e => {
                             toClipboard(document.location.href)
                             // Provide feedback to user
-                            e.target.innerText = "Link copied!";
-                            setTimeout(_ => e.target.innerText = "Copy link", 2000)
+                            update({ linkCopied: true })
+                            setTimeout(() => {
+                                update({ linkCopied: false })
+                            }, 2000)
                         },
                     }),
                     m(UI.Button, {
