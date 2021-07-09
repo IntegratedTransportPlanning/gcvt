@@ -886,8 +886,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
                     return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + (o.name ?? o.id), style: (valid.includes(o.id) ? "" : "background:lightgrey;")}
                 }),
                 
-                // TODO: investigate why this doesn't get set on initial map load
-                value: state[base]["independent_variables"][iv["id"]],
+                value: state[base]["independent_variables"][iv["id"]] ?? iv['values'][0].id,
                 onchange: e => {
 
                     // Not sure I like this
