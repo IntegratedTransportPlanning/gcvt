@@ -662,6 +662,7 @@ const app = {
             if (state.selectedvars !== previousState.selectedvars ||
                 state.centroidLineWeights !== previousState.centroidLineWeights ||
                 state.showClines !== previousState.showClines) {
+                showZoneBorders(state)
                 if (!state.selectedvars.dependent_variable || !state.centroidLineWeights || !state.showClines) {
                     hideCentroids(state)
                 } else {
@@ -885,8 +886,7 @@ const ivSelector = async (state, id, opts = {base: false}) => {
                     return {id: o.id, value: o.id, label: (valid.includes(o.id) ? "" : "Unavailable: ") + (o.name ?? o.id), style: (valid.includes(o.id) ? "" : "background:lightgrey;")}
                 }),
                 
-                // TODO: investigate why this doesn't get set on initial map load
-                value: state[base]["independent_variables"][iv["id"]],
+                value: state[base]["independent_variables"][iv["id"]] ?? iv['values'][0].id,
                 onchange: e => {
 
                     // Not sure I like this
@@ -918,7 +918,7 @@ async function getDomain(dependent_variable, independent_variables = {}, pick = 
 
 const flowLineControls = state => {
     return [
-        state.selectedvars.dependent_variable !== "" && state.selectedZones.length == 0 && [m('br'), m('p', "(Click a zone to see incoming flows)")],
+        state.selectedvars.dependent_variable !== '' && state.selectedZones.length === 0 && !state.compare && [m('br'), m('p', '(Click a zone to see incoming flows)')],
 
         state.selectedZones.length !== 0 && [
             m('div', { class: 'flowlistholder' },
@@ -966,6 +966,7 @@ const flowLineControls = state => {
                 }),
             ),
         ],
+        state.selectedvars.dependent_variable !== '' && state.selectedZones.length > 0 && !state.compare && [m('br'), m('p', '(Hold ctrl and click another zone to show additional flows)')],
     ]
 }
 
@@ -1017,7 +1018,8 @@ const menuView = async state => {
             m('div', {class: 'mapboxgl-ctrl'},
                 m('div', {class: 'gcvt-ctrl', },
                     m(UI.Button, {
-                        label: 'Copy link',
+                        label: state.linkCopied ? 'Link copied!' : 'Copy link',
+                        class: state.linkCopied ? 'fadeout' : (state.linkCopied !== undefined) && 'fadein',
                         fluid: true,
                         align: 'left',
                         outlined: true,
@@ -1025,8 +1027,10 @@ const menuView = async state => {
                         onclick: e => {
                             toClipboard(document.location.href)
                             // Provide feedback to user
-                            e.target.innerText = "Link copied!";
-                            setTimeout(_ => e.target.innerText = "Copy link", 3000)
+                            update({ linkCopied: true })
+                            setTimeout(() => {
+                                update({ linkCopied: false })
+                            }, 2000)
                         },
                     }),
                     m(UI.Button, {
@@ -1189,8 +1193,7 @@ function normalise(v, bounds, good) {
 const hideLayer = id => map.setLayoutProperty(id, "visibility", "none")
 const showLayer = id => map.setLayoutProperty(id, "visibility", "visible")
 
-function hideCentroids({selectedZones}) {
-    R.forEach(hideLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
+function showZoneBorders({selectedZones}) {
     if (selectedZones.length) {
         // Currently looks a bit too shit to use, but maybe we'll want something like it
         // in the future.
@@ -1202,7 +1205,10 @@ function hideCentroids({selectedZones}) {
     } else {
         hideLayer("zoneBorders")
     }
+}
 
+function hideCentroids() {
+    R.forEach(hideLayer, ["centroidLines", "flow_arrowheads", "zoneHalos"])
 }
 
 function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
@@ -1255,8 +1261,6 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
             },
         ))
     })
-
-    map.setLayoutProperty("zoneBorders", "visibility", "none")
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
     map.getSource("zoneHalos").setData(turf.featureCollection(zoneHalos))
