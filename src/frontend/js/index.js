@@ -1255,7 +1255,7 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     })
 
     map.getSource("centroidLines").setData(turf.featureCollection(centroidLines))
-    map.getSource("zoneHalos").setData(turf.featureCollection(zoneHalos))
+    //map.getSource("zoneHalos").setData(turf.featureCollection(zoneHalos))
     map.getSource("flow_arrowheads").setData(turf.featureCollection(centroidLines))
 
     map.setPaintProperty("centroidLines", "line-width", ["get", "weight"])
