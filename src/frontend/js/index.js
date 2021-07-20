@@ -825,6 +825,7 @@ const variableSelector = state => {
 }
 
 function getDescriptions(state) {
+    const projectDesc = m('p', state.meta.project.project_desc ?? "")
     const depDesc = getDescription(state.selectedvars.dependent_variable, state.meta.dependent_variables)
     const indDescs = Object.entries(state.selectedvars.independent_variables).map(
         varandval => getDescription(
@@ -832,7 +833,7 @@ function getDescriptions(state) {
             state.meta.independent_variables?.find(x=>x.id == varandval[0]).values
         )
     )
-    return [depDesc, ...indDescs]
+    return [projectDesc, depDesc, ...indDescs]
 }
 
 function getDescription(varname, meta) {
@@ -1075,11 +1076,12 @@ const menuView = async state => {
 
             // Info / description window
             state.selectedvars.dependent_variable && m('div', {
-                style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
+                style: 'position: absolute; top: 0; font-size: small; margin: 5px; width: 400px',
             },
                 (state.showDesc
                 ?  m(UI.Callout, {
-                    style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
+                    header: state.meta?.project?.project_name,
+                    style: 'padding-bottom: 0px; background: white; pointer-events: auto',
                     fluid: true,
                     onDismiss: _ => update({showDesc: false}),
                     content: getDescriptions(state),
