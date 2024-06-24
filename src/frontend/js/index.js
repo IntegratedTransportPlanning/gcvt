@@ -97,12 +97,21 @@ function erf(x) {
 const nerf = x => (1+erf(x*2-1))/2
 
 // get data from Julia:
-const getData = async endpoint =>
-    (await fetch(
+const getData = async endpoint => {
+    let slow_running = false
+    const slow = setTimeout(() => {console.log("slowly getting data..."); slow_running = true; update({somethingIsSlow: true})}, 500)
+    const data = (await fetch(
         "../api/" + endpoint + (endpoint.includes("?") ? "&" : "?") + "v=" + await API_VERSION_PROMISE)
     ).json().catch(
         e => console.error(`Error getting data from:\n/api/${endpoint}\n\n`, e)
     )
+    if (slow_running) {
+        console.log("got data")
+        update({somethingIsSlow: false})
+    }
+    clearTimeout(slow)
+    return data
+}
 
 async function getApiVersion() {
     try {
@@ -202,6 +211,7 @@ const DEFAULTS = {
     // map ind. variable names to selected values
     selectedvars: {dependent_variable: null, independent_variables: {}},
     selectedbasevars: {dependent_variable: null, independent_variables: {}},
+    somethingIsSlow: false,
 }
 
 
@@ -1033,6 +1043,7 @@ const menuView = async state => {
                         iconRight: state.showctrl ? UI.Icons.CHEVRON_UP : UI.Icons.CHEVRON_DOWN,
                         onclick: e => update({ showctrl: !state.showctrl }),
                     }),
+                    state.somethingIsSlow && m('p', 'loading...'),
                     state.showctrl && [
                         variableSelector(state),
                         state.selectedvars.dependent_variable && [
