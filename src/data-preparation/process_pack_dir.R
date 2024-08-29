@@ -74,14 +74,17 @@ process_links = function(geom, scenarios) {
   print ("Link scenarios have matching column names and types!")
 
   geom = st_transform(geom, 4326)
-
+  print ("The reproj worked")
+  
   # Crop to study area
   eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")) %>%
     st_buffer(0) %>% # Buffer to get rid of some stupid artifact.
-    st_union()
+    st_union() 
   intersection = unlist(st_intersects(eapregion, geom))
   geom = geom[intersection,]
-
+  
+  print ("The crop worked")
+  
   # Remove points
   geom = geom[grepl("LINESTRING", sapply(st_geometry(geom), st_geometry_type)),]
 
