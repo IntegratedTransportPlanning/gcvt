@@ -76,6 +76,9 @@ process_links = function(geom, scenarios) {
   geom = st_transform(geom, 4326)
   print ("The reproj worked")
   
+  # fix issues w invalid spherical coordinates 
+  sf_use_s2(FALSE)
+  
   # Crop to study area
   eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")) %>%
     st_buffer(0) %>% # Buffer to get rid of some stupid artifact.
