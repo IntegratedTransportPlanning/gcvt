@@ -121,6 +121,8 @@ process_links = function(geom, scenarios) {
 
   scenarios$dataDF = tables
   list(just_geometry, scenarios)
+  
+  print ("The links finished") 
 }
 
 # od_matrix_csv -> list of matrices
@@ -128,6 +130,7 @@ process_od_matrix <- function(metamat) {
   variables = names(metamat)[3:length(metamat)]
   od_skim = lapply(variables, function(var) acast(metamat, Orig~Dest, value.var = var))
   names(od_skim)<-variables
+  
   od_skim
 }
 
@@ -150,13 +153,21 @@ rm(temp)
 scenarios[scenarios$type=="od_matrices",]$dataDF =
   lapply(scenarios[scenarios$type=="od_matrices",]$dataDF, process_od_matrix)
 
+print ("Replaced the DFs with lists of matrices")
+
 # Save the scenarios and geometry
 dir_create(path(pack_dir, "processed"))
 saveRDS(scenarios, path(pack_dir, "processed", "scenarios.Rds"))
 write_sf(geom, path(pack_dir, "processed", "links.geojson"), delete_dsn = T, fid_column_name = "id")
 
+print("Saved the scenarios and geometry")
+
+
+
 # RData.jl can read lists with nested tibbles and matrices, but not tibbles with nested tibbles and matrices.
 saveRDS(as.list(scenarios), path(pack_dir, "processed", "julia_compat_scenarios.Rds"))
+
+print("Saved as a list")
 
 ## Other ways of saving the data for julia, but we don't use either of them any more.
 # # Unnest the scenarios data so that it can be saved more sanely
