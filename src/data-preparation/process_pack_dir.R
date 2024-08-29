@@ -117,12 +117,13 @@ process_links = function(geom, scenarios) {
   # The JSON is consumed by the client side app which doesn't need to know anything but the geometry and an id
   just_geometry = tibble(id = 0:(nrow(geom)-1), geometry = st_geometry(geom))
   # This tibble must be saved with write_sf(geom, path, fid_column_name = "id").
-  # There used to be more batshit ways of doing this.
+  # There used to be more unusual ways of doing this.
 
+  print ("The links finished") 
+  
   scenarios$dataDF = tables
   list(just_geometry, scenarios)
   
-  print ("The links finished") 
 }
 
 # od_matrix_csv -> list of matrices
