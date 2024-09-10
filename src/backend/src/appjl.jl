@@ -9,7 +9,7 @@ using Genie.Router: route, @params
 using Genie.Requests: getpayload
 
 # Generates HTML responses
-using Genie.Renderer: html
+using Genie.Renderer.Html
 
 using Memoize: @memoize
 using ProgressMeter: @showprogress
@@ -32,7 +32,10 @@ json(data; status::Int = 200) =
         "Cache-Control" => "public, max-age=$(365 * 24 * 60 * 60)", # cache for a year (max recommended). Change API_VERSION to invalidate
     ))
 
-Genie.config.session_auto_start = false
+# TODO fix this, presume it was here for a reason
+# Genie.config.session_auto_start = false
+
+
 # Default headers are supposed to go here, but they don't seem to work.
 #= Genie.config.cors_headers["Access-Control-Allow-Origin"] = "*" =#
 
