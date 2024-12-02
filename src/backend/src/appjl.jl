@@ -11,6 +11,9 @@ using Genie.Requests: getpayload
 # Generates HTML responses
 using Genie.Renderer.Html
 
+using Genie.Renderer.Json
+
+
 using Memoize: @memoize
 using ProgressMeter: @showprogress
 
@@ -22,12 +25,12 @@ import GeoJSON
 import Turf
 import VegaLite
 
-VegaLite.actionlinks(false) # Global setting - disable action button on all plots
+VegaLite.actionlinks(false) # Global sletting - disable action button on all plots
 
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
 json(data; status::Int = 200) =
-    Genie.Renderer.json(data; status = status, headers = Dict(
+    Genie.Renderer.Json.json(data; status = status, headers = Dict(
         "Access-Control-Allow-Origin" => "*",
         "Cache-Control" => "public, max-age=$(365 * 24 * 60 * 60)", # cache for a year (max recommended). Change API_VERSION to invalidate
     ))
