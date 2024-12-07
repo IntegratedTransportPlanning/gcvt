@@ -12,7 +12,7 @@ mkmbtiles() {
     local base="$(basename -s .geojson "$geojson")"
 
     mkdir -p "$outdir"
-    tippecanoe -zg -pC -f "$geojson" -o "$outdir/$base.mbtiles"
+    tippecanoe -zg -pC -f "$geojson" -e "$outdir/$base"
 }
 
 mktiledir() {
@@ -56,4 +56,6 @@ geom_extension=${geometry#*.}
 # fi
 
 mkmbtiles "$geometry" "$outdir"
-mktiledir "$outdir/$base.mbtiles" "$outdir"
+
+# Easier to just use the tippecanoe -e switch than install mbtiles
+#mktiledir "$outdir/$base.mbtiles" "$outdir"  
