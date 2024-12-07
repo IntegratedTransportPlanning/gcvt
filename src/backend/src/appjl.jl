@@ -49,7 +49,7 @@ end
 
 # Used solely to invalidate caches - increment API_VERSION if you need to do so
 route("/version") do
-    Genie.Renderer.json(Dict("version" => API_VERSION); status = 200, headers = Dict(
+    Genie.Renderer.Json.json(Dict("version" => API_VERSION); status = 200, headers = Dict(
         "Access-Control-Allow-Origin" => "*",
         "Cache-Control" => "max-age=0", # Don't cache 
     ))
