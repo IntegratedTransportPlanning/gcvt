@@ -1,4 +1,4 @@
-# GCVT but de-prototyped
+# Green Connectivity tool but de-prototyped
 
 ## Layout
 
