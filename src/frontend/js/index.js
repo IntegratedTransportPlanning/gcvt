@@ -170,6 +170,7 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
+const default_year = 2035
 
 // INITIAL STATE
 
@@ -192,9 +193,9 @@ const DEFAULTS = {
     },
     percent: true,
     compare: false,
-    scenario: "FleetElectric",
+    scenario: "DoMin",
     compareWith: "DoMin",
-    scenarioYear: 2030,
+    scenarioYear: default_year,
     compareYear: "auto",
     showctrl: true,
     mapReady: false,
@@ -421,7 +422,7 @@ const app = {
             updateScenario: (scenario, scenarioYear) => {
                 update(state => {
                     scenarioYear = Number(scenarioYear)
-                    const years = state.meta.scenarios[scenario]["at"] || [2030]
+                    const years = state.meta.scenarios[scenario]["at"] || [default_year]
                     if (!years.includes(scenarioYear)){
                         scenarioYear = years[0]
                     }
@@ -437,7 +438,7 @@ const app = {
                     if (year !== "auto") {
                         // Validate year
                         year = Number(year)
-                        const years = state.meta.scenarios[scenario]["at"] || [2030]
+                        const years = state.meta.scenarios[scenario]["at"] || [default_year]
                         if (!years.includes(year)){
                             year = years[0]
                         }
@@ -1246,7 +1247,7 @@ function arrayToHumanList(array){
 
 function getScenMinMaxStep(scenario){
     const min = scenario ? Math.min(...scenario.at) : 2020
-    const max = scenario ? Math.max(...scenario.at) : 2030
+    const max = scenario ? Math.max(...scenario.at) : default_year
     const step = scenario ? (max - min) / (scenario.at.length - 1) : 5
     return {min, max, step}
 }
