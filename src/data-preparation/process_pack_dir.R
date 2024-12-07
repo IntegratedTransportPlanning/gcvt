@@ -18,6 +18,8 @@ read_scenarios = function(pack_dir) {
       for (ypath in dir_ls(tpath)) {
         scenarios[nrow(scenarios) + 1,] = list(
           basename(spath), basename(ypath) %>% path_ext_remove() %>% as.integer(), basename(tpath), list(read_csv(ypath)))
+        print("found this dataframe:")
+        print(c(basename(spath), basename(ypath) %>% path_ext_remove() %>% as.integer(), basename(tpath)))
       }
     }
   }
@@ -51,8 +53,10 @@ process_links = function(geom, scenarios) {
   })
 
   # Assert all scenarios contain the same columns and types
-  print (paste("scenarios is length : ", length(scenarios)))
-  for (i in 1:length(scenarios)) {
+  print (paste("scenarios is  : ", names(scenarios)))
+  print (tables[1])
+  print (tables[0])
+  for (i in 1:nrow(scenarios)) {
     check_names = all(names(tables[[i]]) == names(tables[[2]]))
     check_types = all(sapply(tables[[i]], typeof) == sapply(tables[[2]], typeof))
     if (!check_names) {
@@ -78,6 +82,10 @@ process_links = function(geom, scenarios) {
   
   # fix issues w invalid spherical coordinates 
   sf_use_s2(FALSE)
+  
+  # Hack, but meh
+  geom <- geom %>%
+  mutate(ID_LINK = LINK_ID)
   
   # Crop to study area
   eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")) %>%
@@ -138,7 +146,13 @@ process_od_matrix <- function(metamat) {
 
 ### EXECUTE ###
 
-pack_dir = str_c(BASE_DIR, "data/sensitive/GCVT_Scenario_Pack/")
+
+### This is a bit fiddly. It needs a place to take it, and a place to put the 
+## output, and both are expecting different things and getting diff results
+## each time
+
+pack_dir = str_c(BASE_DIR, "data/2024_b/")
+matrix_type_name = "od_matrices"
 
 scenarios = read_scenarios(pack_dir)
 geom = read_sf(path(pack_dir, "geometry", "links.shp"))
@@ -150,9 +164,12 @@ geom = temp[[1]]
 scenarios[scenarios$type=="links",] = temp[[2]]
 rm(temp)
 
+
+print ("there are these matrices:")
+print (scenarios[scenarios$type==matrix_type_name,]$name)
 # Replace the DFs for matrix data with lists of matrices
-scenarios[scenarios$type=="od_matrices",]$dataDF =
-  lapply(scenarios[scenarios$type=="od_matrices",]$dataDF, process_od_matrix)
+scenarios[scenarios$type==matrix_type_name,]$dataDF =
+  lapply(scenarios[scenarios$type==matrix_type_name,]$dataDF, process_od_matrix)
 
 print ("Replaced the DFs with lists of matrices")
 
