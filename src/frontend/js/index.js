@@ -39,6 +39,9 @@ const DEBUG = true
 const log = DEBUG ? console.log : _ => undefined
 const ZONE_OPACITY = 0.5
 
+const COUNTRIES = [ "Armenia", "Azerbaijan", "Georgia", "Moldova", "Ukraine" ]
+
+
 import meiosisMergerino from "meiosis-setup/mergerino"
 import simpleStream from "meiosis-setup/simple-stream"
 import merge from "mergerino"
@@ -211,7 +214,8 @@ const DEFAULTS = {
         hover: null,
     },
     projects: [],
-    projectMode: false
+    projectMode: false,
+    projectCountry: 'Ukraine'
 }
 
 
@@ -972,8 +976,13 @@ const menuView = state => {
                                     onclick: e => {
                                         actions.setProjectMode(false)
                                     }
-                                }) 
-                     // TODO country selector
+                                }), 
+                     m('select', {
+                            name: 'countrySelect',
+                            onchange: e => update({projectCountry: e.target.value})
+                        }, 
+                        COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
+                     )
                 )                                
                 :
                 m('div', {class: 'gcvt-ctrl', },
