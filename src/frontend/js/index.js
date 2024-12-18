@@ -994,6 +994,9 @@ const menuView = state => {
                                 size: "xs",
                             },
                             // All the projects in the selected country. Not the best UI, but a starter
+                            
+                            // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
+                            // But need to check against our user stories, no idea if that is useful
                             state.projects.filter(projItem => projItem.Country == state.projectCountry)
                                 .map(projItem => m(UI.ListItem, {
                                                             label: projItem["Project Title"],
@@ -1503,6 +1506,29 @@ function paintCentroids({zoneCentres, selectedZones, centroidLineWeights}) {
     map.moveLayer("centroidLines")
     map.setLayoutProperty("centroidLines", "visibility", "visible")
 }
+
+function zoomTo (listProjects) {
+    // Seems like the way the projects on the map should work is something like this
+    
+    // Pass a list of 1 or more projects from an action
+    
+    // The map should pan to a bounding box of those (which will probably basically be just the country, but using proj geography seems easier)
+        
+    // something like 
+            // map.setFilter ( layername, [
+                  // "has",
+                  // ["to-string", ["get", "NEWCODE_NU"]],
+                  // ["literal", newcodes] )
+                  
+            // (taken from another ITP proj... so it 'might' work B-) 
+                  
+    // then queryRenderedFeatures()  https://docs.mapbox.com/mapbox-gl-js/api/map/#instance-members-querying-features and feed them into turf
+    
+    // or we just find out bounding boxes for each country and use those
+    
+}
+
+
 
 function paint(domain, {variable, values, bounds, dir, palette}) {
     const mapLayers = {
