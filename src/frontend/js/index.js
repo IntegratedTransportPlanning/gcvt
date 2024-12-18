@@ -208,7 +208,8 @@ const DEFAULTS = {
         // The locations to hover-over.
         popup: null,
         hover: null,
-    }
+    },
+    projects: []   
 }
 
 
@@ -385,6 +386,8 @@ const mapboxInit = ({lng, lat, zoom}) => {
         await actions.getMeta()
         update({mapReady: true})
         actions.fetchAllLayers()
+        
+        actions.fetchProjects()
     }
 
     map.on('load', loadLayers)
@@ -501,6 +504,9 @@ const app = {
             fetchAllLayers: () => {
                 actions.fetchLayerData("links")
                 actions.fetchLayerData("od_matrices")
+            },
+            fetchProjects: async () => {
+                update({ projects: await (await fetch('projects.json')).json() })
             },
             toggleCentroids: showness => {
                 update({showClines: showness})
