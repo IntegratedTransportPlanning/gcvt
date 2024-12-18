@@ -482,6 +482,10 @@ const app = {
             setProjectMode: projectsMode => {
                 update({projectMode: projectsMode})
             },
+            setProjectSelected: project => {
+                // Not impl anything here yet bc it depends on UI design
+                console.log(project['NEWCODE'])
+            },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
                     await Promise.all([
@@ -968,7 +972,7 @@ const menuView = state => {
             // Main menu panel
             m('div', {class: 'mapboxgl-ctrl'}, // Two of these now, one turns on or the other based on 'mode' 
                 state.projectMode ? 
-                m('div', {class: 'gcvt-ctrl', },
+                m('div', {class: 'gcvt-ctrl' },
                     m(UI.Button, {  // TODO should these buttons be at the bottom of ctrl box? idk
                                     // TODO mousing away from button makes text disappear, i think we messed up the css? 
                                     name: 'showModels',
@@ -983,17 +987,23 @@ const menuView = state => {
                         }, 
                         COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
                      ),
-                     m(UI.List, 
-                        {
-                            size: "xs",
-                        },
-                        // All the projects in the selected country. Not the best UI, but a starter
-                        state.projects.filter(projItem => projItem.Country == state.projectCountry)
-                            .map(projItem => m(UI.ListItem, {label: projItem["Project Title"]}))                     
+                     m('label', {for: 'projlist'}, "Projects",
+                         m(UI.List, 
+                            {
+                                name: 'projlist',
+                                size: "xs",
+                            },
+                            // All the projects in the selected country. Not the best UI, but a starter
+                            state.projects.filter(projItem => projItem.Country == state.projectCountry)
+                                .map(projItem => m(UI.ListItem, {
+                                                            label: projItem["Project Title"],
+                                                            onclick: e => { actions.setProjectSelected(projItem) }
+                                                        }))                     
+                         )
                      )
                 )
                 :
-                m('div', {class: 'gcvt-ctrl', },
+                m('div', {class: 'gcvt-ctrl' },
                     m(UI.Button, {
                                     name: 'showProjects',
                                     label: "Go to Projects view",
