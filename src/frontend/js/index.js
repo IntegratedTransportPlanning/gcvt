@@ -966,7 +966,7 @@ const menuView = state => {
             ),
 
             // Main menu panel
-            m('div', {class: 'mapboxgl-ctrl'},
+            m('div', {class: 'mapboxgl-ctrl'}, // Two of these now, one turns on or the other based on 'mode' 
                 state.projectMode ? 
                 m('div', {class: 'gcvt-ctrl', },
                     m(UI.Button, {  // TODO should these buttons be at the bottom of ctrl box? idk
@@ -982,8 +982,16 @@ const menuView = state => {
                             onchange: e => update({projectCountry: e.target.value})
                         }, 
                         COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
+                     ),
+                     m(UI.List, 
+                        {
+                            size: "xs",
+                        },
+                        // All the projects in the selected country. Not the best UI, but a starter
+                        state.projects.filter(projItem => projItem.Country == state.projectCountry)
+                            .map(projItem => m(UI.ListItem, {label: projItem["Project Title"]}))                     
                      )
-                )                                
+                )
                 :
                 m('div', {class: 'gcvt-ctrl', },
                     m(UI.Button, {
