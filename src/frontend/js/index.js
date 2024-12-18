@@ -210,7 +210,8 @@ const DEFAULTS = {
         popup: null,
         hover: null,
     },
-    projects: []   
+    projects: [],
+    projectMode: false
 }
 
 
@@ -473,6 +474,9 @@ const app = {
             setLTypes: LTypes => {
                 update({desiredLTypes: LTypes})
                 actions.fetchLayerData("links")
+            },
+            setProjectMode: projectsMode => {
+                update({projectMode: projectsMode})
             },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
@@ -959,7 +963,28 @@ const menuView = state => {
 
             // Main menu panel
             m('div', {class: 'mapboxgl-ctrl'},
+                state.projectMode ? 
                 m('div', {class: 'gcvt-ctrl', },
+                    m(UI.Button, {  // TODO should these buttons be at the bottom of ctrl box? idk
+                                    // TODO mousing away from button makes text disappear, i think we messed up the css? 
+                                    name: 'showModels',
+                                    label: "Go to Modelling view",
+                                    onclick: e => {
+                                        actions.setProjectMode(false)
+                                    }
+                                }) 
+                     // TODO country selector
+                )                                
+                :
+                m('div', {class: 'gcvt-ctrl', },
+                    m(UI.Button, {
+                                    name: 'showProjects',
+                                    label: "Go to Projects view",
+                                    onclick: e => {
+                                        actions.setProjectMode(true)
+                                    }
+                                }),
+                    m('br'),
                     m('label', {for: 'showctrls'}, 'Show controls: ',
                         m('input', {name: 'showctrls', type:"checkbox", checked:state.showctrl, onchange: e => update({showctrl: e.target.checked})}),
                     ),
