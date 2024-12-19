@@ -58,4 +58,4 @@ geom_extension=${geometry#*.}
 mkmbtiles "$geometry" "$outdir"
 
 # Easier to just use the tippecanoe -e switch than install mbtiles
-#mktiledir "$outdir/$base.mbtiles" "$outdir"  
+# mktiledir "$outdir/$base.mbtiles" "$outdir"

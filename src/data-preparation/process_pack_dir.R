@@ -79,23 +79,23 @@ process_links = function(geom, scenarios) {
 
   geom = st_transform(geom, 4326)
   print ("The reproj worked")
-  
-  # fix issues w invalid spherical coordinates 
+
+  # fix issues w invalid spherical coordinates
   sf_use_s2(FALSE)
-  
+
   # Hack, but meh
   geom <- geom %>%
   mutate(ID_LINK = LINK_ID)
-  
+
   # Crop to study area
   eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")) %>%
     st_buffer(0) %>% # Buffer to get rid of some stupid artifact.
-    st_union() 
+    st_union()
   intersection = unlist(st_intersects(eapregion, geom))
   geom = geom[intersection,]
-  
+
   print ("The crop worked")
-  
+
   # Remove points
   geom = geom[grepl("LINESTRING", sapply(st_geometry(geom), st_geometry_type)),]
 
@@ -127,11 +127,11 @@ process_links = function(geom, scenarios) {
   # This tibble must be saved with write_sf(geom, path, fid_column_name = "id").
   # There used to be more unusual ways of doing this.
 
-  print ("The links finished") 
-  
+  print ("The links finished")
+
   scenarios$dataDF = tables
   list(just_geometry, scenarios)
-  
+
 }
 
 # od_matrix_csv -> list of matrices
@@ -139,15 +139,14 @@ process_od_matrix <- function(metamat) {
   variables = names(metamat)[3:length(metamat)]
   od_skim = lapply(variables, function(var) acast(metamat, Orig~Dest, value.var = var))
   names(od_skim)<-variables
-  
+
   od_skim
 }
 
 
 ### EXECUTE ###
 
-
-### This is a bit fiddly. It needs a place to take it, and a place to put the 
+### This is a bit fiddly. It needs a place to take it, and a place to put the
 ## output, and both are expecting different things and getting diff results
 ## each time
 
