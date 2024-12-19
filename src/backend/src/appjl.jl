@@ -25,7 +25,7 @@ import GeoJSON
 import Turf
 import VegaLite
 
-VegaLite.actionlinks(false) # Global sletting - disable action button on all plots
+VegaLite.actionlinks(false) # Global setting - disable action button on all plots
 
 # This converts its argument to json and sets the appropriate headers for content type
 # We're customising it to set the CORS header
