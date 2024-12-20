@@ -338,6 +338,33 @@ const mapboxInit = ({lng, lat, zoom}) => {
         })
 
         map.addLayer({
+            id: 'projlinks',
+            type: 'line',
+            source: {
+                type: 'vector',
+                tiles: [BASEURL + '/tiles/2/links/{z}/{x}/{y}.pbf',],
+                // If you don't have this, mapbox doesn't show tiles beyond the
+                // zoom level of the tiles, which is not what we want.
+                maxzoom: 6,
+            },
+            "source-layer": "links",
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                //visibility: 'none',
+            },
+            paint: {
+                'line-opacity': .2,
+                'line-color': 'orange',
+                'line-width': 25,  
+                // ^ This makes the thicker ones hard/impossible to see. Prob better to use something like 
+                //  width = <symbology width> + 10 
+            },
+        })
+
+
+
+        map.addLayer({
             id: 'links',
             type: 'line',
             source: {
@@ -359,6 +386,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'line-width': 1.5,
             },
         })
+        
 
         map.addLayer({
             id: "centroidLines",
@@ -830,6 +858,7 @@ const { update, states, actions } =
         // using the same geometry but a bit wider, but that also has issues.
         hover && setTimeout(_ => hover.remove(), 1000)
     })
+    
 
     map.on('mousemove', 'links', async event => update(state =>
         merge(state, {
@@ -842,6 +871,9 @@ const { update, states, actions } =
                     let ltype = LTYPE_LOOKUP[state.LTypes[id]]
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let value = state.layers.links.values[id]
+                    
+                    highlightLinks([id]) // Obv this hover isn't gona be how we do it, just leaving here for others to test it working
+                    
                     let str
                     if (value === null)
                         str = "No data"
@@ -1521,11 +1553,19 @@ function zoomTo (listProjects) {
                   // ["literal", newcodes] )
                   
             // (taken from another ITP proj... so it 'might' work B-) 
+            
+            // it didnt work. D: 
                   
     // then queryRenderedFeatures()  https://docs.mapbox.com/mapbox-gl-js/api/map/#instance-members-querying-features and feed them into turf
     
     // or we just find out bounding boxes for each country and use those
     
+}
+
+function highlightLinks(listProjects) {
+    map.setFilter ( 'projlinks', ['match', ['id'], listProjects, true, false ])  // OH MY DAYS mapbox this was such a faff to get to 
+    
+    setTimeout(_ => map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ]), 5000)
 }
 
 
