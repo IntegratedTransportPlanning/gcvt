@@ -58,7 +58,7 @@ import * as turf from "@turf/turf"
 
 import * as R from "ramda"
 
-import ITPLOGO from "../../resources/itp.png"
+import ITPLOGO from "../../resources/itp-logo.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
 
@@ -970,14 +970,11 @@ const menuView = state => {
                     m(UI.Card, {style: 'pointer-events: auto', fluid: true},
                         [
                             m('a', {href: "https://www.itpworld.net", target: "_blank"},
-                                m('img', {src: ITPLOGO, width: 60, style: 'margin-right: 5px'})
+                                m('img', {src: ITPLOGO, width: 100, style: 'margin-right: 5px'})
                             ),
                             m('a', {href: "https://www.worldbank.org", target: "_blank"},
                                 m('img', {src: WBLOGO, height: 60, style: 'padding: 8px; margin-right: 5px'})
-                            ),
-                            m('a', {href: "http://www.kgreengrowthpartnership.org/", target: "_blank"},
-                                m('img', {src: KGFLOGO, height: 60})
-                            ),
+                            )
                         ]
                     )
                 ),
