@@ -1016,23 +1016,7 @@ const menuView = state => {
                         }, 
                         COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
                      ),
-                     m('label', {for: 'projlist'}, "Projects",
-                         m(UI.List, 
-                            {
-                                name: 'projlist',
-                                size: "xs",
-                            },
-                            // All the projects in the selected country. Not the best UI, but a starter
-                            
-                            // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
-                            // But need to check against our user stories, no idea if that is useful
-                            state.projects.filter(projItem => projItem.Country == state.projectCountry)
-                                .map(projItem => m(UI.ListItem, {
-                                                            label: projItem["Project Title"],
-                                                            onclick: e => { actions.setProjectSelected(projItem) }
-                                                        }))                     
-                         )
-                     )
+                     
                 )
                 :
                 m('div', {class: 'gcvt-ctrl' },
@@ -1258,18 +1242,43 @@ const menuView = state => {
                 style: 'position: absolute; top: 0; font-size: small; margin: 5px;',
             },
                 (state.showDesc
-                ?  m(UI.Callout, {
-                    style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
-                    fluid: true,
-                    onDismiss: _ => update({showDesc: false}),
-                    content: [
-                        state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
-                        state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
-                        state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
-                    ],
-                },
-
+                ? (!state.projectMode   // TODO getting a bit messy here really 
+                        ? m(UI.Callout, {
+                            style: 'padding-bottom: 0px; max-width: 60%; background: white; pointer-events: auto',
+                            fluid: true,
+                            onDismiss: _ => update({showDesc: false}),
+                            content: [
+                                state.showDesc && state.meta.scenarios && state.meta.scenarios[state.scenario] && m('p', m('b', state.meta.scenarios[state.scenario].name + ": " + (state.meta.scenarios[state.scenario].description || ""))),
+                                state.meta.links && state.meta.links[state.layers.links.variable] && m('p', state.meta.links[state.layers.links.variable].name + ": " + (state.meta.links[state.layers.links.variable].description || "")),
+                                state.meta.od_matrices && state.meta.od_matrices[state.layers.od_matrices.variable] && m('p', state.meta.od_matrices[state.layers.od_matrices.variable].name + ": " + (state.meta.od_matrices[state.layers.od_matrices.variable].description || "")),
+                                ],
+                            })
+                        : 
+                        m(UI.Callout, {
+                            style: 'padding-bottom: 0px; max-width: 50%; background: white; pointer-events: auto',
+                            fluid: true,
+                            onDismiss: _ => update({showDesc: false}),
+                            content: [
+                                m('label', {for: 'projlist'}, "Projects",
+                                     m(UI.List, 
+                                        {
+                                            name: 'projlist',
+                                            size: "xs",
+                                        },
+                                        // All the projects in the selected country. Not the best UI, but a starter
+                                        
+                                        // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
+                                        // But need to check against our user stories, no idea if that is useful
+                                        state.projects.filter(projItem => projItem.Country == state.projectCountry)
+                                            .map(projItem => m(UI.ListItem, {
+                                                                        label: getNicerProjectDesc(projItem),
+                                                                        onclick: e => { actions.setProjectSelected(projItem) }
+                                                                    }))                     
+                                     )
+                                 )
+                        ]})
                     )
+                    
                 : m(UI.Button, {
                     style: 'pointer-events: auto',
                     iconLeft: UI.Icons.INFO,
@@ -1342,6 +1351,13 @@ function getScenMinMaxStep(scenario){
     return {min, max, step}
 }
 
+function getNicerProjectDesc(projItem) {    
+    // TODO this would ideally be a nice card per-proj, with formatted text, links, click to highlight proj? 
+    return projItem["Project Title"] + " "
+        + (projItem["DoMin"] == 1 ? "Do Minimum" : " ")
+        + (projItem["2030"] == 1 ? "2030 Scenario" : " ")
+        + (projItem["2035"] == 1 ? "2035 Scenario" : " " ) 
+} 
 states.map(menuView)
 
 
