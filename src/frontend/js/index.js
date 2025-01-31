@@ -215,7 +215,8 @@ const DEFAULTS = {
     },
     projects: [],
     projectMode: false,
-    projectCountry: 'Ukraine'
+    projectCountry: 'Ukraine',
+    projectSelected: null
 }
 
 
@@ -337,7 +338,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
             }
         })
 
-        map.addLayer({
+        map.addLayer({              
             id: 'projlinks',
             type: 'line',
             source: {
@@ -354,12 +355,13 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 //visibility: 'none',
             },
             paint: {
-                'line-opacity': .2,
+                'line-opacity': .35, // TODO can we fix the additive effect where multiple lines are present
                 'line-color': 'orange',
-                'line-width': 25,  
+                'line-width': 50,  
                 // ^ This makes the thicker ones hard/impossible to see. Prob better to use something like 
                 //  width = <symbology width> + 10 
             },
+            filter: ['==', ['get', 'id'], 'nofeatures']
         })
 
 
@@ -512,7 +514,7 @@ const app = {
             },
             setProjectSelected: project => {
                 // Not impl anything here yet bc it depends on UI design
-                console.log(project['NEWCODE'])
+                update({projectSelected: project})
             },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
@@ -800,7 +802,7 @@ const { update, states, actions } =
                             (state.compare && state.percent ? "" : " ") +
                             getUnit(state.meta, "links", state.layers.links.variable, state.compare && state.percent)
                     const chartURL = `/api/charts?scenarios=${state.scenario}${state.compare ? "," + state.compareWith : ""}&domain=links&variable=${state.layers.links.variable}&rows=${id+1}`
-                    const maxWidth = 400
+                    const maxWidth = 400            
                     //TODO: consider adding link to open chart in new tab
                     //m('a', {href: chartURL + "&width=800&height=500", target: "_blank", style: "font-size: smaller;"}, "Open chart in new tab"),
                     return new mapboxgl.Popup({closeButton: false, maxWidth: maxWidth +"px"})
@@ -872,8 +874,8 @@ const { update, states, actions } =
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let value = state.layers.links.values[id]
                     
-                    highlightLinks([id]) // Obv this hover isn't gona be how we do it, just leaving here for others to test it working
-                    
+                    console.log(id)
+                                        
                     let str
                     if (value === null)
                         str = "No data"
@@ -1254,6 +1256,37 @@ const menuView = state => {
                                 ],
                             })
                         : 
+                        
+                        // [
+                        // TODO tried to redo this and have it work nicer using a Card instead of a Callout
+                        // but got nowhere. broken implementation left below as a warning to others
+                        //
+                            // m(UI.Card, {style: 'padding-bottom: 0px; max-width: 50%; background: white; height: 40%'}, 
+                            
+                                // [
+                                    // m("h4", "Projects"),
+                            
+                                    // ...state.projects.filter(projItem => projItem.Country == state.projectCountry)
+                                            // .map(projItem => m(UI.Button, {
+                                                                        // label: projItem["Project Title"],
+                                                                        // onclick: e => { 
+                                                                            // actions.setProjectSelected(projItem) 
+                                                                            // highlightLinks(
+                                                                                // [
+                                                                                    // 13000 + Math.floor(Math.random() * 2000),
+                                                                                    // 13000 + Math.floor(Math.random() * 2000),
+                                                                                    // [13198, 18922,20286][Math.floor(Math.random() * 3)]
+                                                                                // ]) 
+                                                                            // }
+                                                                    // }
+                                                                    // ))  
+                                // ]
+                                // )
+                                    
+                            
+                            
+                        // ]
+                        
                         m(UI.Callout, {
                             style: 'padding-bottom: 0px; max-width: 50%; background: white; pointer-events: auto',
                             fluid: true,
@@ -1271,12 +1304,26 @@ const menuView = state => {
                                         // But need to check against our user stories, no idea if that is useful
                                         state.projects.filter(projItem => projItem.Country == state.projectCountry)
                                             .map(projItem => m(UI.ListItem, {
-                                                                        label: getNicerProjectDesc(projItem),
-                                                                        onclick: e => { actions.setProjectSelected(projItem) }
+                                                                        label: m("h5", {} , projItem["Project Title"]  
+                                                                                
+                                                                             ),
+                                                                        onclick: e => { 
+                                                                            actions.setProjectSelected(projItem.NEWCODE_NU) 
+                                                                            highlightLinks(
+                                                                                [
+                                                                                    // TODO obv with appropriate links instead of random
+                                                                                    
+                                                                                    13000 + Math.floor(Math.random() * 2000),
+                                                                                    13000 + Math.floor(Math.random() * 2000),
+                                                                                    [13198, 18922,20286][Math.floor(Math.random() * 3)]
+                                                                                ]) 
+                                                                            }
                                                                     }))                     
                                      )
                                  )
-                        ]})
+                        ]}
+                        )
+              
                     )
                     
                 : m(UI.Button, {
@@ -1576,9 +1623,13 @@ function zoomTo (listProjects) {
 }
 
 function highlightLinks(listProjects) {
-    map.setFilter ( 'projlinks', ['match', ['id'], listProjects, true, false ])  // OH MY DAYS mapbox this was such a faff to get to 
+    // Bright orange highlight for the 'projlinks' layer
+    // This works by loading everything as another version of the same
+    // links layer, but the only visible bit is links where projects
+    // are highlighted.
+    map.setFilter ( 'projlinks', ['match', ['id'], listProjects, true, false ])  // OH MY DAYS mapbox this was such a faff to get to work
     
-    setTimeout(_ => map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ]), 5000)
+    setTimeout(_ => map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ]), 4000)
 }
 
 
