@@ -51,3 +51,9 @@ sudo docker-compose up --build
 
 # Migrating WordPress installation is slightly tricky - see src/notes.md
 ```
+
+## Troubleshooting
+
+- `make back` fails with an error about RData or Serialization
+  1. Check your julia version. You might want to use `juliaup override set 1.6.7`.
+  2. run `make setup` again: possibly RData or CodecZlib are built for the wrong Julia version. This will rebuild them (better, stronger). CodecZlib especially may take a long time to build. Let it do its thing.

@@ -6,7 +6,7 @@ tiles:
 	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles/2
 
 setup:
-	cd src/backend && julia --project=. -e "import Pkg; Pkg.instantiate()"
+	cd src/backend && julia --project=. -e "import Pkg; Pkg.instantiate(); Pkg.build()"
 	cd src/frontend && yarn
 
 http:
