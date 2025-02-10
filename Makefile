@@ -6,14 +6,14 @@ tiles:
 	./src/data-preparation/tiles.sh data/sensitive/GCVT_Scenario_Pack/geometry/zones.geojson data/sensitive/GCVT_Scenario_Pack/processed/tiles/2
 
 setup:
-	cd src/backend && julia --project=. -e "import Pkg; Pkg.instantiate(); Pkg.build()"
+	cd src/backend && juliaup add 1.6.7 && julia +1.6.7 --project=. -e "import Pkg; Pkg.instantiate(); Pkg.build()"
 	cd src/frontend && yarn
 
 http:
-	caddy
+	./vendor/caddy/caddy
 
 back:
-	cd src/backend && julia --project=. src/appjl.jl
+	cd src/backend && julia +1.6.7 --project=. src/appjl.jl
 
 front:
 	cd src/frontend && yarn run watch

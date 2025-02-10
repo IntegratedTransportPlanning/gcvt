@@ -14,9 +14,8 @@ Some vestiges of R code remain and may be required for preparing your data for t
 To install material other than R:
 
 ```sh
-# install julia v1.x
+# install juliaup
 # install yarn
-# install caddy (or some other webserver)
 
 # install Julia and JS dependencies
 make setup
