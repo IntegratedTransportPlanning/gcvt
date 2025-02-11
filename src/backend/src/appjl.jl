@@ -64,6 +64,22 @@ end
 include("$(@__DIR__)/scenarios.jl")
 
 const zones = GeoJSON.parsefile("$(@__DIR__)/../data/geometry/zones.geojson")
+const links_geom = GeoJSON.parsefile("$(@__DIR__)/../data/processed/links.geojson")
+
+function calcbbox(coordinates)
+    min_lon = Inf
+    min_lat = Inf
+    max_lon = -Inf
+    max_lat = -Inf
+    for c in coordinates
+        lon, lat = c[1], c[2]
+        min_lon = min(min_lon, lon)
+        min_lat = min(min_lat, lat)
+        max_lon = max(max_lon, lon)
+        max_lat = max(max_lat, lat)
+    end
+    return [[min_lon, min_lat], [max_lon, max_lat]]
+end
 
 const zone_centroids = Array{Array{Float64,1},1}(undef,length(zones.features))
 for f in zones.features
@@ -74,6 +90,14 @@ const NUM_ZONES = zone_centroids |> length
 
 # This should probably be reloaded periodically so server doesn't need to be restarted?
 const links, mats, metadata = load_scenarios(packdir)
+
+# Tiny bit slow, should consider running in data prep step
+projects2bboxes = Dict(p => begin
+    projects2links = Dict(Int(k) => findall(identity, v.Project_ID .== k) .- 1 for k in unique(links[("DoMin", 2035)].Project_ID))
+    Dict(k => begin
+            calcbbox(Iterators.flatten(map(f -> f.geometry.coordinates, filter(f -> f.properties["featureid"] in v, links_geom.features)))) # NB: julia row - 1 == featureid
+    end for (k, v) in projects2links)
+end for (p, v) in links)
 
 const NUM_LINKS = (links |> first)[2] |> size |> first
 
@@ -307,6 +331,16 @@ route("/centroids") do
     zone_centroids |> json
 end
 
+route("/bboxes") do
+    defaults = Dict(
+        :scenario => "DoMin",
+        :year => "2035",
+    )
+    d = merge(defaults, getpayload())
+    scenario = d[:scenario]
+    year = parse(Int, d[:year])
+    return projects2bboxes[(scenario, year)] |> json
+end
 # Want to provide:
 # Zone name
 # Absolute change

@@ -1621,6 +1621,8 @@ async function highlightProject(project_id) {
 
     // TODO: don't hardcode scenario, year
     const projects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto&v=0.0.1')
+    const bboxes = await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto&v=0.0.1')
+
     const toHighlight = projects.reduce((matches, current_value, current_index) => {
         if (project_id == current_value) {
             matches.push(current_index)
@@ -1628,6 +1630,7 @@ async function highlightProject(project_id) {
         return matches
     },[])
     map.setFilter ( 'projlinks', ['match', ['id'], toHighlight, true, false ])  // OH MY DAYS mapbox this was such a faff to get to work
+    map.fitBounds(bboxes[project_id], {padding:100})
     
     setTimeout(_ => map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ]), 4000)
 }
