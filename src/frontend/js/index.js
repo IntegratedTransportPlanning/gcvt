@@ -1309,14 +1309,7 @@ const menuView = state => {
                                                                              ),
                                                                         onclick: e => { 
                                                                             actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                            highlightLinks(
-                                                                                [
-                                                                                    // TODO obv with appropriate links instead of random
-                                                                                    
-                                                                                    13000 + Math.floor(Math.random() * 2000),
-                                                                                    13000 + Math.floor(Math.random() * 2000),
-                                                                                    [13198, 18922,20286][Math.floor(Math.random() * 3)]
-                                                                                ]) 
+                                                                            highlightProject(projItem.NEWCODE_NU)
                                                                             }
                                                                     }))                     
                                      )
@@ -1622,12 +1615,21 @@ function zoomTo (listProjects) {
     
 }
 
-function highlightLinks(listProjects) {
+async function highlightProject(project_id) {
     // Bright orange highlight for the 'projlinks' layer
     // This works by loading everything as another version of the same
     // links layer, but the only visible bit is links where projects
     // are highlighted.
-    map.setFilter ( 'projlinks', ['match', ['id'], listProjects, true, false ])  // OH MY DAYS mapbox this was such a faff to get to work
+
+    // TODO: don't hardcode scenario, year
+    const projects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto&v=0.0.1')
+    const toHighlight = projects.reduce((matches, current_value, current_index) => {
+        if (project_id == current_value) {
+            matches.push(current_index)
+        }
+        return matches
+    },[])
+    map.setFilter ( 'projlinks', ['match', ['id'], toHighlight, true, false ])  // OH MY DAYS mapbox this was such a faff to get to work
     
     setTimeout(_ => map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ]), 4000)
 }
