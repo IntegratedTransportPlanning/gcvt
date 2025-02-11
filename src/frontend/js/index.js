@@ -1613,6 +1613,7 @@ function zoomTo (listProjects) {
     
 }
 
+let current_timeout_hash = null
 async function highlightProject(project_id) {
     // Bright orange highlight for the 'projlinks' layer
     // This works by loading everything as another version of the same
@@ -1632,7 +1633,13 @@ async function highlightProject(project_id) {
     map.setFilter ( 'projlinks', ['match', ['id'], toHighlight, true, false ])  // OH MY DAYS mapbox this was such a faff to get to work
     map.fitBounds(bboxes[project_id], {padding:100})
     
-    setTimeout(_ => map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ]), 4000)
+    // use current unix time to get a unique fingerprint for this timer
+    current_timeout_hash = new Date().getTime()
+    const mytimeout = current_timeout_hash
+    setTimeout(_ => {
+        // only blank out the highlight if the timeout hash hasn't changed
+        if (current_timeout_hash == mytimeout) map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ])
+    }, 4000)
 }
 
 
