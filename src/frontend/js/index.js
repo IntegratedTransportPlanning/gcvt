@@ -1302,7 +1302,7 @@ const menuView = state => {
                                         
                                         // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
                                         // But need to check against our user stories, no idea if that is useful
-                                        state.projects.filter(projItem => projItem.Country == state.projectCountry)
+                                        state.projects.filter(projItem => (projItem.Country == state.projectCountry) && (projItem.NEWCODE_NU != 0))
                                             .map(projItem => m(UI.ListItem, {
                                                                         label: m("h5", {} , projItem["Project Title"]  
                                                                                 
