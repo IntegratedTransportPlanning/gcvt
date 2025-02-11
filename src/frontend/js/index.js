@@ -874,8 +874,6 @@ const { update, states, actions } =
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let value = state.layers.links.values[id]
                     
-                    console.log(id)
-                                        
                     let str
                     if (value === null)
                         str = "No data"
