@@ -418,6 +418,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         })
 
         actions.getLTypes()
+        actions.getLinkBboxes()
         actions.getCentres()
         await actions.getMeta()
         update({mapReady: true})
@@ -538,8 +539,28 @@ const app = {
                     scenario: old => old === null ? Object.keys(scenarios)[0] : old,
                 })
             },
-            getLTypes: async () => update({
-                LTypes: await getData("data?domain=links&variable=LType&comparewith=none")
+            // todo: don't hardcode scenario etc
+            getLTypes: async () => {
+                const LTypes =  await getData("data?domain=links&variable=LType&comparewith=none")
+                const LinkProjects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
+                let projectTypeMap = []
+                for (let i = 0; i < LinkProjects.length; i++) {
+                    const projectId = LinkProjects[i]
+                    const type = LTypes[i]
+                    if (projectTypeMap[projectId]) {
+                        projectTypeMap[projectId].add(type)
+                    } else {
+                        projectTypeMap[projectId] = new Set([type])
+                    }
+                }
+                return update({
+                    ProjectLinkTypes: projectTypeMap,
+                    LinkProjects,
+                    LTypes,
+                })
+            },
+            getLinkBboxes: async () => update({
+                LinkBboxes: await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
             }),
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")
@@ -1302,14 +1323,21 @@ const menuView = state => {
                                         
                                         // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
                                         // But need to check against our user stories, no idea if that is useful
-                                        state.projects.filter(projItem => (projItem.Country == state.projectCountry) && (projItem.NEWCODE_NU != 0))
+                                        state.projects.filter(projItem => {
+                                            if (!((projItem.Country == state.projectCountry) && (projItem.NEWCODE_NU != 0))) {
+                                                return false
+                                            }
+                                            const project_ids = projItem.NEWCODE_NU.split(",").filter(x=>x!="")
+                                            const desired = state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
+                                            return desired
+                                        })
                                             .map(projItem => m(UI.ListItem, {
                                                                         label: m("h5", {} , projItem["Project Title"]  
                                                                                 
                                                                              ),
                                                                         onclick: e => { 
                                                                             actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                            highlightProjects(projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
+                                                                            highlightProjects(state, projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
                                                                             }
                                                                     }))                     
                                      )
@@ -1620,24 +1648,22 @@ function mergebboxes(bboxes){
 }
 
 let current_timeout_hash = null
-async function highlightProjects(project_ids) {
+async function highlightProjects(state, project_ids) {
     // Bright orange highlight for the 'projlinks' layer
     // This works by loading everything as another version of the same
     // links layer, but the only visible bit is links where projects
     // are highlighted.
 
-    // TODO: don't hardcode scenario, year
-    const projects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
-    const bboxes = await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
-
+    const projects = state.LinkProjects
+    const bboxes = state.LinkBboxes
     const toHighlight = projects.reduce((matches, current_value, current_index) => {
-        if (project_ids.includes(current_value + "")) {
+        if (project_ids.includes(current_value + "") && (state.desiredLTypes.length == 0 || state.desiredLTypes.includes(state.LTypes[current_index]))) {
             matches.push(current_index)
         }
         return matches
     },[])
     map.setFilter('projlinks', ['match', ['id'], toHighlight, true, false])  // OH MY DAYS mapbox this was such a faff to get to work
-    const bbox = mergebboxes(project_ids.map(id => bboxes[id]))
+    const bbox = mergebboxes(project_ids.map(id => bboxes[id])) // ideally this would filter by link type too
     map.fitBounds(bbox, {padding:100})
     
     // use current unix time to get a unique fingerprint for this timer
