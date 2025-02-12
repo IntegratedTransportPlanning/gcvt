@@ -1086,6 +1086,8 @@ const menuView = state => {
                             // }),
                         ],
 
+                        m('br'),
+
                         m('label', {for: 'compare'}, 'Compare with: ',
                             m('input', {
                                 name: 'compare',
