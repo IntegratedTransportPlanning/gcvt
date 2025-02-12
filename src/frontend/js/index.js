@@ -59,6 +59,7 @@ import * as turf from "@turf/turf"
 import * as R from "ramda"
 
 import ITPLOGO from "../../resources/itp-logo.png"
+import MAN_STRUGGLES_WITH_UMBRELLA from "../../resources/man-struggles-with-umbrella-public-domain.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
 
@@ -569,8 +570,39 @@ const app = {
                 actions.fetchLayerData("links")
                 actions.fetchLayerData("od_matrices")
             },
-            fetchProjects: async () => {
-                update({ projects: await (await fetch('projects.json')).json() })
+            fetchProjects: async () => { // presumably bad things happen if this runs more than once
+                const projects = await (await fetch('projects.json')).json()
+                // for some reason this needs a callback and can't be awaited
+                map.loadImage(MAN_STRUGGLES_WITH_UMBRELLA, (unhappy, icon) => { // WB may wish to choose another icon
+                    map.addImage('icon', icon)
+                    const node_coordinates = projects.filter(x=>x.Type == "Node").map(x=>x["Coordinates (lat, lon)"].split(",")).filter(x=>x.length == 2).map(x=>[x[1],x[0]])
+                    const feats = node_coordinates.map(p => { return {
+                        'type': 'Feature',
+                            'geometry': {
+                                'type': 'Point',
+                                'coordinates': p,
+                            } // TODO: store project id so this can be clickable
+                    }})
+                    map.addSource('point', {
+                        'type': 'geojson',
+                        'data': {
+                            'type': 'FeatureCollection',
+                            'features': feats,
+                        }
+                    })
+
+                    // Add a layer to use the image to represent the data.
+                    map.addLayer({
+                        'id': 'points',
+                        'type': 'symbol',
+                        'source': 'point', // reference the data source
+                        'layout': {
+                            'icon-image': 'icon', // reference the image
+                            'icon-size': 1/16
+                        }
+                    })
+                })
+                return update({ projects })
             },
             toggleCentroids: showness => {
                 update({showClines: showness})
@@ -1328,7 +1360,7 @@ const menuView = state => {
                                                 return false
                                             }
                                             const project_ids = projItem.NEWCODE_NU.split(",").filter(x=>x!="")
-                                            const desired = state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
+                                            const desired = projItem.Type == "Node" || state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
                                             return desired
                                         })
                                             .map(projItem => m(UI.ListItem, {
@@ -1337,8 +1369,12 @@ const menuView = state => {
                                                                              ),
                                                                         onclick: e => { 
                                                                             actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                            highlightProjects(state, projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
+                                                                            projItem.Type == "Link" && highlightProjects(state, projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
+                                                                            if (projItem.Type == "Node") {
+                                                                                const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
+                                                                                map.flyTo({center: [lon, lat], zoom: 12})
                                                                             }
+                                                                        }
                                                                     }))                     
                                      )
                                  )
