@@ -791,7 +791,7 @@ const { update, states, actions } =
                     }
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
-                    let ltype = LTYPE_LOOKUP[state.LTypes[id]]
+                    let ltype = state.LTypes[id]
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let str = ""
                     let value = state.layers.links.values[id]
@@ -870,7 +870,7 @@ const { update, states, actions } =
                         oldpopup.remove()
                     }
                     let id = event.features[0].id
-                    let ltype = LTYPE_LOOKUP[state.LTypes[id]]
+                    let ltype = state.LTypes[id]
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
                     let value = state.layers.links.values[id]
                     
@@ -1169,7 +1169,7 @@ const menuView = state => {
                             onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
                         },
                             m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
-                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, LTYPE_LOOKUP[k]), Object.keys(LTYPE_LOOKUP))
+                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, k), Array.from(new Set(state.LTypes)))
                         ),
 
                         m('label', {for: 'matrix_variable'}, "Zones"),
@@ -1488,7 +1488,7 @@ function setLinkColours(nums, colour,weights) {
 
     if (!R.equals(state.desiredLTypes, [])) {
         const opacities = state.LTypes.map(x => {
-            return R.includes(x, state.desiredLTypes.map(y => parseInt(y, 10))) ? 1 : 0
+            return R.includes(x, state.desiredLTypes) ? 1 : 0
         })
         map.setPaintProperty("links", "line-opacity", atId(opacities))
     } else {

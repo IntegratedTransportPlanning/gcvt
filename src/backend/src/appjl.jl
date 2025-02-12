@@ -2,7 +2,7 @@
 
 module tmp
 
-const API_VERSION = "0.0.1" # Change this to invalidate HTTP cache
+const API_VERSION = "0.0.2" # Change this to invalidate HTTP cache
 
 import Genie
 using Genie.Router: route, @params
@@ -288,15 +288,16 @@ end
 route("/data") do
     defaults = Dict(
         :domain => "od_matrices",
-        :scenario => "Rail",
-        :year => "2030",
-        :comparewith => "DoMin",
+        :scenario => "DoMin",
+        :year => "2035",
+        :comparewith => "MLRoad",
         :compareyear => "auto",
         :variable => "Total_GHG",
         :percent => "true",
         :row => "false",
     )
     d = merge(defaults, getpayload())
+    println(d)
     scenario = d[:scenario]
     year = parse(Int, d[:year])
     variable = d[:variable]
