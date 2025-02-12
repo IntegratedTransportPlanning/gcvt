@@ -1627,8 +1627,8 @@ async function highlightProjects(project_ids) {
     // are highlighted.
 
     // TODO: don't hardcode scenario, year
-    const projects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto&v=0.0.1')
-    const bboxes = await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto&v=0.0.1')
+    const projects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
+    const bboxes = await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
 
     const toHighlight = projects.reduce((matches, current_value, current_index) => {
         if (project_ids.includes(current_value + "")) {
