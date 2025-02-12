@@ -1309,7 +1309,7 @@ const menuView = state => {
                                                                              ),
                                                                         onclick: e => { 
                                                                             actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                            highlightProject(projItem.NEWCODE_NU)
+                                                                            highlightProjects(projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
                                                                             }
                                                                     }))                     
                                      )
@@ -1615,8 +1615,12 @@ function zoomTo (listProjects) {
     
 }
 
+function mergebboxes(bboxes){
+    return [[Math.min(...bboxes.map(x => x[0][0])), Math.min(...bboxes.map(x => x[0][1]))], [Math.max(...bboxes.map(x => x[1][0])), Math.max(...bboxes.map(x => x[1][1]))]]
+}
+
 let current_timeout_hash = null
-async function highlightProject(project_id) {
+async function highlightProjects(project_ids) {
     // Bright orange highlight for the 'projlinks' layer
     // This works by loading everything as another version of the same
     // links layer, but the only visible bit is links where projects
@@ -1627,13 +1631,14 @@ async function highlightProject(project_id) {
     const bboxes = await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto&v=0.0.1')
 
     const toHighlight = projects.reduce((matches, current_value, current_index) => {
-        if (project_id == current_value) {
+        if (project_ids.includes(current_value + "")) {
             matches.push(current_index)
         }
         return matches
     },[])
-    map.setFilter ( 'projlinks', ['match', ['id'], toHighlight, true, false ])  // OH MY DAYS mapbox this was such a faff to get to work
-    map.fitBounds(bboxes[project_id], {padding:100})
+    map.setFilter('projlinks', ['match', ['id'], toHighlight, true, false])  // OH MY DAYS mapbox this was such a faff to get to work
+    const bbox = mergebboxes(project_ids.map(id => bboxes[id]))
+    map.fitBounds(bbox, {padding:100})
     
     // use current unix time to get a unique fingerprint for this timer
     current_timeout_hash = new Date().getTime()
@@ -1734,6 +1739,7 @@ if (DEBUG)
 
         paint,
         getData,
+        mergebboxes,
 
         mapboxgl,
 
