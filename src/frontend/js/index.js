@@ -217,7 +217,8 @@ const DEFAULTS = {
     projects: [],
     projectMode: false,
     projectCountry: 'Ukraine',
-    projectSelected: null
+    projectSelected: null,
+    projectDesc: ""
 }
 
 
@@ -515,8 +516,20 @@ const app = {
                 update({projectMode: projectsMode})
             },
             setProjectSelected: project => {
-                // Not impl anything here yet bc it depends on UI design
-                update({projectSelected: project})
+                const state = states()
+                
+                const desc = state.projects
+                            .filter(proj => proj.NEWCODE_NU == project)
+                            .map(item => 
+                                [
+                                    m('b', item["Project Title"] || " "), 
+                                    m('p',item["Description (short)"])
+                                ])
+                            
+                update({
+                            projectSelected: project,
+                            projectDesc: desc
+                        })
             },
             getMeta: async () => {
                 const [links, od_matrices, scenarios] =
@@ -1070,6 +1083,42 @@ const menuView = state => {
                         COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
                      ),
                      
+                    m('label', {for: 'projlist'}, "Projects",
+                         m(UI.List, 
+                            {
+                                name: 'projlist',
+                                size: "xs",
+                            },
+                            // All the projects in the selected country. Not the best UI, but a starter
+                            
+                            // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
+                            // But need to check against our user stories, no idea if that is useful
+                            state.projects.filter(projItem => {
+                                if (!((projItem.Country == state.projectCountry) && (projItem.NEWCODE_NU != 0))) {
+                                    return false
+                                }
+                                const project_ids = projItem.NEWCODE_NU.split(",").filter(x=>x!="")
+                                const desired = projItem.Type == "Node" || state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
+                                return desired
+                            })
+                                .map(projItem => m(UI.ListItem, {
+                                                            label: m("h5", {} , projItem["Project Title"]  
+                                                                    
+                                                                 ),
+                                                            onclick: e => { 
+                                                                actions.setProjectSelected(projItem.NEWCODE_NU) 
+                                                                projItem.Type == "Link" && highlightProjects(state, projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
+                                                                if (projItem.Type == "Node") {
+                                                                    const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
+                                                                    map.flyTo({center: [lon, lat], zoom: 12})
+                                                                }
+                                                            }
+                                                        }))                     
+                         )
+                     )
+                        
+                     
+                     
                 )
                 :
                 m('div', {class: 'gcvt-ctrl' },
@@ -1309,77 +1358,14 @@ const menuView = state => {
                                 ],
                             })
                         : 
-                        
-                        // [
-                        // TODO tried to redo this and have it work nicer using a Card instead of a Callout
-                        // but got nowhere. broken implementation left below as a warning to others
-                        //
-                            // m(UI.Card, {style: 'padding-bottom: 0px; max-width: 50%; background: white; height: 40%'}, 
-                            
-                                // [
-                                    // m("h4", "Projects"),
-                            
-                                    // ...state.projects.filter(projItem => projItem.Country == state.projectCountry)
-                                            // .map(projItem => m(UI.Button, {
-                                                                        // label: projItem["Project Title"],
-                                                                        // onclick: e => { 
-                                                                            // actions.setProjectSelected(projItem) 
-                                                                            // highlightLinks(
-                                                                                // [
-                                                                                    // 13000 + Math.floor(Math.random() * 2000),
-                                                                                    // 13000 + Math.floor(Math.random() * 2000),
-                                                                                    // [13198, 18922,20286][Math.floor(Math.random() * 3)]
-                                                                                // ]) 
-                                                                            // }
-                                                                    // }
-                                                                    // ))  
-                                // ]
-                                // )
-                                    
-                            
-                            
-                        // ]
-                        
-                        m(UI.Callout, {
-                            style: 'padding-bottom: 0px; max-width: 50%; background: white; pointer-events: auto',
+                         m(UI.Callout, {
+                            style: 'width:40em; background: white; pointer-events: auto',
                             fluid: true,
                             onDismiss: _ => update({showDesc: false}),
-                            content: [
-                                m('label', {for: 'projlist'}, "Projects",
-                                     m(UI.List, 
-                                        {
-                                            name: 'projlist',
-                                            size: "xs",
-                                        },
-                                        // All the projects in the selected country. Not the best UI, but a starter
-                                        
-                                        // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
-                                        // But need to check against our user stories, no idea if that is useful
-                                        state.projects.filter(projItem => {
-                                            if (!((projItem.Country == state.projectCountry) && (projItem.NEWCODE_NU != 0))) {
-                                                return false
-                                            }
-                                            const project_ids = projItem.NEWCODE_NU.split(",").filter(x=>x!="")
-                                            const desired = projItem.Type == "Node" || state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
-                                            return desired
-                                        })
-                                            .map(projItem => m(UI.ListItem, {
-                                                                        label: m("h5", {} , projItem["Project Title"]  
-                                                                                
-                                                                             ),
-                                                                        onclick: e => { 
-                                                                            actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                            projItem.Type == "Link" && highlightProjects(state, projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
-                                                                            if (projItem.Type == "Node") {
-                                                                                const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
-                                                                                map.flyTo({center: [lon, lat], zoom: 12})
-                                                                            }
-                                                                        }
-                                                                    }))                     
-                                     )
-                                 )
-                        ]}
-                        )
+                            content: state.projectDesc
+                            })
+                        
+                        
               
                     )
                     
