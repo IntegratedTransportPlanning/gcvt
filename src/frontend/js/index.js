@@ -513,6 +513,8 @@ const app = {
                 actions.fetchLayerData("links")
             },
             setProjectMode: projectsMode => {
+                map.setLayoutProperty('points', 'visibility', 
+                                       projectsMode ? 'visible' : 'none')
                 update({projectMode: projectsMode})
             },
             setProjectSelected: project => {
@@ -611,10 +613,12 @@ const app = {
                         'source': 'point', // reference the data source
                         'layout': {
                             'icon-image': 'icon', // reference the image
-                            'icon-size': 1/16
+                            'icon-size': 1/20
                         }
                     })
+                    map.setLayoutProperty('points', 'visibility', 'none')
                 })
+                
                 return update({ projects })
             },
             toggleCentroids: showness => {
@@ -1359,7 +1363,7 @@ const menuView = state => {
                             })
                         : 
                          m(UI.Callout, {
-                            style: 'width:40em; background: white; pointer-events: auto',
+                            style: 'width:30em; background: white; pointer-events: auto',
                             fluid: true,
                             onDismiss: _ => update({showDesc: false}),
                             content: state.projectDesc
