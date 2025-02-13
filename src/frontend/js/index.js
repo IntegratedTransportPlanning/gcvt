@@ -1025,6 +1025,16 @@ function getUnit(meta, domain, variable, percent=false){
 const mountpoint = document.createElement('div')
 document.body.appendChild(mountpoint)
 
+function linkSwitcher(state) {
+    return state.layers.links.variable && m('select', {
+            name: 'link_type',
+            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
+        },
+        m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
+        R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, k), Array.from(new Set(state.LTypes)))
+    )
+}
+
 const menuView = state => {
     // let popup = state.mapUI.popup
     render(mountpoint,
@@ -1086,7 +1096,8 @@ const menuView = state => {
                         }, 
                         COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
                      ),
-                     
+                    linkSwitcher(state),
+                    m('br'),
                     m('label', {for: 'projlist'}, "Projects",
                          m(UI.List, 
                             {
@@ -1270,13 +1281,7 @@ const menuView = state => {
                             m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
                             meta2options(state.meta.links, state.layers.links.variable)
                         ),
-                        state.layers.links.variable && m('select', {
-                            name: 'link_type',
-                            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
-                        },
-                            m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
-                            R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, k), Array.from(new Set(state.LTypes)))
-                        ),
+                        linkSwitcher(state),
 
                         m('label', {for: 'matrix_variable'}, "Zones"),
                         m('div[style=display:flex;align-items:center]', [
