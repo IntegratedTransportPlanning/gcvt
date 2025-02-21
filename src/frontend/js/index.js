@@ -61,7 +61,7 @@ import * as R from "ramda"
 import ITPLOGO from "../../resources/itp-logo.png"
 import MAN_STRUGGLES_WITH_UMBRELLA from "../../resources/man-struggles-with-umbrella-public-domain.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
-import KGFLOGO from "../../resources/Korea Green Growth Trust Fund Logo.jpg"
+import EAPLOGO from "../../resources/eap-small.png"
 
 
 // UTILITY FUNCS
@@ -1049,12 +1049,14 @@ const menuView = state => {
                 m('div', {style: 'float: left; transform: rotate(180deg); margin: 5px'},
                     m(UI.Card, {style: 'pointer-events: auto', fluid: true},
                         [
+                            m('h4','Eastern Partnership: Indicative TEN-T Investment Action Plan'),
+                            m('img', {src: EAPLOGO, height: 60}),                            
+                            m('a', {href: "https://www.worldbank.org", target: "_blank"},
+                                m('img', {src: WBLOGO, height: 60, style: 'padding: 8px; margin-right: 5px'})
+                            ),
                             m('a', {href: "https://www.itpworld.net", target: "_blank"},
                                 m('img', {src: ITPLOGO, width: 100, style: 'margin-right: 5px'})
                             ),
-                            m('a', {href: "https://www.worldbank.org", target: "_blank"},
-                                m('img', {src: WBLOGO, height: 60, style: 'padding: 8px; margin-right: 5px'})
-                            )
                         ]
                     )
                 ),
