@@ -1088,6 +1088,7 @@ const menuView = state => {
                                     // TODO mousing away from button makes text disappear, i think we messed up the css? 
                                     name: 'showModels',
                                     label: "Go to Modelling view",
+                                    style: {color: UI.Colors.BLUE_GREY600},
                                     onclick: e => {
                                         actions.setProjectMode(false)
                                     }
@@ -1142,6 +1143,7 @@ const menuView = state => {
                     m(UI.Button, {
                                     name: 'showProjects',
                                     label: "Go to Projects view",
+                                    style: {color: UI.Colors.BLUE_GREY600},
                                     onclick: e => {
                                         actions.setProjectMode(true)
                                     }
