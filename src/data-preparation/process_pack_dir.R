@@ -88,7 +88,7 @@ process_links = function(geom, scenarios) {
   mutate(ID_LINK = LINK_ID)
 
   # Crop to study area
-  eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only.geojson", sep="")) %>%
+  eapregion = read_sf(paste(BASE_DIR, "data/sensitive/eap_zones_only_minus_B.geojson", sep="")) %>%
     st_buffer(0) %>% # Buffer to get rid of some stupid artifact.
     st_union()
   intersection = unlist(st_intersects(eapregion, geom))
