@@ -1693,7 +1693,8 @@ async function highlightProjects(state, project_ids) {
         }
         return matches
     },[])
-    map.setFilter('projlinks', ['match', ['id'], toHighlight, true, false])  // OH MY DAYS mapbox this was such a faff to get to work
+    map.setFilter('projlinks', ['match', ['id'], toHighlight, true, false])  
+    
     const bbox = mergebboxes(project_ids.map(id => bboxes[id])) // ideally this would filter by link type too
     map.fitBounds(bbox, {padding:100})
     
@@ -1703,7 +1704,7 @@ async function highlightProjects(state, project_ids) {
     setTimeout(_ => {
         // only blank out the highlight if the timeout hash hasn't changed
         if (current_timeout_hash == mytimeout) map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ])
-    }, 4000)
+    }, 9000)
 }
 
 
