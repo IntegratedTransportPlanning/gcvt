@@ -238,14 +238,14 @@ function stateFromSearch(search) {
     }
 
     // Bools in the query string
-    for (let k of ["percent","compare","showctrl","showDesc","showClines","showChart"]) {
+    for (let k of ["percent","compare","showctrl","showDesc","showClines","showChart", "projectMode","projectSelected"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = qsObj[k] == "true"
         }
     }
 
     // Arrays in the querty string
-    for (let k of ["selectedZones","desiredLTypes"]) {
+    for (let k of ["selectedZones","desiredLTypes", "projectDesc"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
         }
@@ -524,10 +524,14 @@ const app = {
                 const desc = state.projects
                             .filter(proj => proj.NEWCODE_NU == project)
                             .map(item => 
-                                [
-                                    m('b', item["Project Title"] || " "), 
-                                    m('p',item["Description (short)"])
-                                ])
+                                     [
+                                        item["Project Title"] || " ", 
+                                        item["Description (short)"]
+                                    ])
+                                // [
+                                    // m('b', item["Project Title"] || " "), 
+                                    // m('p',item["Description (short)"])
+                                // ])
                             
                 update({
                             projectSelected: project,
@@ -765,8 +769,10 @@ const app = {
             // Query string updater
             // take subset of things that should be saved, pushState if any change.
             const nums_in_query = [] // These are really floats
-            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart"]
-            const arrays_in_query = ["selectedZones", "desiredLTypes"]
+            
+            // strings and bools 
+            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart","projectMode", "projectCountry","projectSelected"]
+            const arrays_in_query = ["selectedZones", "desiredLTypes", "projectDesc"]
 
             const updateQS = () => {
                 const queryItems = [
@@ -1052,7 +1058,7 @@ const menuView = state => {
                 
                 [
                     m('h3', "Eastern Partnership Visualization Tool"),
-                    m('p', "This tool contains preliminary World Bank modelling for the five Eastern Partnership countries and the TEN-T investment plan. <br> Most data is not intended for external sharing."),
+                    m('p', "This tool contains preliminary World Bank modelling for the five Eastern Partnership countries and the TEN-T investment plan. Most data is not intended for external sharing."),
                     m('label', {for:"foot-high-fence"},"Password: "),
                     m(UI.Input, 
                         {
