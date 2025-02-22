@@ -218,7 +218,8 @@ const DEFAULTS = {
     projectMode: false,
     projectCountry: 'Ukraine',
     projectSelected: null,
-    projectDesc: ""
+    projectDesc: "",
+    passwordEntered: false
 }
 
 
@@ -1040,6 +1041,29 @@ const menuView = state => {
     render(mountpoint,
         // Position relative and full height are required for positioning elements at the bottom
         // translate(0,0) is required to put it in front of mapbox.
+        
+        // This is not really 'security', it is just intended to emphasise that this is internal WB work at this stage.
+        // Discussed with EEE (17/2/2025) that proper page security is outside the scope of this contract
+        !state.passwordEntered ? 
+            m('div', 
+                {
+                    style: 'width: 100%; height: 100vh; background:aliceblue; position: relative; transform: translate(0,0); padding: 50px' 
+                }, 
+                
+                [
+                    m('h3', "Eastern Partnership Visualization Tool"),
+                    m('p', "This tool contains preliminary World Bank modelling for the five Eastern Partnership countries and the TEN-T investment plan. <br> Most data is not intended for external sharing."),
+                    m('label', {for:"foot-high-fence"},"Password: "),
+                    m(UI.Input, 
+                        {
+                            name: "foot-high-fence", 
+                            placeholder: "Enter password",
+                            oninput: e => { update({passwordEntered: e.target.value == "moldova"}) }
+                        })
+                ]
+                )
+                
+        :
         m('div', {style: 'pointer-events: none; height: 100vh; position: relative; transform: translate(0,0)'}, [
 
             // Sponsor logos. Most important stuff first.
