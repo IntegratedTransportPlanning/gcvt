@@ -40,7 +40,13 @@ const log = DEBUG ? console.log : _ => undefined
 const ZONE_OPACITY = 0.5
 
 const COUNTRIES = [ "Armenia", "Azerbaijan", "Georgia", "Moldova", "Ukraine" ]
-
+const COUNTRY_BBOXES = {
+  "Armenia": [[43.58, 38.74], [46.51, 41.25]],
+  "Azerbaijan": [[44.77, 38.39], [50.37, 41.91]],
+  "Georgia": [[40.01, 41.05], [46.64, 43.58]],
+  "Moldova": [[26.67, 45.47], [30.13, 48.49]],
+  "Ukraine": [[22.14, 44.39], [40.23, 52.37]]
+}
 
 import meiosisMergerino from "meiosis-setup/mergerino"
 import simpleStream from "meiosis-setup/simple-stream"
@@ -1111,7 +1117,7 @@ const menuView = state => {
             ),
 
             // Main menu panel
-            m('div', {class: 'mapboxgl-ctrl'}, // Two of these now, one turns on or the other based on 'mode' 
+            m('div', {class: 'mapboxgl-ctrl'}, // Two of these now, one or the other based on 'mode' 
                 state.projectMode ? 
                 m('div', {class: 'gcvt-ctrl' },
                     m(UI.Button, {  // TODO should these buttons be at the bottom of ctrl box? idk
@@ -1123,12 +1129,35 @@ const menuView = state => {
                                         actions.setProjectMode(false)
                                     }
                                 }), 
+                     m('label', {for: 'countrySelect'}, "Project country"),           
                      m('select', {
                             name: 'countrySelect',
-                            onchange: e => update({projectCountry: e.target.value})
+                            onchange: e => 
+                            {
+                                // Update the map to highlight all the links
+                                // from a given country
+                                let thisCountry = e.target.value
+                                let countryProjs = state.projects
+                                    .filter(proj => proj.Country == thisCountry)
+                                    .map(proj => proj.NEWCODE_NU)
+                                    .map(code =>  code.split(",")  )
+                                    .flat()
+                                    .filter(code => code != "")
+                                highlightProjects(state, countryProjs, thisCountry) 
+                                update({projectCountry: thisCountry})
+                            }
                         }, 
-                        COUNTRIES.map(item => m('option', {value: item, selected: state.projectCountry == item}, item))
+                        COUNTRIES.map(item => 
+                                m('option', 
+                                        {
+                                            value: item, 
+                                            selected: state.projectCountry == item
+                                        }, 
+                                    item)
+                            
+                            )
                      ),
+                    m('label', "Types of project"), 
                     linkSwitcher(state),
                     m('br'),
                     m('label', {for: 'projlist'}, "Projects",
@@ -1155,7 +1184,12 @@ const menuView = state => {
                                                                  ),
                                                             onclick: e => { 
                                                                 actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                projItem.Type == "Link" && highlightProjects(state, projItem.NEWCODE_NU.split(",").filter(x=>x!=""))
+                                                                projItem.Type == "Link" 
+                                                                    && highlightProjects(
+                                                                        state, 
+                                                                        projItem.NEWCODE_NU.split(",").filter(x=>x!="")
+                                                                        //bbox = [] // Olie's thing works it out 
+                                                                        )
                                                                 if (projItem.Type == "Node") {
                                                                     const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
                                                                     map.flyTo({center: [lon, lat], zoom: 12})
@@ -1713,7 +1747,7 @@ function mergebboxes(bboxes){
 }
 
 let current_timeout_hash = null
-async function highlightProjects(state, project_ids) {
+async function highlightProjects(state, project_ids, country = "") {
     // Bright orange highlight for the 'projlinks' layer
     // This works by loading everything as another version of the same
     // links layer, but the only visible bit is links where projects
@@ -1729,7 +1763,21 @@ async function highlightProjects(state, project_ids) {
     },[])
     map.setFilter('projlinks', ['match', ['id'], toHighlight, true, false])  
     
-    const bbox = mergebboxes(project_ids.map(id => bboxes[id])) // ideally this would filter by link type too
+    //if (bbox === []) {
+    let bbox = [] 
+    
+    if (country !== "") {
+        bbox = COUNTRY_BBOXES[country]
+        map.setPaintProperty('projlinks','line-width',15)
+    }
+    else { 
+        // Because we sometimes want to show all country projects too, tweak the highlight width on and off
+        // (Nasty hack but it works)
+        map.setPaintProperty('projlinks','line-width',50)
+        bbox = mergebboxes(project_ids.map(id => bboxes[id])) // ideally this would filter by link type too
+    }
+
+    console.log("bbox is" + bbox)
     map.fitBounds(bbox, {padding:100})
     
     // use current unix time to get a unique fingerprint for this timer
