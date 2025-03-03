@@ -10,7 +10,7 @@ setup:
 	cd src/frontend && yarn
 
 http:
-	./vendor/caddy/caddy
+	./vendor/caddy2/caddy run
 
 back:
 	cd src/backend && julia +1.6.7 --project=. src/appjl.jl

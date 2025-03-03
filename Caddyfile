@@ -1,23 +1,28 @@
-# This doesn't always work right due to hostname or routing difficulties.
-# If you use a real host rather than localhost it is more likely to work correctly.
-# Will fix this ;)
-
-:2016/tiles/ {
-	root src/backend/data/processed/tiles/
-	browse
+{
+    # debug
 }
 
-:2016/map/ {
-	root src/frontend/www/
-}
+http://localhost:2016 {
+    route /tiles* {
+        uri strip_prefix /tiles
+        root * src/backend/data/processed/tiles/
+        file_server
+    }
 
-:2016/api/ {
-	proxy / :8000 {
-		websocket
-	}
-}
+    route /map* {
+        uri strip_prefix /map
+        root * src/frontend/www/
+        file_server
+    }
 
-:2016 {
-	# Temporarily redirect root to /map
-	redir / /map/ 307
+    route /api* {
+        uri strip_prefix /api
+        reverse_proxy localhost:8000 {
+            header_up Host {host} # Forward original host header
+        }
+    }
+
+    route {
+        redir / /map/ 307
+    }
 }
