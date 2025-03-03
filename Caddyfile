@@ -2,7 +2,7 @@
     # debug
 }
 
-http://localhost:2016 {
+{$SITE_ADDRESS} {
     route /tiles* {
         uri strip_prefix /tiles
         root * src/backend/data/processed/tiles/

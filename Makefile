@@ -9,8 +9,11 @@ setup:
 	cd src/backend && juliaup add 1.6.7 && julia +1.6.7 --project=. -e "import Pkg; Pkg.instantiate(); Pkg.build()"
 	cd src/frontend && yarn
 
+http_prod: # HTTPS for the real site
+	env SITE_ADDRESS=https://beta.greenconnectivity.net ./vendor/caddy2/caddy run
+
 http:
-	./vendor/caddy2/caddy run
+	env SITE_ADDRESS=http://:2016 ./vendor/caddy2/caddy run
 
 back:
 	cd src/backend && julia +1.6.7 --project=. src/appjl.jl
