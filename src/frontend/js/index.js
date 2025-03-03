@@ -1181,17 +1181,18 @@ const menuView = state => {
                             // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
                             // But need to check against our user stories, no idea if that is useful
                             state.projects.filter(projItem => {
-                                if (!((projItem.Country == state.projectCountry) && (projItem.NEWCODE_NU != 0))) {
+                                if (!(projItem.Country == state.projectCountry)) { // this used to also filter NUCODE_NU != 0 but it missed out lots of node projects?
                                     return false
                                 }
                                 const project_ids = projItem.NEWCODE_NU.split(",").filter(x=>x!="")
-                                const desired = projItem.Type == "Node" || state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
+                                // const desired = projItem.Type == "Node" || state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
+                                const desired = ((projItem.Type == "Node") && (projItem["Coordinates (lat, lon)"] != "")) || (projItem.Type != "Node") && (state.desiredLTypes.length == 0) || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
                                 return desired
                             })
                                 .map(projItem => m(UI.ListItem, {
-                                                            label: m("h5", {} , projItem["Project Title"]  
+                                    label: [projItem.Type == "Node" && m("img", {src: CRANE, style: "height: 2em"}), m("h5", {} , projItem["Project Title"]  
                                                                     
-                                                                 ),
+                                                                 )],
                                                             onclick: e => { 
                                                                 actions.setProjectSelected(projItem.NEWCODE_NU) 
                                                                 projItem.Type == "Link" 
