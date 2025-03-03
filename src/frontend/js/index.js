@@ -195,7 +195,7 @@ const DEFAULTS = {
     },
     layers: {
         links: {
-            variable: "V_total_pax",
+            variable: "Tent",
         },
         od_matrices: {
             variable: "",
@@ -1056,7 +1056,7 @@ const menuView = state => {
         
         // This is not really 'security', it is just intended to emphasise that this is internal WB work at this stage.
         // Discussed with EEE (17/2/2025) that proper page security is outside the scope of this contract
-        !state.passwordEntered ? 
+        !(state.passwordEntered || state.passwordSkipped) ? 
             m('div', 
                 {
                     style: 'width: 100%; height: 100vh; background:aliceblue; position: relative; transform: translate(0,0); padding: 50px' 
@@ -1071,7 +1071,17 @@ const menuView = state => {
                             name: "foot-high-fence", 
                             placeholder: "Enter password",
                             oninput: e => { update({passwordEntered: e.target.value == "moldova"}) }
-                        })
+                        }),
+                    m(UI.Button, {
+                        name: 'keep-your-secrets',
+                        label: "Skip for reduced access",
+                        style: {color: UI.Colors.BLUE_GREY600},
+                        onclick: e => {
+                            update({passwordSkipped: true})
+                            actions.changeLayerVariable("od_matrices", null)
+                            actions.changeLayerVariable("links", "Tent")
+                        }
+                    }), 
                 ]
                 )
                 
@@ -1228,7 +1238,7 @@ const menuView = state => {
                     state.showctrl && [
                         m('br'),
 
-                        m('label', {for: 'scenario'}, "Scenario"),
+                        state.passwordEntered && [m('label', {for: 'scenario'}, "Scenario"),
                         m('select', {
                             name: 'scenario',
                             onchange: e => actions.updateScenario(e.target.value, state.scenarioYear)
@@ -1338,7 +1348,7 @@ const menuView = state => {
                                 checked: state.percent,
                                 onchange: e => actions.setPercent(e.target.checked),
                             }),
-                        ),
+                        )],
 
                         m('br'),
                         m('label', {for: 'link_variable'}, "Links"),
@@ -1347,11 +1357,11 @@ const menuView = state => {
                             onchange: e => actions.changeLayerVariable("links", e.target.value),
                         },
                             m('option', {value: '', selected: state.layers.links.variable === null}, 'None'),
-                            meta2options(state.meta.links, state.layers.links.variable)
+                            meta2options(state.passwordEntered == false ? R.filter(x=>x.name == "TEN-T network", state.meta.links) : state.meta.links, state.layers.links.variable)
                         ),
                         linkSwitcher(state),
 
-                        m('label', {for: 'matrix_variable'}, "Zones"),
+                        state.passwordEntered && [m('label', {for: 'matrix_variable'}, "Zones"),
                         m('div[style=display:flex;align-items:center]', [
                             m('select', {
                                 name: 'matrix_variable',
@@ -1396,7 +1406,7 @@ const menuView = state => {
                             m('label', {for: 'show_clines'}, 'Flow lines: ',
                                 m('input', {name: 'show_clines', type:"checkbox", checked: state.showClines, onchange: e => actions.toggleCentroids(e.target.checked)}),
                             ),
-                        ],
+                        ]],
 
                         // Summary statistics for zones
                         state.layers.od_matrices.variable !== ""
