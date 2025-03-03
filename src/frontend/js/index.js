@@ -251,7 +251,7 @@ function stateFromSearch(search) {
     }
 
     // Arrays in the querty string
-    for (let k of ["selectedZones","desiredLTypes", "projectDesc"]) {
+    for (let k of ["selectedZones","desiredLTypes"]) {
         if (qsObj.hasOwnProperty(k)) {
             qsObj[k] = JSON.parse(qsObj[k])
         }
