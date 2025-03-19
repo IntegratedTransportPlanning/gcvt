@@ -553,22 +553,12 @@ const app = {
                 update({projectMode: projectsMode})
             },
             setProjectSelected: project => {
-                const state = states()
+                const newcode = project.NEWCODE_NU
                 
-                const desc = state.projects
-                            .filter(proj => proj.NEWCODE_NU == project)
-                            .map(item => 
-                                     [
-                                        item["Project Title"] || " ", 
-                                        item["Description (short)"]
-                                    ])
-                                // [
-                                    // m('b', item["Project Title"] || " "), 
-                                    // m('p',item["Description (short)"])
-                                // ])
+                const desc = [m('p', m('b', project["Project Title"] || " ")), m('p', project["Description (short)"])]
                             
                 update({
-                            projectSelected: project,
+                            projectSelected: newcode,
                             projectDesc: desc
                         })
             },
@@ -1913,7 +1903,7 @@ if (DEBUG)
 
 // a bit hacky: state only required for links, so for nodes it can be called outside of the bits that have access to state
 function selectProject(projItem, state) {
-    actions.setProjectSelected(projItem.NEWCODE_NU)
+    actions.setProjectSelected(projItem)
     projItem.Type == "Link"
         && highlightProjects(
             state,
