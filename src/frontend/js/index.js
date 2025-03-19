@@ -601,13 +601,17 @@ const app = {
                 // for some reason this needs a callback and can't be awaited
                 map.loadImage(CRANE, (unhappy, icon) => { // WB may wish to choose another icon
                     map.addImage('icon', icon)
-                    const node_coordinates = projects.filter(x=>x.Type == "Node").map(x=>x["Coordinates (lat, lon)"].split(",")).filter(x=>x.length == 2).map(x=>[x[1],x[0]])
-                    const feats = node_coordinates.map(p => { return {
+                    const node_projects = projects.filter(x=>x.Type == "Node").map(x=>{
+                        const coords = x["Coordinates (lat, lon)"].split(",")
+                        return {...x, p: [coords[1], coords[0]]}
+                    }).filter(x=>x.p.length == 2)
+                    const feats = node_projects.map(x => { return {
                         'type': 'Feature',
-                            'geometry': {
-                                'type': 'Point',
-                                'coordinates': p,
-                            } // TODO: store project id so this can be clickable
+                        'properties': x,
+                        'geometry': {
+                            'type': 'Point',
+                            'coordinates': x.p,
+                        }
                     }})
                     map.addSource('point', {
                         'type': 'geojson',
@@ -864,6 +868,8 @@ const { update, states, actions } =
     map.on("zoomend", positionUpdate)
 
     map.on('click', 'zones', actions.clickZone)
+
+    map.on('click', 'points', e => selectProject(e.features[0].properties, states()))
 
     map.on('click', 'links', async event => update(state =>
         merge(state, {
@@ -1189,24 +1195,10 @@ const menuView = state => {
                                 const desired = ((projItem.Type == "Node") && (projItem["Coordinates (lat, lon)"] != "")) || (projItem.Type != "Node") && (state.desiredLTypes.length == 0) || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
                                 return desired
                             })
-                                .map(projItem => m(UI.ListItem, {
-                                    label: [projItem.Type == "Node" && m("img", {src: CRANE, style: "height: 2em"}), m("h5", {} , projItem["Project Title"]  
-                                                                    
-                                                                 )],
-                                                            onclick: e => { 
-                                                                actions.setProjectSelected(projItem.NEWCODE_NU) 
-                                                                projItem.Type == "Link" 
-                                                                    && highlightProjects(
-                                                                        state, 
-                                                                        projItem.NEWCODE_NU.split(",").filter(x=>x!="")
-                                                                        //bbox = [] // Olie's thing works it out 
-                                                                        )
-                                                                if (projItem.Type == "Node") {
-                                                                    const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
-                                                                    map.flyTo({center: [lon, lat], zoom: 12})
-                                                                }
-                                                            }
-                                                        }))                     
+                             .map(projItem => m(UI.ListItem, {
+                                 label: [projItem.Type == "Node" && m("img", {src: CRANE, style: "height: 2em"}), m("h5", {} , projItem["Project Title"])],
+                                 onclick: e => selectProject(projItem, state)
+                             }))
                          )
                      )
                         
@@ -1788,7 +1780,6 @@ async function highlightProjects(state, project_ids, country = "") {
         bbox = mergebboxes(project_ids.map(id => bboxes[id])) // ideally this would filter by link type too
     }
 
-    console.log("bbox is" + bbox)
     map.fitBounds(bbox, {padding:100})
     
     // use current unix time to get a unique fingerprint for this timer
@@ -1907,3 +1898,17 @@ if (DEBUG)
         setEqual,
         nerf
     })
+
+// a bit hacky: state only required for links, so for nodes it can be called outside of the bits that have access to state
+function selectProject(projItem, state) {
+    actions.setProjectSelected(projItem.NEWCODE_NU)
+    projItem.Type == "Link"
+        && highlightProjects(
+            state,
+            projItem.NEWCODE_NU.split(",").filter(x=>x!="")
+        )
+    if (projItem.Type == "Node") {
+        const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
+        map.flyTo({center: [lon, lat], zoom: 12})
+    }
+}
