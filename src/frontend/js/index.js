@@ -125,7 +125,7 @@ const API_VERSION_PROMISE = getApiVersion()
 // d3 really doesn't offer a sane way to pick these.
 // Supported list: https://github.com/d3/d3-scale-chromatic/blob/master/src/index.js
 const divergingPalette = _ => d3.interpolateRdYlGn
-const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateViridis
+const continuousPalette = scheme => scheme ? d3[`interpolate${scheme}`] : d3.interpolateWarm
 const categoricalPalette = scheme => scheme ? d3[`scheme${scheme}`] : d3.schemeTableau10
 
 // TODO: This is a cludge: we should get this data from the meta.yaml somehow.
@@ -1821,6 +1821,8 @@ function paint(domain, {variable, values, bounds, dir, palette}) {
 }
 
 // TODO: support categorical variables
+// - need to import swatches from d3-color-legend and change Legend() function to use them
+// - follow https://observablehq.com/@d3/color-legend
 function getPalette(dir, bounds, {palette, bins}, compare, usesymlog=false) {
     let pal = continuousPalette(palette)
     if (pal === undefined) {
