@@ -451,7 +451,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
                 'icon-allow-overlap': true,
             }
         })
-        map.setLayoutProperty('points', 'visibility', 'none')
+        map.setLayoutProperty('points', 'visibility', initial.projectMode ? 'visible' : 'none') // don't think this is the right place for this
 
         actions.getLTypes()
         actions.getLinkBboxes()
