@@ -66,6 +66,7 @@ import * as R from "ramda"
 
 import ITPLOGO from "../../resources/itp-logo.png"
 import CRANE from "../../resources/crane.png"
+import PLANE from "../../resources/plane-public-domain.png"
 import WBLOGO from "../../resources/WBG-Transport-Horizontal-RGB-high.png"
 import EAPLOGO from "../../resources/eap-small.png"
 
@@ -426,6 +427,32 @@ const mapboxInit = ({lng, lat, zoom}) => {
             },
         })
 
+        ;[[CRANE, 'icon'], [PLANE, 'plane']].forEach(([url, id]) => {
+            map.loadImage(url, (unhappy, icon) => {
+                map.addImage(id, icon)
+            })
+        })
+        map.addSource('point', {
+            'type': 'geojson',
+            'data': {
+                'type': 'FeatureCollection',
+                'features': [],
+            }
+        })
+
+        // Add a layer to use the image to represent the data.
+        map.addLayer({
+            'id': 'points',
+            'type': 'symbol',
+            'source': 'point', // reference the data source
+            'layout': {
+                'icon-image': ['get', 'icon'], // reference the image
+                'icon-size': 1/8,
+                'icon-allow-overlap': true,
+            }
+        })
+        map.setLayoutProperty('points', 'visibility', 'none')
+
         actions.getLTypes()
         actions.getLinkBboxes()
         actions.getCentres()
@@ -517,6 +544,7 @@ const app = {
             },
             setLTypes: LTypes => {
                 update({desiredLTypes: LTypes})
+                actions.fetchProjects()
                 actions.fetchLayerData("links")
             },
             setProjectMode: projectsMode => {
@@ -598,40 +626,21 @@ const app = {
             },
             fetchProjects: async () => { // presumably bad things happen if this runs more than once
                 const projects = await (await fetch('projects.json')).json()
-                // for some reason this needs a callback and can't be awaited
-                map.loadImage(CRANE, (unhappy, icon) => { // WB may wish to choose another icon
-                    map.addImage('icon', icon)
-                    const node_projects = projects.filter(x=>x.Type == "Node").map(x=>{
-                        const coords = x["Coordinates (lat, lon)"].split(",")
-                        return {...x, p: [coords[1], coords[0]]}
-                    }).filter(x=>x.p.length == 2)
-                    const feats = node_projects.map(x => { return {
-                        'type': 'Feature',
-                        'properties': x,
-                        'geometry': {
-                            'type': 'Point',
-                            'coordinates': x.p,
-                        }
-                    }})
-                    map.addSource('point', {
-                        'type': 'geojson',
-                        'data': {
-                            'type': 'FeatureCollection',
-                            'features': feats,
-                        }
-                    })
-
-                    // Add a layer to use the image to represent the data.
-                    map.addLayer({
-                        'id': 'points',
-                        'type': 'symbol',
-                        'source': 'point', // reference the data source
-                        'layout': {
-                            'icon-image': 'icon', // reference the image
-                            'icon-size': 1/8
-                        }
-                    })
-                    map.setLayoutProperty('points', 'visibility', 'none')
+                const node_projects = projects.filter(x=>x.Type == "Node").map(x=>{
+                    const coords = x["Coordinates (lat, lon)"].split(",")
+                    return {...x, p: [coords[1], coords[0]]}
+                }).filter(x=>(x.p.length == 2) && (states().desiredLTypes.length == 0 || (x.Mode.split("/").some(mode => states().desiredLTypes.includes(mode))))) // i know we're not supposed to use states() but I can't remember why
+                const feats = node_projects.map(x => { return {
+                    'type': 'Feature',
+                    'properties': {...x, 'icon': getIconFromMode(x.Mode.split("/")[0])},
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': x.p,
+                    }
+                }})
+                const points = map.getSource('point')
+                points.setData({'type': 'FeatureCollection',
+                    'features': feats,
                 })
                 
                 return update({ projects })
@@ -1049,8 +1058,8 @@ function linkSwitcher(state) {
             name: 'link_type',
             onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
         },
-        m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all link types'),
-        R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, k), Array.from(new Set(state.LTypes)))
+        m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all types'),
+        R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, k), Array.from(new Set([...state.LTypes, ...state.projects.map(x=>x.Mode.split("/")).flat()].filter(x=>x!==""))))
     )
 }
 
@@ -1192,11 +1201,14 @@ const menuView = state => {
                                 }
                                 const project_ids = projItem.NEWCODE_NU.split(",").filter(x=>x!="")
                                 // const desired = projItem.Type == "Node" || state.desiredLTypes.length == 0 || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
-                                const desired = ((projItem.Type == "Node") && (projItem["Coordinates (lat, lon)"] != "")) || (projItem.Type != "Node") && (state.desiredLTypes.length == 0) || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
+                                const desired = (
+                                (projItem.Type == "Node") && (projItem["Coordinates (lat, lon)"] != "")) && ((state.desiredLTypes.length == 0) || projItem.Mode.split("/").some(mode => state.desiredLTypes.includes(mode)))
+                                || (projItem.Type != "Node") && (state.desiredLTypes.length == 0)
+                                || project_ids.map(id => state.ProjectLinkTypes[id] && state.ProjectLinkTypes[id].intersection(new Set(state.desiredLTypes)).size > 0).some(x=>x)
                                 return desired
                             })
                              .map(projItem => m(UI.ListItem, {
-                                 label: [projItem.Type == "Node" && m("img", {src: CRANE, style: "height: 2em"}), m("h5", {} , projItem["Project Title"])],
+                                 label: [projItem.Type == "Node" && m("p", "🏗️"), m("h5", {} , projItem["Project Title"])],
                                  onclick: e => selectProject(projItem, state)
                              }))
                          )
@@ -1910,5 +1922,17 @@ function selectProject(projItem, state) {
     if (projItem.Type == "Node") {
         const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
         map.flyTo({center: [lon, lat], zoom: 12})
+    }
+}
+
+// Images defined around line 430
+// TODO: add icons for all/most of ['Port', 'IWW', 'Rail', 'Logistics', 'Road', 'Airport']
+function getIconFromMode(mode) {
+    if (mode == "Road") {
+        return "icon"
+    } else if (mode == "Airport") {
+        return "plane"
+    } else {
+        return "icon"
     }
 }
