@@ -226,6 +226,7 @@ const DEFAULTS = {
     projectCountry: 'Ukraine',
     projectSelected: null,
     projectDesc: "",
+    projectTitle: "",
     passwordEntered: false
 }
 
@@ -555,10 +556,12 @@ const app = {
             setProjectSelected: project => {
                 const newcode = project.NEWCODE_NU
                 
-                const desc = [m('p', m('b', project["Project Title"] || " ")), m('p', project["Description (short)"])]
+                const desc = project["Description (short)"]
+                const title = project["Project Title"]
                             
                 update({
                             projectSelected: newcode,
+                            projectTitle: title,
                             projectDesc: desc
                         })
             },
@@ -780,8 +783,8 @@ const app = {
             const nums_in_query = [] // These are really floats
             
             // strings and bools 
-            const strings_in_query = [ "scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart","projectMode", "projectCountry","projectSelected"]
-            const arrays_in_query = ["selectedZones", "desiredLTypes", "projectDesc"]
+            const strings_in_query = ["scenario", "scenarioYear", "percent", "compare", "showctrl", "compareWith", "compareYear", "showDesc","showClines","showMatHelp","showLinkHelp","showChart","projectMode", "projectCountry","projectSelected", "projectDesc", "projectTitle"]
+            const arrays_in_query = ["selectedZones", "desiredLTypes"]
 
             const updateQS = () => {
                 const queryItems = [
@@ -1444,7 +1447,7 @@ const menuView = state => {
                             style: 'width:30em; background: white; pointer-events: auto',
                             fluid: true,
                             onDismiss: _ => update({showDesc: false}),
-                            content: state.projectDesc
+                            content: [m('p', m('b', state.projectTitle || " ")), m('p', state.projectDesc)],
                             })
                         
                         
