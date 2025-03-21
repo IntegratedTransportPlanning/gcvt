@@ -7,3 +7,4 @@ SHAPE
 *.geojson
 packrat/lib*/
 packrat/src/
+\!data/sensitive/eap_zones_only_minus_B.geojson
