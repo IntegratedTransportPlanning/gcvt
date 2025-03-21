@@ -1816,7 +1816,7 @@ async function highlightProjects(state, project_ids, country = "") {
     setTimeout(_ => {
         // only blank out the highlight if the timeout hash hasn't changed
         if (current_timeout_hash == mytimeout) map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ])
-    }, 9000)
+    }, 1000*600)
 }
 
 
