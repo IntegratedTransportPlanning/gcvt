@@ -865,13 +865,36 @@ const { update, states, actions } =
         const cent = map.getCenter()
         actions.changePosition(cent.lng, cent.lat, map.getZoom())
     }
-
+    
+    
+    const pointsPopup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+    })
+    
     map.on("moveend", positionUpdate)
     map.on("zoomend", positionUpdate)
 
     map.on('click', 'zones', actions.clickZone)
 
     map.on('click', 'points', e => selectProject(e.features[0].properties, states()))
+    
+    map.on('mouseenter', 'points', e => {
+        
+        const coordinates = e.features[0].geometry.coordinates.slice();
+        const description = e.features[0].properties.Mode + " project. Click for info.";
+
+        pointsPopup.setLngLat(coordinates)
+            .setHTML(description)
+            .addTo(map);    
+         
+        setTimeout(_ => pointsPopup.remove() , 2000)
+    })
+    
+    map.on('mouseleave', 'points', () => {
+        
+        pointsPopup.remove()
+    })
 
     map.on('click', 'links', async event => update(state =>
         merge(state, {
