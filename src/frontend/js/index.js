@@ -181,7 +181,7 @@ function zones2summary(summariser, state) {
         (state.percent && state.compare ? "" : " ") + getUnit(state.meta, "od_matrices", state.layers.od_matrices.variable, state.compare && state.percent)
 }
 
-const default_year = 2035
+const default_year = 2030
 
 // INITIAL STATE
 
@@ -590,7 +590,7 @@ const app = {
             // todo: don't hardcode scenario etc
             getLTypes: async () => {
                 const LTypes =  await getData("data?domain=links&variable=LType&comparewith=none")
-                const LinkProjects = await getData('data?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
+                const LinkProjects = await getData('data?domain=links&year=2030&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
                 let projectTypeMap = []
                 for (let i = 0; i < LinkProjects.length; i++) {
                     const projectId = LinkProjects[i]
@@ -608,7 +608,7 @@ const app = {
                 })
             },
             getLinkBboxes: async () => update({
-                LinkBboxes: await getData('bboxes?domain=links&year=2035&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
+                LinkBboxes: await getData('bboxes?domain=links&year=2030&variable=Project_ID&scenario=DoMin&percent=false&comparewith=none&compareyear=auto')
             }),
             getCentres: async () => update({
                 zoneCentres: await getData("centroids")

@@ -93,7 +93,7 @@ const links, mats, metadata = load_scenarios(packdir)
 
 # Tiny bit slow, should consider running in data prep step
 projects2bboxes = Dict(p => begin
-    projects2links = Dict(Int(k) => findall(identity, v.Project_ID .== k) .- 1 for k in unique(links[("DoMin", 2035)].Project_ID))
+    projects2links = Dict(Int(k) => findall(identity, v.Project_ID .== k) .- 1 for k in unique(links[("DoMin", 2030)].Project_ID))
     Dict(k => begin
             calcbbox(Iterators.flatten(map(f -> f.geometry.coordinates, filter(f -> f.properties["featureid"] in v, links_geom.features)))) # NB: julia row - 1 == featureid
     end for (k, v) in projects2links)
@@ -289,7 +289,7 @@ route("/data") do
     defaults = Dict(
         :domain => "od_matrices",
         :scenario => "DoMin",
-        :year => "2035",
+        :year => "2030",
         :comparewith => "MLRoad",
         :compareyear => "auto",
         :variable => "Total_GHG",
@@ -334,7 +334,7 @@ end
 
 route("/bboxes") do
     defaults = Dict(
-        :scenario => "DoMin",
+        :scenario => "Project35",
         :year => "2035",
     )
     d = merge(defaults, getpayload())

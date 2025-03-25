@@ -150,7 +150,7 @@ process_od_matrix <- function(metamat) {
 ## output, and both are expecting different things and getting diff results
 ## each time
 
-pack_dir = str_c(BASE_DIR, "data/2024_b/")
+pack_dir = str_c(BASE_DIR, "data/2025/")
 matrix_type_name = "od_matrices"
 
 scenarios = read_scenarios(pack_dir)
