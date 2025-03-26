@@ -39,13 +39,15 @@ const DEBUG = true
 const log = DEBUG ? console.log : _ => undefined
 const ZONE_OPACITY = 0.5
 
-const COUNTRIES = [ "Armenia", "Azerbaijan", "Georgia", "Moldova", "Ukraine" ]
+const COUNTRIES = [ "Armenia", "Azerbaijan", "Georgia", "Moldova", "Ukraine", "(Show whole plan)"]
 const COUNTRY_BBOXES = {
   "Armenia": [[43.58, 38.74], [46.51, 41.25]],
   "Azerbaijan": [[44.77, 38.39], [50.37, 41.91]],
   "Georgia": [[40.01, 41.05], [46.64, 43.58]],
   "Moldova": [[26.67, 45.47], [30.13, 48.49]],
-  "Ukraine": [[22.14, 44.39], [40.23, 52.37]]
+  "Ukraine": [[22.14, 44.39], [40.23, 52.37]],
+  // w , s , e , n 
+  "(Show whole plan)": [[9.52, 34.197],[58.723,53.115]]
 }
 
 import meiosisMergerino from "meiosis-setup/mergerino"
@@ -1176,15 +1178,18 @@ const menuView = state => {
                             onchange: e => 
                             {
                                 // Update the map to highlight all the links
-                                // from a given country
+                                // from a given country (or all countries) 
                                 let thisCountry = e.target.value
-                                let countryProjs = state.projects
-                                    .filter(proj => proj.Country == thisCountry)
+                                let countryProjs = (thisCountry.includes("Show")) ? 
+                                    state.projects :                                             // All countries
+                                    (state.projects.filter(proj => proj.Country == thisCountry)) // Selected country
+                                    
+                                let selProjects = countryProjs
                                     .map(proj => proj.NEWCODE_NU)
                                     .map(code =>  code.split(",")  )
                                     .flat()
                                     .filter(code => code != "")
-                                highlightProjects(state, countryProjs, thisCountry) 
+                                highlightProjects(state, selProjects, thisCountry) 
                                 update({projectCountry: thisCountry})
                             }
                         }, 
@@ -1792,6 +1797,7 @@ async function highlightProjects(state, project_ids, country = "") {
         }
         return matches
     },[])
+    
     map.setFilter('projlinks', ['match', ['id'], toHighlight, true, false])  
     
     //if (bbox === []) {
