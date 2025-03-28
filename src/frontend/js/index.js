@@ -1229,6 +1229,7 @@ const menuView = state => {
                                 return desired
                             })
                              .map(projItem => m(UI.ListItem, {
+                                 active: projItem.NEWCODE_NU === state.projectSelected,
                                  label: [projItem.Type == "Node" && m("p", "🏗️"), m("h5", {} , projItem["Project Title"])],
                                  onclick: e => selectProject(projItem, state)
                              }))
@@ -1475,7 +1476,7 @@ const menuView = state => {
                             style: 'width:30em; background: white; pointer-events: auto',
                             fluid: true,
                             onDismiss: _ => update({showDesc: false}),
-                            content: [m('p', m('b', state.projectTitle || " ")), m('p', state.projectDesc)],
+                            content: [m('p', m('b', state.projectTitle || "Click a country or project in the box on the right to explore the EaP TEN-T Plan.")), m('p', state.projectDesc)],
                             })
                         
                         
