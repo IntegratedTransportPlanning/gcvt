@@ -985,6 +985,10 @@ const { update, states, actions } =
                     if (oldpopup) {
                         oldpopup.remove()
                     }
+                    
+                    // This was getting in the way, not needed here
+                    if (state.projectMode) return null
+                    
                     let id = event.features[0].id
                     let ltype = state.LTypes[id]
                     if (!R.equals(state.desiredLTypes,[]) && !R.includes(state.LTypes[id],state.desiredLTypes.map(x => parseInt(x, 10)))) return;
@@ -1103,7 +1107,7 @@ const menuView = state => {
                         {
                             name: "foot-high-fence", 
                             placeholder: "Enter password",
-                            oninput: e => { update({passwordEntered: e.target.value == "moldova"}) }
+                            oninput: e => { update({passwordEntered: e.target.value == "ExtentAxonsIodine7"}) }
                         }),
                     m(UI.Button, {
                         name: 'keep-your-secrets',
