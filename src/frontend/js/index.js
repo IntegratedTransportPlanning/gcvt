@@ -1078,7 +1078,12 @@ document.body.appendChild(mountpoint)
 function linkSwitcher(state) {
     return state.layers.links.variable && m('select', {
             name: 'link_type',
-            onchange: e => actions.setLTypes(e.target.value == "all" ? [] : [e.target.value]),
+            onchange: e => 
+            {
+                if (state.projectMode)
+                    map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ])
+                actions.setLTypes(e.target.value == "all" ? [] : [e.target.value])
+            }
         },
         m('option', {value: "all", selected: R.equals(state.desiredLTypes, [])}, 'Show all types'),
         R.map(k=>m('option', {value: k, selected: R.equals(state.desiredLTypes, [k])}, k), Array.from(new Set([...state.LTypes, ...state.projects.map(x=>x.Mode.split("/")).flat()].filter(x=>x!==""))))
@@ -1950,6 +1955,7 @@ function selectProject(projItem, state) {
         const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
         map.flyTo({center: [lon, lat], zoom: 12})
         map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ])
+        
     }
 }
 
