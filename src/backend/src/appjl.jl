@@ -2,7 +2,7 @@
 
 module tmp
 
-const API_VERSION = "0.0.1" # Change this to invalidate HTTP cache
+const API_VERSION = "0.0.2" # Change this to invalidate HTTP cache
 
 import Genie
 using Genie.Router: route, @params
@@ -29,7 +29,8 @@ VegaLite.actionlinks(false) # Global setting - disable action button on all plot
 json(data; status::Int = 200) =
     Genie.Renderer.json(data; status = status, headers = Dict(
         "Access-Control-Allow-Origin" => "*",
-        "Cache-Control" => "public, max-age=$(365 * 24 * 60 * 60)", # cache for a year (max recommended). Change API_VERSION to invalidate
+        #"Cache-Control" => "public, max-age=$(365 * 24 * 60 * 60)", # cache for a year (max recommended). Change API_VERSION to invalidate
+        "Cache-Control" => "max-age=0",
     ))
 
 Genie.config.session_auto_start = false
@@ -114,6 +115,8 @@ function link_data(scenario, year, variable)
         end
     end
 end
+
+const a2d(arr) = Dict(enumerate(arr))
 
 # Get colour to draw each shape for (scenario, year, variable, comparison scenario, comparison year) -> (colours)
 mat_comp(args...; kwargs...) = comp(mat_data, args...; kwargs...)
@@ -203,19 +206,19 @@ end
 "Given a pair of variable_name => meta, return true if it should be used"
 is_used((name, meta)) = get(meta, "use", true)
 
-println("Warming up the cache: links")
-@showprogress for variable in keys(filter(is_used, list_variables("links")))
-    # get these quantiles from colourMap in index.js
-    var_stats("links", variable, (0.1, 0.9))
-    var_stats("links", variable, (0.05, 0.95), true)
-end
-
-println("Warming up the cache: matrices")
-@showprogress for variable in keys(filter(is_used, list_variables("od_matrices")))
-    # get these quantiles from colourMap in index.js
-    var_stats("od_matrices", variable, (0.0001, 0.9999))
-    var_stats("od_matrices", variable, (0.05, 0.95), true)
-end
+# println("Warming up the cache: links")
+# @showprogress for variable in keys(filter(is_used, list_variables("links")))
+#     # get these quantiles from colourMap in index.js
+#     var_stats("links", variable, (0.1, 0.9))
+#     var_stats("links", variable, (0.05, 0.95), true)
+# end
+# 
+# println("Warming up the cache: matrices")
+# @showprogress for variable in keys(filter(is_used, list_variables("od_matrices")))
+#     # get these quantiles from colourMap in index.js
+#     var_stats("od_matrices", variable, (0.0001, 0.9999))
+#     var_stats("od_matrices", variable, (0.05, 0.95), true)
+# end
 
 
 ## Routes
@@ -277,24 +280,23 @@ route("/data") do
     if d[:domain] == "od_matrices"
         if d[:row] != "false"
             rows = parse.(Int,split(d[:row],','))
-            return sum([mat_data(scenario, year, variable)[row,:] for row in rows]) |> json
-        end
-        if d[:comparewith] == "none"
-            reshape(sum(mat_data(scenario, year, variable), dims = 2), :) |> json
+            sum([mat_data(scenario, year, variable)[row,:] for row in rows])
+        elseif d[:comparewith] == "none"
+            reshape(sum(mat_data(scenario, year, variable), dims = 2), :)
         else
             mat_comp(scenario, year, variable,
-                     comparewith, compareyear, percent=percent) |> json
+                     comparewith, compareyear, percent=percent)
         end
     elseif d[:domain] == "links"
         if d[:comparewith] == "none"
-            link_data(scenario, year, variable) |> json
+            link_data(scenario, year, variable)
         else
             link_comp(scenario, year, variable,
-                      comparewith, compareyear, percent=percent) |> json
+                      comparewith, compareyear, percent=percent)
         end
     else
         throw(DomainError(d[:domain]))
-    end
+    end |> a2d |> json
 end
 
 route("/centroids") do
