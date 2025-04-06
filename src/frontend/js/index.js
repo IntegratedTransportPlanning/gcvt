@@ -1949,6 +1949,7 @@ function selectProject(projItem, state) {
     if (projItem.Type == "Node") {
         const [lat, lon] = projItem["Coordinates (lat, lon)"].split(",")
         map.flyTo({center: [lon, lat], zoom: 12})
+        map.setFilter ( 'projlinks', ['match', ['id'], [-1], true, false ])
     }
 }
 
