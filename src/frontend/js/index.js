@@ -1242,7 +1242,7 @@ const menuView = state => {
                                 return desired
                             })
                              .map(projItem => m(UI.ListItem, {
-                                 active: projItem.NEWCODE_NU === state.projectSelected,
+                                 active: projItem["Project Title"] === state.projectTitle, // We should have set proper IDs for these projects at the start
                                  label: [projItem.Type == "Node" && m("p", "🏗️"), m("h5", {} , projItem["Project Title"])],
                                  onclick: e => selectProject(projItem, state)
                              }))
