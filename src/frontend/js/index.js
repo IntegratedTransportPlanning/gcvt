@@ -905,6 +905,10 @@ const { update, states, actions } =
                     if (oldpopup) {
                         oldpopup.remove()
                     }
+                    
+                    // Don't try and show a graph if in project mode
+                    if (state.projectMode) return; 
+                    
                     // TODO: fix so that the zone clicker doesn't shadow this
                     let id = event.features[0].id
                     let ltype = state.LTypes[id]
