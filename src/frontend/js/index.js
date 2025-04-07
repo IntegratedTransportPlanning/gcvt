@@ -34,6 +34,16 @@
  * of the actions.blah methods (which all call update internally).
  *
  */
+ 
+// TODOs 
+/*
+What to do about port/IWW?
+Reset proj type when changing country
+Hint text when nothing is selected
+Tighten up UI 
+
+*/
+
 
 const DEBUG = true
 const log = DEBUG ? console.log : _ => undefined
@@ -188,9 +198,9 @@ const default_year = 2030
 // INITIAL STATE
 
 const DEFAULTS = {
-    lng: 29.6,
-    lat: 50.57,
-    zoom: 4.21,
+    lng: 34.69,
+    lat: 44.33,
+    zoom: 4.39,
     meta: {
         links: {},
         od_matrices: {},
@@ -224,8 +234,8 @@ const DEFAULTS = {
         hover: null,
     },
     projects: [],
-    projectMode: false,
-    projectCountry: 'Ukraine',
+    projectMode: true,
+    projectCountry: '(Show whole plan)',
     projectSelected: null,
     projectDesc: "",
     projectTitle: "",
@@ -1203,6 +1213,10 @@ const menuView = state => {
                                     .flat()
                                     .filter(code => code != "")
                                 highlightProjects(state, selProjects, thisCountry) 
+                                
+                                // This seems neater
+                                actions.setLTypes([])
+                                
                                 update({projectCountry: thisCountry})
                             }
                         }, 
@@ -1225,8 +1239,7 @@ const menuView = state => {
                                 name: 'projlist',
                                 size: "xs",
                             },
-                            // All the projects in the selected country. Not the best UI, but a starter
-                            
+                                                        
                             // A nice idea here might be to order the list by some sort of 'story' id, which the user just clicks a button to step through. 
                             // But need to check against our user stories, no idea if that is useful
                             state.projects.filter(projItem => {
