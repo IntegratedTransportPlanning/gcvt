@@ -35,14 +35,6 @@
  *
  */
  
-// TODOs 
-/*
-What to do about port/IWW?
-Reset proj type when changing country
-Hint text when nothing is selected
-Tighten up UI 
-
-*/
 
 
 const DEBUG = true
@@ -474,6 +466,7 @@ const mapboxInit = ({lng, lat, zoom}) => {
         actions.fetchAllLayers()
         
         actions.fetchProjects()
+        
     }
 
     map.on('load', loadLayers)
@@ -647,6 +640,20 @@ const app = {
                 points.setData({'type': 'FeatureCollection',
                     'features': feats,
                 })
+                
+                const state = states()
+                if (state.projectCountry === "(Show whole plan)" &&
+                    state.desiredLTypes.length == 0) {
+                        
+                    let selProjects = projects
+                                    .map(proj => proj.NEWCODE_NU)
+                                    .map(code =>  code.split(",")  )
+                                    .flat()
+                                    .filter(code => code != "")
+                                    
+                    highlightProjects(state, selProjects, "(Show whole plan)")
+                    
+                }
                 
                 return update({ projects })
             },
@@ -1259,8 +1266,13 @@ const menuView = state => {
                                  label: [projItem.Type == "Node" && m("p", "🏗️"), m("h5", {} , projItem["Project Title"])],
                                  onclick: e => selectProject(projItem, state)
                              }))
+                             
                          )
-                     )
+                     ),
+                     m('br'),
+                     (states().projectCountry === "(Show whole plan)" 
+                        && states().desiredLTypes.length == 0 ) ? 
+                        "Too many/few projects to show. Select a country or type of project with the boxes above" : " "
                         
                      
                      
